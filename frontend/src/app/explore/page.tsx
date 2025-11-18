@@ -1,258 +1,372 @@
+/**
+ * Explore Page
+ *
+ * Browse all NFTs, listings, and auctions on ArcMarket
+ * Features filtering, search, sorting, and pagination
+ */
+
 'use client';
 
-import { useState, useEffect } from 'react';
-import NFTCard from '@/components/NFTCard';
-import { fetchGraphQL } from '@/lib/graphql-client';
-import { GET_ACTIVE_LISTINGS, GET_ACTIVE_AUCTIONS, GET_MARKETPLACE_STATS } from '@/graphql/queries';
+import { useState, useEffect, useCallback } from 'react';
+import { Search, SlidersHorizontal, TrendingUp, Package } from 'lucide-react';
+import { NFTGrid } from '@/components/nft/NFTCard';
+import { Pagination } from '@/components/ui/Pagination';
+import { LoadingPage } from '@/components/ui/LoadingSpinner';
+import { ErrorDisplay, EmptyState } from '@/components/ui/ErrorDisplay';
+import { fetchListings, fetchAuctions, fetchMarketplaceStats } from '@/lib/graphql-client';
+import { formatUSDC, formatCompactUSDC, formatNumber, debounce } from '@/lib/utils';
+import type { NFT, Listing, Auction, MarketplaceStats, SortOption } from '@/types';
 
 type ViewMode = 'all' | 'listings' | 'auctions';
 
-interface MarketplaceStats {
-  totalVolume: string;
-  totalSales: string;
-  activeListings: string;
-  activeAuctions: string;
-}
+const ITEMS_PER_PAGE = 20;
+
+const SORT_OPTIONS: SortOption[] = [
+  { label: 'Recently Listed', value: 'recent', orderBy: 'createdAt', orderDirection: 'desc' },
+  { label: 'Price: Low to High', value: 'price_asc', orderBy: 'price', orderDirection: 'asc' },
+  { label: 'Price: High to Low', value: 'price_desc', orderBy: 'price', orderDirection: 'desc' },
+  { label: 'Ending Soon', value: 'ending', orderBy: 'endTime', orderDirection: 'asc' },
+];
 
 export default function ExplorePage() {
+  // View state
   const [viewMode, setViewMode] = useState<ViewMode>('all');
-  const [listings, setListings] = useState<any[]>([]);
-  const [auctions, setAuctions] = useState<any[]>([]);
-  const [stats, setStats] = useState<MarketplaceStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<SortOption>(SORT_OPTIONS[0]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Data state
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [auctions, setAuctions] = useState<Auction[]>([]);
+  const [stats, setStats] = useState<MarketplaceStats | null>(null);
+
+  // UI state
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Debounce search input
+  const debouncedSetSearch = useCallback(
+    debounce((value: string) => {
+      setDebouncedSearch(value);
+      setCurrentPage(1); // Reset to first page on search
+    }, 300),
+    []
+  );
 
   useEffect(() => {
-    loadData();
+    debouncedSetSearch(searchQuery);
+  }, [searchQuery, debouncedSetSearch]);
+
+  // Load marketplace stats on mount
+  useEffect(() => {
+    loadStats();
   }, []);
 
-  const loadData = async () => {
-    setLoading(true);
+  // Load data when view mode or pagination changes
+  useEffect(() => {
+    loadData();
+  }, [viewMode, currentPage, sortBy, debouncedSearch]);
+
+  const loadStats = async () => {
     try {
-      // Fetch marketplace stats
-      const statsData: any = await fetchGraphQL(GET_MARKETPLACE_STATS);
-      if (statsData.marketplaceStats) {
-        setStats(statsData.marketplaceStats);
+      const statsData = await fetchMarketplaceStats();
+      if (statsData) {
+        setStats(statsData);
       }
-
-      // Fetch active listings
-      const listingsData: any = await fetchGraphQL(GET_ACTIVE_LISTINGS, {
-        first: 50,
-        skip: 0,
-      });
-      setListings(listingsData.listings || []);
-
-      // Fetch active auctions
-      const auctionsData: any = await fetchGraphQL(GET_ACTIVE_AUCTIONS, {
-        first: 50,
-        skip: 0,
-      });
-      setAuctions(auctionsData.auctions || []);
-    } catch (error) {
-      console.error('Error loading explore data:', error);
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error('Failed to load stats:', err);
+      // Don't block page load if stats fail
     }
   };
 
-  // Convert listings to NFT format for NFTCard
-  const listingNFTs = listings.map((listing) => ({
-    ...listing.nft,
-    listing: {
-      id: listing.id,
-      price: listing.price,
-      active: true,
-    },
-  }));
+  const loadData = async () => {
+    setIsLoading(true);
+    setError(null);
 
-  // Convert auctions to NFT format for NFTCard
-  const auctionNFTs = auctions.map((auction) => ({
-    ...auction.nft,
-    auction: {
-      id: auction.id,
-      reservePrice: auction.reservePrice,
-      highestBid: auction.highestBid,
-      endTime: auction.endTime,
-      settled: auction.settled,
-    },
-  }));
+    try {
+      const skip = (currentPage - 1) * ITEMS_PER_PAGE;
 
-  // Combine and filter based on view mode
-  const allNFTs = [...listingNFTs, ...auctionNFTs];
-  const displayNFTs =
-    viewMode === 'all'
-      ? allNFTs
-      : viewMode === 'listings'
-      ? listingNFTs
-      : auctionNFTs;
+      if (viewMode === 'all' || viewMode === 'listings') {
+        const listingsData = await fetchListings({
+          first: ITEMS_PER_PAGE,
+          skip,
+          orderBy: sortBy.orderBy,
+          orderDirection: sortBy.orderDirection,
+        });
+        setListings(listingsData);
+      }
 
-  // Filter by search query
+      if (viewMode === 'all' || viewMode === 'auctions') {
+        const auctionsData = await fetchAuctions({
+          first: ITEMS_PER_PAGE,
+          skip,
+        });
+        setAuctions(auctionsData);
+      }
+    } catch (err) {
+      console.error('Failed to load data:', err);
+      setError(err as Error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Combine NFTs from listings and auctions
+  const allNFTs: NFT[] = [
+    ...listings.map((listing) => listing.nft).filter(Boolean) as NFT[],
+    ...auctions.map((auction) => auction.nft).filter(Boolean) as NFT[],
+  ];
+
+  // Filter NFTs based on view mode
+  const displayNFTs = (() => {
+    if (viewMode === 'listings') {
+      return listings.map((listing) => listing.nft).filter(Boolean) as NFT[];
+    }
+    if (viewMode === 'auctions') {
+      return auctions.map((auction) => auction.nft).filter(Boolean) as NFT[];
+    }
+    return allNFTs;
+  })();
+
+  // Search filter
   const filteredNFTs = displayNFTs.filter((nft) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
+    if (!debouncedSearch) return true;
+    const query = debouncedSearch.toLowerCase();
     return (
+      nft.name?.toLowerCase().includes(query) ||
       nft.collection?.name?.toLowerCase().includes(query) ||
-      nft.tokenId?.toString().includes(query)
+      nft.tokenId?.toString().includes(query) ||
+      nft.owner?.toLowerCase().includes(query)
     );
   });
 
+  // Create lookup maps for listings and auctions
+  const listingsMap: Record<string, Listing> = {};
+  listings.forEach((listing) => {
+    if (listing.nft) {
+      const key = `${listing.collection.toLowerCase()}-${listing.tokenId}`;
+      listingsMap[key] = listing;
+    }
+  });
+
+  const auctionsMap: Record<string, Auction> = {};
+  auctions.forEach((auction) => {
+    if (auction.nft) {
+      const key = `${auction.collection.toLowerCase()}-${auction.tokenId}`;
+      auctionsMap[key] = auction;
+    }
+  });
+
+  // Calculate total pages (estimate)
+  const totalPages = Math.ceil((filteredNFTs.length || ITEMS_PER_PAGE) / ITEMS_PER_PAGE);
+
+  // Loading state
+  if (isLoading && !listings.length && !auctions.length) {
+    return <LoadingPage label="Loading NFTs..." />;
+  }
+
+  // Error state
+  if (error && !listings.length && !auctions.length) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <ErrorDisplay error={error} title="Failed to load NFTs" onRetry={loadData} />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="container mx-auto px-4 py-8">
+      <div className="space-y-6">
+        {/* Header Section */}
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            Explore NFTs
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Discover unique digital assets on Arc blockchain
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Explore NFTs</h1>
+          <p className="text-lg text-gray-600">
+            Discover unique digital assets on Circle Arc blockchain
           </p>
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search collections or token ID..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full md:w-80 px-4 py-2 pl-10 pr-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <svg
-            className="absolute left-3 top-2.5 w-5 h-5 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        {/* Stats Cards */}
+        {stats && (
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <StatsCard
+              label="Total Volume"
+              value={formatCompactUSDC(stats.totalVolume)}
+              icon={TrendingUp}
             />
-          </svg>
-        </div>
-      </div>
+            <StatsCard
+              label="Total Sales"
+              value={formatNumber(stats.totalSales)}
+              icon={Package}
+            />
+            <StatsCard
+              label="Active Listings"
+              value={formatNumber(stats.activeListings)}
+            />
+            <StatsCard
+              label="Active Auctions"
+              value={formatNumber(stats.activeAuctions)}
+            />
+          </div>
+        )}
 
-      {/* Stats */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              Total Volume
-            </p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {(parseInt(stats.totalVolume) / 1e6).toLocaleString()} USDC
-            </p>
+        {/* Search and Filters */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          {/* Search Bar */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by name, collection, or token ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              Total Sales
-            </p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {parseInt(stats.totalSales).toLocaleString()}
-            </p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              Active Listings
-            </p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {stats.activeListings}
-            </p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              Active Auctions
-            </p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {stats.activeAuctions}
-            </p>
-          </div>
-        </div>
-      )}
 
-      {/* View Mode Tabs */}
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => setViewMode('all')}
-          className={`px-4 py-2 font-medium transition-colors ${
-            viewMode === 'all'
-              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-          }`}
-        >
-          All ({allNFTs.length})
-        </button>
-        <button
-          onClick={() => setViewMode('listings')}
-          className={`px-4 py-2 font-medium transition-colors ${
-            viewMode === 'listings'
-              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-          }`}
-        >
-          Listings ({listingNFTs.length})
-        </button>
-        <button
-          onClick={() => setViewMode('auctions')}
-          className={`px-4 py-2 font-medium transition-colors ${
-            viewMode === 'auctions'
-              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-          }`}
-        >
-          Auctions ({auctionNFTs.length})
-        </button>
-      </div>
-
-      {/* NFT Grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(12)].map((_, i) => (
-            <div
-              key={i}
-              className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md animate-pulse"
+          {/* Sort and Filter Controls */}
+          <div className="flex gap-3">
+            <select
+              value={sortBy.value}
+              onChange={(e) => {
+                const option = SORT_OPTIONS.find((opt) => opt.value === e.target.value);
+                if (option) setSortBy(option);
+              }}
+              className="rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <div className="aspect-square bg-gray-200 dark:bg-gray-700" />
-              <div className="p-4 space-y-3">
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
-              </div>
-            </div>
-          ))}
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              Filters
+            </button>
+          </div>
         </div>
-      ) : filteredNFTs.length === 0 ? (
-        <div className="text-center py-12">
-          <svg
-            className="mx-auto h-12 w-12 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+
+        {/* View Mode Tabs */}
+        <div className="flex gap-4 border-b border-gray-200">
+          <TabButton
+            active={viewMode === 'all'}
+            onClick={() => {
+              setViewMode('all');
+              setCurrentPage(1);
+            }}
+            label="All"
+            count={allNFTs.length}
+          />
+          <TabButton
+            active={viewMode === 'listings'}
+            onClick={() => {
+              setViewMode('listings');
+              setCurrentPage(1);
+            }}
+            label="Listings"
+            count={listings.length}
+          />
+          <TabButton
+            active={viewMode === 'auctions'}
+            onClick={() => {
+              setViewMode('auctions');
+              setCurrentPage(1);
+            }}
+            label="Auctions"
+            count={auctions.length}
+          />
+        </div>
+
+        {/* NFT Grid */}
+        {filteredNFTs.length === 0 && !isLoading ? (
+          <EmptyState
+            title="No NFTs found"
+            description={
+              debouncedSearch
+                ? 'Try adjusting your search query or filters'
+                : 'No NFTs are currently available in this category'
+            }
+          />
+        ) : (
+          <>
+            <NFTGrid
+              nfts={filteredNFTs}
+              listings={listingsMap}
+              auctions={auctionsMap}
+              isLoading={isLoading}
             />
-          </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-            No NFTs found
-          </h3>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {searchQuery
-              ? 'Try adjusting your search query'
-              : 'No NFTs are currently available'}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredNFTs.map((nft) => (
-            <NFTCard key={nft.id} nft={nft} />
-          ))}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-8">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Helper Components
+
+function StatsCard({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  icon?: React.ComponentType<{ className?: string }>;
+}) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      {Icon && (
+        <div className="mb-2">
+          <Icon className="h-5 w-5 text-blue-600" />
         </div>
       )}
+      <p className="text-sm text-gray-600 mb-1">{label}</p>
+      <p className="text-2xl font-bold text-gray-900">{value}</p>
     </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  label,
+  count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count?: number;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`relative px-4 py-3 font-medium transition-colors ${
+        active
+          ? 'text-blue-600 border-b-2 border-blue-600'
+          : 'text-gray-600 hover:text-gray-900'
+      }`}
+    >
+      {label}
+      {count !== undefined && (
+        <span className="ml-2 text-sm text-gray-500">({count})</span>
+      )}
+    </button>
   );
 }
