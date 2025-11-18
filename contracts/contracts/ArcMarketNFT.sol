@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 
 /**
  * @title ArcMarketNFT
@@ -13,9 +12,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
  * Supports multi-creator revenue splits and verified creator badges
  */
 contract ArcMarketNFT is ERC721, ERC721URIStorage, ERC721Royalty, Ownable {
-    using Counters for Counters.Counter;
-
-    Counters.Counter private _tokenIdCounter;
+    uint256 private _nextTokenId;
 
     // Mapping from token ID to creator address
     mapping(uint256 => address) public tokenCreator;
@@ -52,8 +49,7 @@ contract ArcMarketNFT is ERC721, ERC721URIStorage, ERC721Royalty, Ownable {
         address royaltyReceiver,
         uint96 royaltyFeeNumerator
     ) public returns (uint256) {
-        uint256 tokenId = _tokenIdCounter.current();
-        _tokenIdCounter.increment();
+        uint256 tokenId = _nextTokenId++;
 
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
@@ -80,14 +76,14 @@ contract ArcMarketNFT is ERC721, ERC721URIStorage, ERC721Royalty, Ownable {
         require(creators.length > 0, "At least one creator required");
 
         uint96 totalShare = 0;
+        uint256 tokenId = _nextTokenId;
         for (uint256 i = 0; i < creators.length; i++) {
             totalShare += creators[i].share;
-            tokenCreators[_tokenIdCounter.current()].push(creators[i]);
+            tokenCreators[tokenId].push(creators[i]);
         }
         require(totalShare == 10000, "Total shares must equal 10000 (100%)");
 
-        uint256 tokenId = _tokenIdCounter.current();
-        _tokenIdCounter.increment();
+        _nextTokenId++;
 
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
@@ -163,7 +159,7 @@ contract ArcMarketNFT is ERC721, ERC721URIStorage, ERC721Royalty, Ownable {
      * @dev Get total supply of NFTs
      */
     function totalSupply() public view returns (uint256) {
-        return _tokenIdCounter.current();
+        return _nextTokenId;
     }
 
     // Required overrides

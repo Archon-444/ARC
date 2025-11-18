@@ -1,0 +1,38 @@
+[
+  {
+    "inputs": [
+      { "internalType": "address", "name": "collection", "type": "address" }
+    ],
+    "name": "getCollectionSplits",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "address", "name": "recipient", "type": "address" },
+          { "internalType": "uint16", "name": "bps", "type": "uint16" }
+        ],
+        "internalType": "struct FeeVault.CollectionSplit[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getGlobalSplits",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "address", "name": "recipient", "type": "address" },
+          { "internalType": "uint16", "name": "bps", "type": "uint16" }
+        ],
+        "internalType": "struct FeeVault.GlobalSplit[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
