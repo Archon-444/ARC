@@ -1,11 +1,20 @@
 'use client';
 
+import { useState } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Wallet } from 'lucide-react';
+import { useCircleWallet } from '@/hooks/useCircleWallet';
+import { WalletManagementModal } from '@/components/circle/WalletManagementModal';
+import { CreateWalletModal } from '@/components/circle/CreateWalletModal';
+import { truncateAddress } from '@/lib/utils';
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { isAuthenticated, currentWallet, wallets } = useCircleWallet();
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const navLinks = [
     { href: '/', label: 'Explore' },
@@ -46,8 +55,29 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Connect Wallet Button */}
-          <div className="flex items-center space-x-4">
+          {/* Connect Wallet Buttons */}
+          <div className="flex items-center space-x-3">
+            {/* Circle Wallet Button */}
+            {isAuthenticated && currentWallet ? (
+              <button
+                onClick={() => setShowWalletModal(true)}
+                className="inline-flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+              >
+                <Wallet className="h-4 w-4" />
+                <span className="hidden sm:inline">{truncateAddress(currentWallet.address as `0x${string}`)}</span>
+                <span className="sm:hidden">Circle</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => wallets.length > 0 ? setShowWalletModal(true) : setShowCreateModal(true)}
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <Wallet className="h-4 w-4" />
+                <span className="hidden sm:inline">Circle Wallet</span>
+              </button>
+            )}
+
+            {/* RainbowKit Connect Button */}
             <ConnectButton />
           </div>
         </div>
@@ -71,6 +101,14 @@ export default function Navbar() {
           ))}
         </div>
       </div>
+
+      {/* Circle Wallet Modals */}
+      <WalletManagementModal isOpen={showWalletModal} onClose={() => setShowWalletModal(false)} />
+      <CreateWalletModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => setShowCreateModal(false)}
+      />
     </nav>
   );
 }
