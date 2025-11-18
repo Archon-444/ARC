@@ -1,7 +1,7 @@
 const hre = require("hardhat");
 
 async function main() {
-  console.log("Starting deployment of ArcMarket v0.1...\n");
+  console.log("Starting deployment of ArcMarket v0.2...\n");
 
   const [deployer] = await hre.ethers.getSigners();
   console.log("Deploying contracts with account:", deployer.address);
@@ -52,21 +52,26 @@ async function main() {
   const profileRegistryAddress = await profileRegistry.getAddress();
   console.log("ProfileRegistry deployed to:", profileRegistryAddress);
 
-  // Deploy StakingRewards (stub)
-  console.log("\nDeploying StakingRewards (stub)...");
+  // Deploy StakingRewards (v0.2)
+  console.log("\nDeploying StakingRewards...");
   const StakingRewards = await hre.ethers.getContractFactory("StakingRewards");
-  const stakingRewards = await StakingRewards.deploy();
+  const stakingRewards = await StakingRewards.deploy(usdcAddress);
   await stakingRewards.waitForDeployment();
   const stakingRewardsAddress = await stakingRewards.getAddress();
   console.log("StakingRewards deployed to:", stakingRewardsAddress);
+  console.log("  - Default tiers initialized (Bronze, Silver, Gold, Platinum)");
+  console.log("  - Initial reward rate: 1 wei per second per USDC");
 
-  // Deploy SimpleGovernance (stub)
-  console.log("\nDeploying SimpleGovernance (stub)...");
+  // Deploy SimpleGovernance (v0.2)
+  console.log("\nDeploying SimpleGovernance...");
   const SimpleGovernance = await hre.ethers.getContractFactory("SimpleGovernance");
-  const simpleGovernance = await SimpleGovernance.deploy();
+  const simpleGovernance = await SimpleGovernance.deploy(usdcAddress, stakingRewardsAddress);
   await simpleGovernance.waitForDeployment();
   const simpleGovernanceAddress = await simpleGovernance.getAddress();
   console.log("SimpleGovernance deployed to:", simpleGovernanceAddress);
+  console.log("  - Voting period: 7 days");
+  console.log("  - Min stake to propose: 1000 USDC");
+  console.log("  - Quorum: 10% of total staked");
 
   // Optional: Set up initial splits in FeeVault
   console.log("\nSetting up default global splits (platform fee)...");
@@ -80,24 +85,26 @@ async function main() {
   console.log("Default global splits configured");
 
   // Summary
-  console.log("\n=== ArcMarket v0.1 Deployment Summary ===");
+  console.log("\n=== ArcMarket v0.2 Deployment Summary ===");
   console.log("Network:", hre.network.name);
   console.log("Deployer:", deployer.address);
-  console.log("\nCore Contracts:");
+  console.log("\nv0.1 Core Contracts:");
   console.log("  MockUSDC:", usdcAddress);
   console.log("  NFTMarketplace:", marketplaceAddress);
   console.log("  FeeVault:", feeVaultAddress);
   console.log("  ProfileRegistry:", profileRegistryAddress);
-  console.log("\nStub Contracts (v0.2+):");
+  console.log("\nv0.2 Contracts:");
   console.log("  StakingRewards:", stakingRewardsAddress);
   console.log("  SimpleGovernance:", simpleGovernanceAddress);
   console.log("\nConfiguration:");
   console.log("  Protocol Fee:", protocolFeeBps / 100, "%");
+  console.log("  Staking Tiers: Bronze (100), Silver (500), Gold (2000), Platinum (10000) USDC");
+  console.log("  Governance: 7-day voting, 1000 USDC min to propose");
 
   // Save deployment addresses
   const fs = require("fs");
   const deploymentInfo = {
-    version: "0.1.0",
+    version: "0.2.0",
     network: hre.network.name,
     chainId: hre.network.config.chainId,
     timestamp: new Date().toISOString(),
@@ -123,13 +130,15 @@ async function main() {
 
   // Generate .env template for frontend
   const envTemplate = `
-# ArcMarket v0.1 Contract Addresses
+# ArcMarket v0.2 Contract Addresses
 VITE_CHAIN_ID=${hre.network.config.chainId || 31337}
 VITE_RPC_URL=${hre.network.config.url || "http://localhost:8545"}
 VITE_USDC_ADDRESS=${usdcAddress}
 VITE_MARKETPLACE_ADDRESS=${marketplaceAddress}
 VITE_FEEVAULT_ADDRESS=${feeVaultAddress}
 VITE_PROFILEREGISTRY_ADDRESS=${profileRegistryAddress}
+VITE_STAKINGREWARDS_ADDRESS=${stakingRewardsAddress}
+VITE_SIMPLEGOVERNANCE_ADDRESS=${simpleGovernanceAddress}
 VITE_SUBGRAPH_URL=http://localhost:8000/subgraphs/name/arcmarket
 `;
 
