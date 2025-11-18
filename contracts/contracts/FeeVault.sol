@@ -1,274 +1,208 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title FeeVault
- * @dev Central fee and royalty distributor for marketplace sales
- * Handles automatic splitting of sale proceeds to sellers, creators, and platform
+ * @notice Central fee and royalty distributor for each sale
+ * @dev Handles collection-specific and global revenue splits
  */
-contract FeeVault is ReentrancyGuard, Ownable {
-    IERC20 public immutable usdc;
+contract FeeVault is Ownable {
+    IERC20 public immutable USDC;
     address public marketplace;
 
-    struct Split {
+    struct GlobalSplit {
         address recipient;
-        uint16 bps; // Basis points (10000 = 100%)
+        uint16 bps;
     }
 
-    // Global platform fee recipients (platform treasury, team, etc.)
-    Split[] public globalSplits;
+    struct CollectionSplit {
+        address recipient;
+        uint16 bps;
+    }
 
-    // Collection-specific royalty splits
-    mapping(address => Split[]) public collectionSplits;
+    // collection => CollectionSplit[]
+    mapping(address => CollectionSplit[]) private _collectionSplits;
+
+    // Global splits for platform/team
+    GlobalSplit[] private _globalSplits;
+
+    // Custom Errors
+    error NotOwner();
+    error NotMarketplace();
+    error InvalidSplits();
 
     // Events
     event MarketplaceSet(address indexed marketplace);
-    event GlobalSplitsUpdated(Split[] splits);
-    event CollectionSplitsUpdated(address indexed collection, Split[] splits);
+    event GlobalSplitsUpdated(GlobalSplit[] splits);
+    event CollectionSplitsUpdated(address indexed collection);
     event Distributed(
         address indexed collection,
         uint256 indexed tokenId,
-        uint256 totalAmount,
-        uint256 sellerAmount,
-        uint256 creatorAmount,
-        uint256 platformAmount
+        uint256 amount
     );
 
-    // Errors
-    error NotMarketplace();
-    error InvalidSplits();
-    error InvalidBasisPoints();
-    error TransferFailed();
-
     constructor(address _usdc, address _marketplace) Ownable(msg.sender) {
-        require(_usdc != address(0), "Invalid USDC address");
-        require(_marketplace != address(0), "Invalid marketplace address");
-        usdc = IERC20(_usdc);
+        USDC = IERC20(_usdc);
         marketplace = _marketplace;
     }
 
+    // ==================== Admin Functions ====================
+
     /**
-     * @dev Set marketplace contract address (only owner)
+     * @notice Set marketplace contract address
+     * @param _marketplace New marketplace address
      */
     function setMarketplace(address _marketplace) external onlyOwner {
-        require(_marketplace != address(0), "Invalid marketplace");
         marketplace = _marketplace;
         emit MarketplaceSet(_marketplace);
     }
 
     /**
-     * @dev Set global platform fee splits (only owner)
-     * @param splits Array of recipients and their basis points
+     * @notice Set global splits for platform/team
+     * @param splits Array of GlobalSplit structs
      */
-    function setGlobalSplits(Split[] calldata splits) external onlyOwner {
+    function setGlobalSplits(GlobalSplit[] calldata splits) external onlyOwner {
+        // Validate total bps
         uint16 totalBps = 0;
         for (uint256 i = 0; i < splits.length; i++) {
-            require(splits[i].recipient != address(0), "Invalid recipient");
             totalBps += splits[i].bps;
         }
-
-        // Total should be reasonable (0-5000 bps = 0-50%)
-        if (totalBps > 5000) revert InvalidBasisPoints();
+        if (totalBps > 10_000) revert InvalidSplits();
 
         // Clear existing splits
-        delete globalSplits;
+        delete _globalSplits;
 
-        // Add new splits
+        // Set new splits
         for (uint256 i = 0; i < splits.length; i++) {
-            globalSplits.push(splits[i]);
+            _globalSplits.push(splits[i]);
         }
 
         emit GlobalSplitsUpdated(splits);
     }
 
     /**
-     * @dev Set collection-specific royalty splits
-     * @param collection NFT collection address
-     * @param splits Array of creator recipients and their basis points
+     * @notice Set collection-specific royalty splits
+     * @param collection Collection address
+     * @param splits Array of CollectionSplit structs
      */
     function setCollectionSplits(
         address collection,
-        Split[] calldata splits
-    ) external {
-        // Only collection owner or this contract owner can set splits
-        require(
-            msg.sender == owner() || _isCollectionOwner(collection, msg.sender),
-            "Not authorized"
-        );
-
+        CollectionSplit[] calldata splits
+    ) external onlyOwner {
+        // Validate total bps
         uint16 totalBps = 0;
         for (uint256 i = 0; i < splits.length; i++) {
-            require(splits[i].recipient != address(0), "Invalid recipient");
             totalBps += splits[i].bps;
         }
-
-        // Total creator royalties should not exceed 100%
-        if (totalBps > 10000) revert InvalidBasisPoints();
+        if (totalBps > 10_000) revert InvalidSplits();
 
         // Clear existing splits
-        delete collectionSplits[collection];
+        delete _collectionSplits[collection];
 
-        // Add new splits
+        // Set new splits
         for (uint256 i = 0; i < splits.length; i++) {
-            collectionSplits[collection].push(splits[i]);
+            _collectionSplits[collection].push(splits[i]);
         }
 
-        emit CollectionSplitsUpdated(collection, splits);
+        emit CollectionSplitsUpdated(collection);
     }
 
+    // ==================== Distribution Function ====================
+
     /**
-     * @dev Distribute sale proceeds (only marketplace)
+     * @notice Distribute sale proceeds to collection creators and global recipients
      * @param collection NFT collection address
-     * @param tokenId Token ID
-     * @param seller Seller address
-     * @param totalAmount Total sale amount in USDC
-     * @param platformFeeBps Platform fee in basis points
-     * @param royaltyBps Royalty fee in basis points
+     * @param tokenId Token ID (for future per-token overrides)
+     * @param amount Amount in USDC to distribute
      */
     function distribute(
         address collection,
         uint256 tokenId,
-        address seller,
-        uint256 totalAmount,
-        uint16 platformFeeBps,
-        uint16 royaltyBps
-    ) external nonReentrant {
+        uint256 amount
+    ) external {
         if (msg.sender != marketplace) revert NotMarketplace();
 
-        // Calculate amounts
-        uint256 platformAmount = (totalAmount * platformFeeBps) / 10000;
-        uint256 royaltyAmount = (totalAmount * royaltyBps) / 10000;
-        uint256 sellerAmount = totalAmount - platformAmount - royaltyAmount;
+        // First transfer USDC from marketplace to vault
+        USDC.transferFrom(msg.sender, address(this), amount);
 
-        // Distribute platform fees via global splits
-        if (platformAmount > 0) {
-            _distributeGlobalSplits(platformAmount);
-        }
+        uint256 remaining = amount;
 
-        // Distribute creator royalties via collection splits
-        if (royaltyAmount > 0) {
-            _distributeCollectionSplits(collection, royaltyAmount);
-        }
-
-        // Send remaining amount to seller
-        if (sellerAmount > 0) {
-            if (!usdc.transfer(seller, sellerAmount)) revert TransferFailed();
-        }
-
-        emit Distributed(
-            collection,
-            tokenId,
-            totalAmount,
-            sellerAmount,
-            royaltyAmount,
-            platformAmount
-        );
-    }
-
-    /**
-     * @dev Distribute amount among global platform fee recipients
-     */
-    function _distributeGlobalSplits(uint256 amount) internal {
-        if (globalSplits.length == 0) {
-            // If no splits configured, send to owner
-            if (!usdc.transfer(owner(), amount)) revert TransferFailed();
-            return;
-        }
-
-        uint256 totalBps = 0;
-        for (uint256 i = 0; i < globalSplits.length; i++) {
-            totalBps += globalSplits[i].bps;
-        }
-
-        for (uint256 i = 0; i < globalSplits.length; i++) {
-            uint256 splitAmount = (amount * globalSplits[i].bps) / totalBps;
+        // 1. Distribute collection splits (creator royalties)
+        CollectionSplit[] storage collectionSplits = _collectionSplits[collection];
+        for (uint256 i = 0; i < collectionSplits.length; i++) {
+            uint256 splitAmount = (amount * collectionSplits[i].bps) / 10_000;
             if (splitAmount > 0) {
-                if (!usdc.transfer(globalSplits[i].recipient, splitAmount))
-                    revert TransferFailed();
+                USDC.transfer(collectionSplits[i].recipient, splitAmount);
+                remaining -= splitAmount;
             }
         }
-    }
 
-    /**
-     * @dev Distribute amount among collection royalty recipients
-     */
-    function _distributeCollectionSplits(address collection, uint256 amount) internal {
-        Split[] storage splits = collectionSplits[collection];
-
-        if (splits.length == 0) {
-            // If no splits configured, try to send to collection owner
-            address collectionOwner = _getCollectionOwner(collection);
-            if (collectionOwner != address(0)) {
-                if (!usdc.transfer(collectionOwner, amount)) revert TransferFailed();
-            } else {
-                // If can't determine owner, send to contract owner
-                if (!usdc.transfer(owner(), amount)) revert TransferFailed();
-            }
-            return;
-        }
-
-        uint256 totalBps = 0;
-        for (uint256 i = 0; i < splits.length; i++) {
-            totalBps += splits[i].bps;
-        }
-
-        for (uint256 i = 0; i < splits.length; i++) {
-            uint256 splitAmount = (amount * splits[i].bps) / totalBps;
+        // 2. Distribute global splits (platform/team)
+        for (uint256 i = 0; i < _globalSplits.length; i++) {
+            uint256 splitAmount = (amount * _globalSplits[i].bps) / 10_000;
             if (splitAmount > 0) {
-                if (!usdc.transfer(splits[i].recipient, splitAmount))
-                    revert TransferFailed();
+                USDC.transfer(_globalSplits[i].recipient, splitAmount);
+                remaining -= splitAmount;
             }
         }
+
+        // 3. Send remaining to collection owner/seller
+        // Note: In v0.1, the marketplace handles seller payment directly,
+        // so this vault primarily handles royalties and platform fees.
+        // If there's remaining due to rounding, it stays in vault or
+        // we could send to a designated address.
+
+        emit Distributed(collection, tokenId, amount);
+    }
+
+    // ==================== View Functions ====================
+
+    /**
+     * @notice Get collection splits
+     * @param collection Collection address
+     * @return Array of CollectionSplit structs
+     */
+    function getCollectionSplits(address collection)
+        external
+        view
+        returns (CollectionSplit[] memory)
+    {
+        return _collectionSplits[collection];
     }
 
     /**
-     * @dev Check if address is collection owner (basic check via Ownable interface)
+     * @notice Get global splits
+     * @return Array of GlobalSplit structs
      */
-    function _isCollectionOwner(address collection, address account) internal view returns (bool) {
-        try Ownable(collection).owner() returns (address collectionOwner) {
-            return collectionOwner == account;
-        } catch {
-            return false;
-        }
+    function getGlobalSplits() external view returns (GlobalSplit[] memory) {
+        return _globalSplits;
     }
 
     /**
-     * @dev Get collection owner
+     * @notice Get number of collection splits for a collection
+     * @param collection Collection address
+     * @return Number of splits
      */
-    function _getCollectionOwner(address collection) internal view returns (address) {
-        try Ownable(collection).owner() returns (address collectionOwner) {
-            return collectionOwner;
-        } catch {
-            return address(0);
-        }
+    function getCollectionSplitsCount(address collection) external view returns (uint256) {
+        return _collectionSplits[collection].length;
     }
 
     /**
-     * @dev Get global splits
+     * @notice Get number of global splits
+     * @return Number of global splits
      */
-    function getGlobalSplits() external view returns (Split[] memory) {
-        return globalSplits;
+    function getGlobalSplitsCount() external view returns (uint256) {
+        return _globalSplits.length;
     }
 
     /**
-     * @dev Get collection splits
+     * @notice Emergency withdraw (owner only)
+     * @param amount Amount to withdraw
      */
-    function getCollectionSplits(address collection) external view returns (Split[] memory) {
-        return collectionSplits[collection];
-    }
-
-    /**
-     * @dev Emergency withdraw (only owner)
-     */
-    function emergencyWithdraw(address token, uint256 amount) external onlyOwner {
-        if (token == address(0)) {
-            payable(owner()).transfer(amount);
-        } else {
-            IERC20(token).transfer(owner(), amount);
-        }
+    function emergencyWithdraw(uint256 amount) external onlyOwner {
+        USDC.transfer(owner(), amount);
     }
 }
