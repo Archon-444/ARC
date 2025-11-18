@@ -4,9 +4,9 @@
  * Configures Circle User-Controlled Wallets for Arc blockchain
  */
 
-import { initializationService, W3SSdk } from '@circle-fin/user-controlled-wallets';
+import { W3SSdk } from '@circle-fin/user-controlled-wallets';
 
-// Circle SDK App ID (should be set in environment variables)
+// Circle SDK App ID (public, frontend)
 export const CIRCLE_APP_ID = process.env.NEXT_PUBLIC_CIRCLE_APP_ID || '';
 
 /**
@@ -20,7 +20,7 @@ export function initializeCircleSDK(): W3SSdk | null {
   }
 
   try {
-    const sdk = initializationService({ appId: CIRCLE_APP_ID });
+    const sdk = new W3SSdk();
     return sdk;
   } catch (error) {
     console.error('Failed to initialize Circle SDK:', error);

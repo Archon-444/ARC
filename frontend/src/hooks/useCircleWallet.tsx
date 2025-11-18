@@ -2,6 +2,7 @@
  * Circle Wallet Hook
  *
  * Manages Circle User-Controlled Wallets state and operations
+ * NOW WITH REAL API INTEGRATION (no mocks!)
  */
 
 'use client';
@@ -12,11 +13,11 @@ import {
   initializeCircleSDK,
   CircleWallet,
   CircleUser,
-  CircleChallenge,
   CircleWalletError,
   CIRCLE_APP_ID,
 } from '@/lib/circle';
 import { useToast } from './useToast';
+import { useAccount } from 'wagmi';
 
 interface CircleWalletContextValue {
   // SDK
@@ -34,7 +35,7 @@ interface CircleWalletContextValue {
   isCreatingWallet: boolean;
 
   // Operations
-  login: (userToken: string, encryptionKey: string) => Promise<void>;
+  createUser: () => Promise<void>;
   logout: () => void;
   createWallet: () => Promise<CircleWallet | null>;
   selectWallet: (walletId: string) => void;
@@ -48,6 +49,7 @@ const CircleWalletContext = createContext<CircleWalletContextValue | undefined>(
 
 export function CircleWalletProvider({ children }: { children: ReactNode }) {
   const { error: showError, success: showSuccess } = useToast();
+  const { address: connectedAddress } = useAccount();
 
   // SDK
   const [sdk, setSdk] = useState<W3SSdk | null>(null);
@@ -110,41 +112,65 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
   }, []);
 
   /**
-   * Login with Circle user token
+   * Create Circle user (REAL API CALL)
    */
-  const login = useCallback(
-    async (userToken: string, encryptionKey: string) => {
-      if (!sdk) {
-        throw new CircleWalletError('SDK not initialized');
+  const createUser = useCallback(async () => {
+    if (!sdk) {
+      throw new CircleWalletError('SDK not initialized');
+    }
+
+    setIsLoading(true);
+    try {
+      // Use connected wallet address as userId (or generate unique ID)
+      const userId = connectedAddress || `user_${Date.now()}`;
+
+      // Call backend API to create Circle user
+      const response = await fetch('/api/circle/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new CircleWalletError(errorData.error || 'Failed to create user');
       }
 
-      setIsLoading(true);
-      try {
-        // In a real implementation, you would call Circle API to get user details
-        // For now, we'll create a mock user
-        const mockUser: CircleUser = {
-          userId: userToken,
-          wallets: [],
-        };
+      const data = await response.json();
 
-        setUser(mockUser);
-        setIsAuthenticated(true);
-        localStorage.setItem('circle_user', JSON.stringify(mockUser));
+      // Set SDK authentication
+      sdk.setAppSettings({
+        appId: CIRCLE_APP_ID!,
+      });
+      sdk.setAuthentication({
+        userToken: data.userToken,
+        encryptionKey: data.encryptionKey,
+      });
 
-        // Fetch user's wallets
-        await refreshWallets();
+      // Save user
+      const circleUser: CircleUser = {
+        userId: data.userId,
+        wallets: [],
+      };
 
-        showSuccess('Connected to Circle Wallet');
-      } catch (error) {
-        console.error('Login failed:', error);
-        showError('Failed to connect', 'Please try again');
-        throw error;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [sdk, showError, showSuccess]
-  );
+      setUser(circleUser);
+      setIsAuthenticated(true);
+      localStorage.setItem('circle_user', JSON.stringify(circleUser));
+      localStorage.setItem('circle_user_token', data.userToken);
+      localStorage.setItem('circle_encryption_key', data.encryptionKey);
+
+      // Fetch existing wallets
+      await refreshWallets();
+
+      showSuccess('Circle account created');
+    } catch (error) {
+      console.error('User creation failed:', error);
+      showError('Failed to create account', error instanceof Error ? error.message : 'Unknown error');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [sdk, connectedAddress, showError, showSuccess]);
 
   /**
    * Logout
@@ -158,43 +184,69 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('circle_user');
     localStorage.removeItem('circle_wallets');
     localStorage.removeItem('circle_current_wallet');
+    localStorage.removeItem('circle_user_token');
+    localStorage.removeItem('circle_encryption_key');
 
     showSuccess('Disconnected from Circle Wallet');
   }, [showSuccess]);
 
   /**
-   * Create new wallet
+   * Create new wallet (REAL API CALL)
    */
   const createWallet = useCallback(async (): Promise<CircleWallet | null> => {
     if (!sdk || !user) {
       throw new CircleWalletError('SDK not initialized or user not logged in');
     }
 
+    const userToken = localStorage.getItem('circle_user_token');
+    if (!userToken) {
+      throw new CircleWalletError('User token not found. Please log in again.');
+    }
+
     setIsCreatingWallet(true);
     try {
-      // In a real implementation, you would call Circle API to create wallet
-      // For now, we'll create a mock wallet
-      const mockWallet: CircleWallet = {
-        id: `wallet_${Date.now()}`,
-        address: `0x${Math.random().toString(16).substr(2, 40)}`,
-        blockchain: 'ARC',
-        state: 'LIVE',
-        createDate: new Date().toISOString(),
-        updateDate: new Date().toISOString(),
-      };
+      // Call backend API to create wallet challenge
+      const response = await fetch('/api/circle/wallets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.userId,
+          userToken,
+          blockchain: 'MATIC-AMOY', // Polygon Amoy testnet (Arc not yet supported)
+        }),
+      });
 
-      const updatedWallets = [...wallets, mockWallet];
-      setWallets(updatedWallets);
-      setCurrentWallet(mockWallet);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new CircleWalletError(errorData.error || 'Failed to create wallet');
+      }
 
-      localStorage.setItem('circle_wallets', JSON.stringify(updatedWallets));
-      localStorage.setItem('circle_current_wallet', JSON.stringify(mockWallet));
+      const { challengeId } = await response.json();
 
-      showSuccess('Wallet created successfully');
-      return mockWallet;
+      // Execute challenge with SDK (user PIN + biometric)
+      const success = await executeChallenge(challengeId);
+
+      if (!success) {
+        throw new CircleWalletError('Challenge execution failed');
+      }
+
+      // Refresh wallets to get the new wallet
+      await refreshWallets();
+
+      // Get the newly created wallet
+      const newWallet = wallets[wallets.length - 1];
+
+      if (newWallet) {
+        setCurrentWallet(newWallet);
+        localStorage.setItem('circle_current_wallet', JSON.stringify(newWallet));
+        showSuccess('Wallet created successfully');
+        return newWallet;
+      }
+
+      return null;
     } catch (error) {
       console.error('Failed to create wallet:', error);
-      showError('Failed to create wallet', 'Please try again');
+      showError('Failed to create wallet', error instanceof Error ? error.message : 'Unknown error');
       return null;
     } finally {
       setIsCreatingWallet(false);
@@ -216,28 +268,45 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
   );
 
   /**
-   * Refresh wallets from Circle API
+   * Refresh wallets from Circle API (REAL API CALL)
    */
   const refreshWallets = useCallback(async () => {
     if (!sdk || !user) return;
 
+    const userToken = localStorage.getItem('circle_user_token');
+    if (!userToken) return;
+
     setIsLoading(true);
     try {
-      // In a real implementation, you would fetch wallets from Circle API
-      // For now, we'll use the wallets from state
-      const savedWallets = localStorage.getItem('circle_wallets');
-      if (savedWallets) {
-        setWallets(JSON.parse(savedWallets));
+      // Call backend API to get wallets
+      const response = await fetch(
+        `/api/circle/wallets?userId=${user.userId}&userToken=${encodeURIComponent(userToken)}`
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new CircleWalletError(errorData.error || 'Failed to fetch wallets');
+      }
+
+      const { wallets: fetchedWallets } = await response.json();
+
+      setWallets(fetchedWallets);
+      localStorage.setItem('circle_wallets', JSON.stringify(fetchedWallets));
+
+      // Set first wallet as current if none selected
+      if (!currentWallet && fetchedWallets.length > 0) {
+        setCurrentWallet(fetchedWallets[0]);
+        localStorage.setItem('circle_current_wallet', JSON.stringify(fetchedWallets[0]));
       }
     } catch (error) {
       console.error('Failed to refresh wallets:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [sdk, user]);
+  }, [sdk, user, currentWallet]);
 
   /**
-   * Execute challenge (for transaction signing)
+   * Execute challenge (REAL SDK CALL)
    */
   const executeChallenge = useCallback(
     async (challengeId: string): Promise<boolean> => {
@@ -246,8 +315,15 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        // In a real implementation, you would execute the challenge via SDK
-        // For now, we'll return true to simulate success
+        // Execute challenge via SDK - this will prompt user for PIN + biometric
+        await sdk.execute(challengeId, (error, result) => {
+          if (error) {
+            console.error('Challenge execution error:', error);
+            return false;
+          }
+          return true;
+        });
+
         return true;
       } catch (error) {
         console.error('Challenge execution failed:', error);
@@ -268,7 +344,7 @@ export function CircleWalletProvider({ children }: { children: ReactNode }) {
         isAuthenticated,
         isLoading,
         isCreatingWallet,
-        login,
+        createUser,
         logout,
         createWallet,
         selectWallet,
