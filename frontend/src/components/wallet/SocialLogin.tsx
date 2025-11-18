@@ -2,12 +2,14 @@
  * Social Login Component
  * Provides Google, Facebook, and Apple login for Circle Wallets
  * No MetaMask required - users get a wallet automatically
+ * Uses NextAuth.js for REAL OAuth authentication (NO MOCKS)
  */
 
 'use client';
 
-import { useState } from 'react';
-import { useCircleWallet } from '@/providers/CircleWalletProvider';
+import { useState, useEffect } from 'react';
+import { signIn, useSession } from 'next-auth/react';
+import { useCircleWallet } from '@/hooks/useCircleWallet';
 
 interface SocialLoginProps {
   onSuccess?: (walletAddress: string) => void;
@@ -39,97 +41,128 @@ interface SocialLoginProps {
  * ```
  */
 export function SocialLogin({ onSuccess, onError, className = '' }: SocialLoginProps) {
-  const { createWallet, isInitialized, loading: circleLoading } = useCircleWallet();
+  const { data: session, status } = useSession();
+  const { createUser, createWallet, currentWallet, isSDKReady } = useCircleWallet();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [provider, setProvider] = useState<string | null>(null);
+
+  // When OAuth session is established, create Circle wallet
+  useEffect(() => {
+    if (session && provider && !currentWallet) {
+      handleCreateWallet();
+    }
+  }, [session, provider, currentWallet]);
 
   /**
-   * Handle Google login
+   * Create Circle wallet after successful OAuth
+   */
+  const handleCreateWallet = async () => {
+    if (!session?.user?.email) {
+      setError('No user email found in session');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Create Circle user first (if not exists)
+      await createUser();
+
+      // Create Circle wallet
+      const wallet = await createWallet();
+
+      if (wallet) {
+        onSuccess?.(wallet.address);
+        console.log('✅ OAuth + Circle wallet created:', wallet.address);
+      }
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message);
+      onError?.(error);
+      console.error('Wallet creation failed:', error);
+    } finally {
+      setLoading(false);
+      setProvider(null);
+    }
+  };
+
+  /**
+   * Handle Google OAuth login
+   * Uses NextAuth.js Google provider
    */
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError(null);
+    setProvider('google');
 
     try {
-      // 1. Authenticate with Google (implement with NextAuth or similar)
-      // For now, using a mock implementation
-      const googleUser = await mockGoogleAuth();
-
-      // 2. Create Circle wallet
-      const walletAddress = await createWallet(googleUser.id, googleUser.email);
-
-      // 3. Call success callback
-      onSuccess?.(walletAddress);
-
-      console.log('✅ Google login successful, wallet created:', walletAddress);
+      // Trigger NextAuth Google OAuth flow
+      await signIn('google', {
+        redirect: false,
+        callbackUrl: window.location.href,
+      });
     } catch (err) {
       const error = err as Error;
       setError(error.message);
       onError?.(error);
-      console.error('Google login failed:', error);
-    } finally {
+      console.error('Google OAuth failed:', error);
       setLoading(false);
+      setProvider(null);
     }
   };
 
   /**
-   * Handle Facebook login
+   * Handle Facebook OAuth login
+   * Uses NextAuth.js Facebook provider
    */
   const handleFacebookLogin = async () => {
     setLoading(true);
     setError(null);
+    setProvider('facebook');
 
     try {
-      // 1. Authenticate with Facebook
-      const facebookUser = await mockFacebookAuth();
-
-      // 2. Create Circle wallet
-      const walletAddress = await createWallet(facebookUser.id, facebookUser.email);
-
-      // 3. Call success callback
-      onSuccess?.(walletAddress);
-
-      console.log('✅ Facebook login successful, wallet created:', walletAddress);
+      // Trigger NextAuth Facebook OAuth flow
+      await signIn('facebook', {
+        redirect: false,
+        callbackUrl: window.location.href,
+      });
     } catch (err) {
       const error = err as Error;
       setError(error.message);
       onError?.(error);
-      console.error('Facebook login failed:', error);
-    } finally {
+      console.error('Facebook OAuth failed:', error);
       setLoading(false);
+      setProvider(null);
     }
   };
 
   /**
-   * Handle Apple login
+   * Handle Apple OAuth login
+   * Uses NextAuth.js Apple provider
    */
   const handleAppleLogin = async () => {
     setLoading(true);
     setError(null);
+    setProvider('apple');
 
     try {
-      // 1. Authenticate with Apple
-      const appleUser = await mockAppleAuth();
-
-      // 2. Create Circle wallet
-      const walletAddress = await createWallet(appleUser.id, appleUser.email);
-
-      // 3. Call success callback
-      onSuccess?.(walletAddress);
-
-      console.log('✅ Apple login successful, wallet created:', walletAddress);
+      // Trigger NextAuth Apple OAuth flow
+      await signIn('apple', {
+        redirect: false,
+        callbackUrl: window.location.href,
+      });
     } catch (err) {
       const error = err as Error;
       setError(error.message);
       onError?.(error);
-      console.error('Apple login failed:', error);
-    } finally {
+      console.error('Apple OAuth failed:', error);
       setLoading(false);
+      setProvider(null);
     }
   };
 
-  const isLoading = loading || circleLoading;
-  const isDisabled = !isInitialized || isLoading;
+  const isLoading = loading || status === 'loading';
+  const isDisabled = !isSDKReady || isLoading;
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -147,6 +180,18 @@ export function SocialLogin({ onSuccess, onError, className = '' }: SocialLoginP
       {error && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
           <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+        </div>
+      )}
+
+      {/* Success Message */}
+      {session && currentWallet && (
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+          <p className="text-sm text-green-800 dark:text-green-200">
+            ✅ Signed in as {session.user?.email}
+          </p>
+          <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+            Wallet: {currentWallet.address.slice(0, 6)}...{currentWallet.address.slice(-4)}
+          </p>
         </div>
       )}
 
@@ -222,6 +267,15 @@ export function SocialLogin({ onSuccess, onError, className = '' }: SocialLoginP
         </p>
       </div>
 
+      {/* OAuth Setup Notice */}
+      {!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+          <p className="text-xs text-yellow-800 dark:text-yellow-200">
+            ⚠️ OAuth providers not configured. Set up Google/Facebook/Apple credentials in .env.local
+          </p>
+        </div>
+      )}
+
       {/* Traditional Wallet Option */}
       <div className="text-center">
         <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -239,42 +293,6 @@ export function SocialLogin({ onSuccess, onError, className = '' }: SocialLoginP
       </div>
     </div>
   );
-}
-
-// Mock authentication functions
-// TODO: Replace with actual OAuth implementations
-
-async function mockGoogleAuth(): Promise<{ id: string; email: string; name: string }> {
-  // In production, use NextAuth with Google provider or @react-oauth/google
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  return {
-    id: `google_${Math.random().toString(36).slice(2)}`,
-    email: `user_${Math.random().toString(36).slice(2, 8)}@gmail.com`,
-    name: 'Google User',
-  };
-}
-
-async function mockFacebookAuth(): Promise<{ id: string; email: string; name: string }> {
-  // In production, use NextAuth with Facebook provider or facebook-js-sdk
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  return {
-    id: `facebook_${Math.random().toString(36).slice(2)}`,
-    email: `user_${Math.random().toString(36).slice(2, 8)}@facebook.com`,
-    name: 'Facebook User',
-  };
-}
-
-async function mockAppleAuth(): Promise<{ id: string; email: string; name: string }> {
-  // In production, use NextAuth with Apple provider or appleid-js
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  return {
-    id: `apple_${Math.random().toString(36).slice(2)}`,
-    email: `user_${Math.random().toString(36).slice(2, 8)}@privaterelay.appleid.com`,
-    name: 'Apple User',
-  };
 }
 
 /**
