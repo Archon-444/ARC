@@ -7,6 +7,7 @@ import { WagmiProvider } from 'wagmi';
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { config } from '@/lib/wagmi';
 import Navbar from '@/components/Navbar';
+import { ToastProvider } from '@/hooks/useToast';
 
 const queryClient = new QueryClient();
 
@@ -21,12 +22,14 @@ export default function RootLayout({
         <WagmiProvider config={config}>
           <QueryClientProvider client={queryClient}>
             <RainbowKitProvider>
-              <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
-                <Navbar />
-                <main className="container mx-auto px-4 py-8">
-                  {children}
-                </main>
-              </div>
+              <ToastProvider>
+                <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
+                  <Navbar />
+                  <main className="container mx-auto px-4 py-8">
+                    {children}
+                  </main>
+                </div>
+              </ToastProvider>
             </RainbowKitProvider>
           </QueryClientProvider>
         </WagmiProvider>

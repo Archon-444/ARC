@@ -10,6 +10,7 @@
 import { use, useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useAccount } from 'wagmi';
 import {
   Clock,
   Tag,
@@ -23,6 +24,10 @@ import {
 } from 'lucide-react';
 import { LoadingPage } from '@/components/ui/LoadingSpinner';
 import { ErrorPage } from '@/components/ui/ErrorDisplay';
+import { BuyModal } from '@/components/marketplace/BuyModal';
+import { BidModal } from '@/components/marketplace/BidModal';
+import { ListNFTModal } from '@/components/marketplace/ListNFTModal';
+import { CreateAuctionModal } from '@/components/marketplace/CreateAuctionModal';
 import { fetchNFTDetails } from '@/lib/graphql-client';
 import {
   formatUSDC,
@@ -48,6 +53,7 @@ interface PageProps {
 
 export default function NFTDetailPage({ params }: PageProps) {
   const { collection, tokenId } = use(params);
+  const { address } = useAccount();
 
   const [nft, setNft] = useState<NFT | null>(null);
   const [listing, setListing] = useState<Listing | null>(null);
@@ -56,6 +62,12 @@ export default function NFTDetailPage({ params }: PageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [isLiked, setIsLiked] = useState(false);
+
+  // Modal states
+  const [showBuyModal, setShowBuyModal] = useState(false);
+  const [showBidModal, setShowBidModal] = useState(false);
+  const [showListModal, setShowListModal] = useState(false);
+  const [showAuctionModal, setShowAuctionModal] = useState(false);
 
   // Countdown for auctions
   const [timeRemaining, setTimeRemaining] = useState<ReturnType<typeof getTimeRemaining> | null>(null);
@@ -219,9 +231,13 @@ export default function NFTDetailPage({ params }: PageProps) {
                 <p className="text-sm text-gray-600">Current Price</p>
                 <p className="text-4xl font-bold text-gray-900">{formatUSDC(listing.price)}</p>
               </div>
-              <button className="w-full rounded-lg bg-blue-600 px-6 py-3 text-lg font-semibold text-white hover:bg-blue-700 flex items-center justify-center gap-2">
+              <button
+                onClick={() => setShowBuyModal(true)}
+                disabled={!address || address.toLowerCase() === nft.owner.toLowerCase()}
+                className="w-full rounded-lg bg-blue-600 px-6 py-3 text-lg font-semibold text-white hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <ShoppingCart className="h-5 w-5" />
-                Buy Now
+                {!address ? 'Connect Wallet' : address.toLowerCase() === nft.owner.toLowerCase() ? 'You Own This' : 'Buy Now'}
               </button>
             </div>
           )}
@@ -258,17 +274,39 @@ export default function NFTDetailPage({ params }: PageProps) {
                   </div>
                 )}
               </div>
-              <button className="w-full rounded-lg bg-purple-600 px-6 py-3 text-lg font-semibold text-white hover:bg-purple-700 flex items-center justify-center gap-2">
+              <button
+                onClick={() => setShowBidModal(true)}
+                disabled={!address || address.toLowerCase() === nft.owner.toLowerCase()}
+                className="w-full rounded-lg bg-purple-600 px-6 py-3 text-lg font-semibold text-white hover:bg-purple-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <Gavel className="h-5 w-5" />
-                Place Bid
+                {!address ? 'Connect Wallet' : address.toLowerCase() === nft.owner.toLowerCase() ? 'You Own This' : 'Place Bid'}
               </button>
             </div>
           )}
 
           {!listing && !isAuctionActive && (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-6">
               <AlertCircle className="mx-auto mb-2 h-8 w-8 text-gray-400" />
-              <p className="text-gray-600">This NFT is not currently listed for sale</p>
+              <p className="mb-4 text-center text-gray-600">This NFT is not currently listed for sale</p>
+              {address && address.toLowerCase() === nft.owner.toLowerCase() && (
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowListModal(true)}
+                    className="flex-1 rounded-lg border border-blue-600 bg-white px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                  >
+                    <Tag className="mx-auto mb-1 h-4 w-4" />
+                    List for Sale
+                  </button>
+                  <button
+                    onClick={() => setShowAuctionModal(true)}
+                    className="flex-1 rounded-lg border border-purple-600 bg-white px-4 py-2 text-sm font-medium text-purple-600 hover:bg-purple-50"
+                  >
+                    <Gavel className="mx-auto mb-1 h-4 w-4" />
+                    Create Auction
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -362,6 +400,53 @@ export default function NFTDetailPage({ params }: PageProps) {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      {listing && (
+        <BuyModal
+          isOpen={showBuyModal}
+          onClose={() => setShowBuyModal(false)}
+          nft={nft}
+          listing={listing}
+          onSuccess={() => {
+            setShowBuyModal(false);
+            loadNFT();
+          }}
+        />
+      )}
+
+      {auction && (
+        <BidModal
+          isOpen={showBidModal}
+          onClose={() => setShowBidModal(false)}
+          nft={nft}
+          auction={auction}
+          onSuccess={() => {
+            setShowBidModal(false);
+            loadNFT();
+          }}
+        />
+      )}
+
+      <ListNFTModal
+        isOpen={showListModal}
+        onClose={() => setShowListModal(false)}
+        nft={nft}
+        onSuccess={() => {
+          setShowListModal(false);
+          loadNFT();
+        }}
+      />
+
+      <CreateAuctionModal
+        isOpen={showAuctionModal}
+        onClose={() => setShowAuctionModal(false)}
+        nft={nft}
+        onSuccess={() => {
+          setShowAuctionModal(false);
+          loadNFT();
+        }}
+      />
     </div>
   );
 }
