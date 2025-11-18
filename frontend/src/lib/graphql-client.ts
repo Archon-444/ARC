@@ -1,10 +1,24 @@
 import { GraphQLClient } from 'graphql-request';
 
-const SUBGRAPH_URL =
+/**
+ * GraphQL Endpoint Configuration
+ *
+ * Priority order:
+ * 1. NEXT_PUBLIC_GRAPHQL_ENDPOINT (from .env)
+ * 2. NEXT_PUBLIC_SUBGRAPH_URL (legacy support)
+ * 3. Local development endpoint
+ */
+const GRAPHQL_ENDPOINT =
+  process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT ||
   process.env.NEXT_PUBLIC_SUBGRAPH_URL ||
-  'https://api.studio.thegraph.com/query/YOUR_SUBGRAPH_ID/arcmarket/v0.1.0';
+  'http://localhost:8000/subgraphs/name/arcmarket';
 
-export const graphQLClient = new GraphQLClient(SUBGRAPH_URL, {
+// Log endpoint in development
+if (process.env.NODE_ENV === 'development') {
+  console.log('[GraphQL] Using endpoint:', GRAPHQL_ENDPOINT);
+}
+
+export const graphQLClient = new GraphQLClient(GRAPHQL_ENDPOINT, {
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
