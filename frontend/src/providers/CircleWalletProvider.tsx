@@ -5,12 +5,15 @@
  *
  * This provider communicates with our backend Circle API routes,
  * which use the Circle User-Controlled Wallets SDK server-side.
+ * The Web SDK is used for PIN/challenge handling in the browser.
  */
 
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
+import { W3SSdk } from '@circle-fin/w3s-pw-web-sdk';
+import { CIRCLE_APP_ID, CircleWalletError } from '@/lib/circle';
 
 interface CircleWallet {
   address: string;
@@ -24,6 +27,10 @@ interface CircleWallet {
 }
 
 interface CircleWalletContextType {
+  // Web SDK
+  sdk: W3SSdk | null;
+  isSDKReady: boolean;
+
   // Wallet state
   wallets: CircleWallet[];
   activeWallet: CircleWallet | null;
@@ -40,6 +47,9 @@ interface CircleWalletContextType {
   loadWallets: () => Promise<void>;
   setActiveWallet: (wallet: CircleWallet) => void;
   disconnectWallet: () => void;
+
+  // Challenge execution (for PIN setup)
+  executeChallenge: (challengeId: string) => Promise<boolean>;
 }
 
 const CircleWalletContext = createContext<CircleWalletContextType | null>(null);
@@ -62,6 +72,12 @@ export interface CircleWalletProviderProps {
  */
 export function CircleWalletProvider({ children }: CircleWalletProviderProps) {
   const { data: session, status: sessionStatus } = useSession();
+
+  // Web SDK state
+  const [sdk, setSdk] = useState<W3SSdk | null>(null);
+  const [isSDKReady, setIsSDKReady] = useState(false);
+
+  // Wallet state
   const [wallets, setWallets] = useState<CircleWallet[]>([]);
   const [activeWallet, setActiveWalletState] = useState<CircleWallet | null>(null);
   const [loading, setLoading] = useState(false);
@@ -70,6 +86,30 @@ export function CircleWalletProvider({ children }: CircleWalletProviderProps) {
   const [encryptionKey, setEncryptionKey] = useState<string | null>(null);
 
   const isConnected = activeWallet !== null && session !== null;
+
+  // Initialize Web SDK on mount
+  useEffect(() => {
+    if (!CIRCLE_APP_ID) {
+      console.warn('Circle App ID not configured. Set NEXT_PUBLIC_CIRCLE_APP_ID in .env');
+      return;
+    }
+
+    try {
+      const webSDK = new W3SSdk();
+
+      // Configure SDK
+      webSDK.setAppSettings({
+        appId: CIRCLE_APP_ID,
+      });
+
+      setSdk(webSDK);
+      setIsSDKReady(true);
+      console.log('✅ Circle Web SDK initialized');
+    } catch (err) {
+      console.error('Failed to initialize Circle Web SDK:', err);
+      setError(err as Error);
+    }
+  }, []);
 
   /**
    * Get authentication tokens from backend
@@ -98,6 +138,15 @@ export function CircleWalletProvider({ children }: CircleWalletProviderProps) {
       setUserToken(data.userToken);
       setEncryptionKey(data.encryptionKey);
 
+      // Configure Web SDK with authentication tokens
+      if (sdk && isSDKReady) {
+        sdk.setAuthentication({
+          userToken: data.userToken,
+          encryptionKey: data.encryptionKey,
+        });
+        console.log('✅ Circle SDK authenticated');
+      }
+
       return {
         userToken: data.userToken,
         encryptionKey: data.encryptionKey,
@@ -106,7 +155,7 @@ export function CircleWalletProvider({ children }: CircleWalletProviderProps) {
       console.error('Failed to get auth tokens:', err);
       return null;
     }
-  }, [session]);
+  }, [session, sdk, isSDKReady]);
 
   /**
    * Load wallets for the current user
@@ -199,13 +248,22 @@ export function CircleWalletProvider({ children }: CircleWalletProviderProps) {
         const data = await response.json();
 
         console.log(`✅ Wallet creation initiated. Challenge ID: ${data.challengeId}`);
-        console.log('⚠️  User must complete PIN setup to finalize wallet creation');
+        console.log('⏳ Executing challenge (PIN setup)...');
 
-        // TODO: Integrate Circle's Web SDK to handle the challenge
-        // For now, we'll reload wallets after a delay to check if wallet was created
-        setTimeout(() => {
-          loadWallets();
-        }, 2000);
+        // Execute challenge with Web SDK (PIN setup)
+        if (sdk && isSDKReady) {
+          const success = await executeChallenge(data.challengeId);
+
+          if (success) {
+            // Reload wallets to get the new wallet
+            await loadWallets();
+            console.log('✅ Wallet creation completed successfully');
+          } else {
+            console.error('❌ Challenge execution failed');
+          }
+        } else {
+          console.warn('⚠️  Web SDK not ready - challenge must be completed manually');
+        }
 
         return data.challengeId;
       } catch (err) {
@@ -236,6 +294,43 @@ export function CircleWalletProvider({ children }: CircleWalletProviderProps) {
     localStorage.removeItem('circle_active_wallet_id');
   }, []);
 
+  /**
+   * Execute a Circle challenge (PIN setup, transaction signing, etc.)
+   *
+   * This opens the Circle Web SDK UI for the user to complete the challenge
+   * @param challengeId - The challenge ID from Circle API
+   * @returns Promise<boolean> - true if challenge was completed successfully
+   */
+  const executeChallenge = useCallback(
+    async (challengeId: string): Promise<boolean> => {
+      if (!sdk || !isSDKReady) {
+        throw new CircleWalletError('Web SDK not initialized');
+      }
+
+      return new Promise((resolve) => {
+        try {
+          // Execute challenge - this will show Circle's UI for PIN/biometric input
+          sdk.execute(challengeId, (error, result) => {
+            if (error) {
+              console.error('Challenge execution error:', error);
+              setError(new Error(error.message || 'Challenge failed'));
+              resolve(false);
+              return;
+            }
+
+            console.log('Challenge completed successfully:', result);
+            resolve(true);
+          });
+        } catch (err) {
+          console.error('Failed to execute challenge:', err);
+          setError(err as Error);
+          resolve(false);
+        }
+      });
+    },
+    [sdk, isSDKReady]
+  );
+
   // Auto-load wallets when user session is established
   useEffect(() => {
     if (sessionStatus === 'authenticated' && session) {
@@ -260,6 +355,8 @@ export function CircleWalletProvider({ children }: CircleWalletProviderProps) {
   }, [wallets]);
 
   const contextValue: CircleWalletContextType = {
+    sdk,
+    isSDKReady,
     wallets,
     activeWallet,
     isConnected,
@@ -271,6 +368,7 @@ export function CircleWalletProvider({ children }: CircleWalletProviderProps) {
     loadWallets,
     setActiveWallet,
     disconnectWallet,
+    executeChallenge,
   };
 
   return (

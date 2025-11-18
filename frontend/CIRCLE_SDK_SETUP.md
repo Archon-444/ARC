@@ -1,5 +1,14 @@
 # Circle User-Controlled Wallets SDK Integration Guide
 
+**Status:** ✅ **FULLY INTEGRATED** (Backend SDK + Web SDK)
+
+**What's Working:**
+- ✅ Backend Circle SDK (`@circle-fin/user-controlled-wallets@9.3.0`)
+- ✅ Frontend Web SDK (`@circle-fin/w3s-pw-web-sdk@1.1.11`)
+- ✅ Automatic PIN/challenge handling
+- ✅ NextAuth social login integration
+- ✅ Complete wallet creation flow
+
 This guide explains how to set up and use Circle's User-Controlled Wallets in ArcMarket.
 
 ## Overview
@@ -12,33 +21,37 @@ ArcMarket integrates Circle's User-Controlled Wallets SDK to provide:
 ## Architecture
 
 ```
-┌─────────────────┐
-│  Frontend (React) │
-│  - CircleWalletProvider │
-│  - useCircleWallet()    │
-└─────────┬───────┘
-          │ HTTP
-          ▼
-┌─────────────────┐
-│ Backend (Next.js API) │
-│  /api/circle/auth     │
-│  /api/circle/wallet   │
-└─────────┬───────┘
-          │ Circle SDK
-          ▼
-┌─────────────────┐
-│  Circle API     │
-│  - User Management    │
-│  - Wallet Creation    │
-│  - Token Generation   │
-└───────────────── ┘
+┌──────────────────────────┐
+│  Frontend (Browser)      │
+│  - CircleWalletProvider  │
+│  - useCircleWallet()     │
+│  - Web SDK (PIN/Challenge) │ ◄── Handles PIN, biometric, challenges
+└──────────┬───────────────┘
+           │ HTTP
+           ▼
+┌──────────────────────────┐
+│ Backend (Next.js API)    │
+│  /api/circle/auth        │
+│  /api/circle/wallet      │
+│  - Node.js SDK           │ ◄── Creates users, wallets, tokens
+└──────────┬───────────────┘
+           │ HTTPS
+           ▼
+┌──────────────────────────┐
+│  Circle API              │
+│  - User Management       │
+│  - Wallet Creation       │
+│  - Token Generation      │
+│  - Challenge Processing  │
+└──────────────────────────┘
 ```
 
 **Key Points:**
-- ✅ Circle SDK runs **server-side only** in Next.js API routes
-- ✅ Frontend calls our API routes, which call Circle's services
+- ✅ **Backend SDK** (`@circle-fin/user-controlled-wallets`) - Server-side user/wallet management
+- ✅ **Web SDK** (`@circle-fin/w3s-pw-web-sdk`) - Browser-side PIN/challenge handling
+- ✅ Frontend calls backend APIs → Backend calls Circle API
+- ✅ Web SDK handles challenge execution (PIN setup) in the browser
 - ✅ User authentication via NextAuth (social login)
-- ✅ Wallet operations require Circle user tokens
 
 ## Prerequisites
 
@@ -65,16 +78,19 @@ cd frontend
 cp .env.example .env.local
 ```
 
-### Step 2: Configure Circle API Key
+### Step 2: Configure Circle Credentials
 
 Edit `.env.local`:
 
 ```env
 # Circle User-Controlled Wallets Configuration
-CIRCLE_API_KEY=your_circle_api_key_here
+CIRCLE_API_KEY=your_circle_api_key_here  # Server-side secret
+NEXT_PUBLIC_CIRCLE_APP_ID=your_circle_app_id_here  # Public client ID
 ```
 
-⚠️ **Security Note**: `CIRCLE_API_KEY` does NOT have `NEXT_PUBLIC_` prefix, meaning it's server-side only and will never be exposed to the browser.
+⚠️ **Security Note**:
+- `CIRCLE_API_KEY` = Server-side secret (NO `NEXT_PUBLIC_` prefix)
+- `NEXT_PUBLIC_CIRCLE_APP_ID` = Public client ID (safe to expose)
 
 ### Step 3: Configure OAuth Providers
 
