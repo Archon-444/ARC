@@ -146,116 +146,118 @@ source:
 
 ---
 
-### 5. Circle Wallet Integration ❌ **FULLY MOCKED**
+### 5. Circle Wallet Integration ⚠️ **BACKEND INTEGRATED - WEB SDK PENDING**
 
-**Status:** Complete mock implementation - NO production Circle API integration
+**Status:** Server-side SDK integrated with real Circle API - Browser SDK for PIN/challenge handling pending
 
-#### 5.1 Circle Wallet Provider
+**SDK Package:** `@circle-fin/user-controlled-wallets@9.3.0` (server-side only)
+
+#### 5.1 Backend API Routes ✅ **REAL CIRCLE SDK**
+
+**Files:**
+- `frontend/src/app/api/circle/auth/route.ts` - Authentication & token generation
+- `frontend/src/app/api/circle/wallet/route.ts` - Wallet management
+
+**Implementation:**
+```typescript
+// Real Circle SDK initialization
+import { initiateUserControlledWalletsClient } from '@circle-fin/user-controlled-wallets';
+
+const circleClient = initiateUserControlledWalletsClient({
+  apiKey: process.env.CIRCLE_API_KEY || '',
+});
+```
+
+**Features Implemented:**
+- ✅ Real user creation via `circleClient.createUser()`
+- ✅ Real user token generation via `circleClient.createUserToken()`
+- ✅ Real wallet creation via `circleClient.createWallet()`
+- ✅ Wallet listing via `circleClient.listWallets()`
+- ✅ Wallet retrieval via `circleClient.getWallet()`
+- ✅ Token refresh via `circleClient.refreshUserToken()`
+- ✅ NextAuth session verification
+- ✅ Error handling for Circle API responses
+
+**Authentication Flow:**
+1. User signs in with NextAuth (Google/Facebook/Apple)
+2. Backend calls `POST /api/circle/auth` → Creates Circle user + generates token
+3. Returns `userToken` and `encryptionKey` to frontend
+
+**Wallet Creation Flow:**
+1. Frontend calls `POST /api/circle/wallet` with userToken
+2. Backend calls Circle SDK → Returns `challengeId`
+3. **Challenge must be completed** via Circle Web SDK (PIN setup)
+
+#### 5.2 Frontend Provider ✅ **REAL API INTEGRATION**
+
 **File:** `frontend/src/providers/CircleWalletProvider.tsx`
 
-**Mock Implementation (Lines 99-118):**
-```typescript
-// TODO: Replace with actual Circle SDK initialization when available
-const mockSdk: CircleWalletSDK = {
-  setAuthentication: async (params) => {
-    console.log('Mock: Setting authentication', params);
-    setUserToken(params.userToken);
-    setEncryptionKey(params.encryptionKey);
-  },
-  createWallet: async () => {
-    console.log('Mock: Creating wallet');
-    const mockAddress = `0x${Math.random().toString(16).slice(2, 42)}`;
-    return { walletAddress: mockAddress };
-  },
-  recoverWallet: async (params) => {
-    console.log('Mock: Recovering wallet', params);
-  },
-  executeTransaction: async (params) => {
-    console.log('Mock: Executing transaction', params);
-    const mockTxHash = `0x${Math.random().toString(16).slice(2, 66)}`;
-    return { txHash: mockTxHash };
-  },
-};
+**Status:** Client-side provider that calls real backend APIs
+
+**Implementation:**
+- ✅ Calls real `/api/circle/auth` endpoint
+- ✅ Calls real `/api/circle/wallet` endpoint
+- ✅ Integrates with NextAuth session
+- ✅ Auto-loads wallets on authentication
+- ✅ Manages wallet state and active wallet selection
+- ✅ Stores active wallet in localStorage
+
+**Methods:**
+- `getAuthTokens()` - Gets Circle user tokens from backend
+- `loadWallets()` - Fetches user's wallets from Circle API
+- `createWallet()` - Initiates wallet creation (returns challengeId)
+- `setActiveWallet()` - Sets active wallet for transactions
+- `disconnectWallet()` - Clears wallet state
+
+#### 5.3 Current Limitations & Next Steps
+
+**What's Working:**
+- ✅ Real Circle API calls from backend
+- ✅ User creation and authentication
+- ✅ Wallet creation initiation
+- ✅ Wallet listing and retrieval
+- ✅ NextAuth social login integration
+
+**What's Pending:**
+- ⏳ **Circle Web SDK Integration** - Required to complete PIN challenges
+- ⏳ **Challenge Handling** - Users cannot complete wallet creation without Web SDK
+- ⏳ **Transaction Signing** - Requires Web SDK integration
+- ⏳ **Wallet Recovery** - PIN recovery flow needs Web SDK
+
+**Required Package for Browser:**
+```bash
+npm install @circle-fin/w3s-pw-web-sdk
 ```
 
-**Console Warning:**
-```
-✅ Circle SDK initialized (mock mode for development)
-⚠️  Replace with actual Circle SDK in production
-```
+**Required Environment Variables:**
+```env
+# Server-side (NEVER expose to client)
+CIRCLE_API_KEY=<your-circle-api-key>
 
-#### 5.2 Circle Authentication API
-**File:** `frontend/src/app/api/circle/auth/route.ts`
-
-**Status:** Generates fake tokens (Lines 26-49)
-
-```typescript
-// TODO: Implement actual Circle authentication
-// For production, you would:
-// 1. Verify the user is authenticated
-// 2. Generate a JWT or session token
-// 3. Call Circle API to get authentication tokens
-// 4. Store tokens securely
-
-// Mock implementation for development
-const userToken = generateMockToken(userId);
-const encryptionKey = generateMockEncryptionKey(userId);
+# OAuth providers (for NextAuth)
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=<random-32-chars>
+GOOGLE_CLIENT_ID=<your-google-client-id>
+GOOGLE_CLIENT_SECRET=<your-google-client-secret>
 ```
 
-**Mock Functions (Lines 90-99):**
-```typescript
-function generateMockToken(userId: string): string {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 15);
-  return `mock_token_${userId}_${timestamp}_${random}`;
-}
-
-function generateMockEncryptionKey(userId: string): string {
-  const random = Math.random().toString(36).substring(2, 15);
-  return `mock_encryption_key_${userId}_${random}`;
-}
-```
-
-#### 5.3 Circle Wallet Management API
-**File:** `frontend/src/app/api/circle/wallet/route.ts`
-
-**Status:** In-memory mock database (Lines 8-10)
-
-```typescript
-// Mock database for development
-// TODO: Replace with actual database in production
-const walletDatabase: Map<string, any> = new Map();
-```
-
-**Mock Wallet Creation (Lines 50-66):**
-```typescript
-// TODO: Implement actual Circle Wallet creation
-// For production, you would:
-// 1. Verify user authentication
-// 2. Call Circle API to create wallet
-// 3. Store wallet information in database
-// 4. Return wallet details
-
-// Mock wallet creation
-const wallet = {
-  id: `wallet_${Math.random().toString(36).substring(2, 15)}`,
-  address: `0x${Math.random().toString(16).substring(2, 42).padStart(40, '0')}`,
-  userId,
-  email,
-  createDate: new Date().toISOString(),
-  // ...
-};
-```
+See `frontend/CIRCLE_SDK_SETUP.md` for complete setup guide.
 
 #### Impact on User Onboarding/Custody
-- ✅ UI/UX flows are implemented
-- ✅ State management is working
-- ❌ No actual wallet creation via Circle's API
-- ❌ No real custody or key management
-- ❌ No transaction signing capability
-- ❌ Users cannot perform real blockchain operations
 
-**Status:** **NON-PRODUCTION** - All Circle wallet functionality is simulated
+**Current State:**
+- ✅ Users can sign in with social login
+- ✅ Backend can create Circle users and initiate wallet creation
+- ✅ Backend returns challenge IDs for wallet operations
+- ⏳ Users **cannot complete wallet creation** without Web SDK integration
+- ⏳ No transaction signing capability (requires Web SDK)
+- ⏳ No PIN setup flow (requires Web SDK)
+
+**Status:** **PARTIALLY PRODUCTION-READY**
+- Backend integration: ✅ Complete and production-ready
+- Frontend integration: ⏳ Requires Circle Web SDK for challenge handling
+- Can test: User creation, token generation, wallet initiation
+- Cannot test: Wallet finalization, transactions, PIN setup
 
 ---
 
@@ -336,9 +338,10 @@ providers: [
 | Arc Mainnet Config | ❌ Placeholder | No | Awaiting Circle mainnet launch |
 | Frontend GraphQL Client | ✅ Real Integration | Yes | Subgraph deployment |
 | The Graph Subgraph | ❌ Not Deployed | No | Need deployed contract addresses |
-| Circle Wallet SDK | ❌ Fully Mocked | No | Replace with real Circle SDK |
-| Circle Auth API | ❌ Fully Mocked | No | Implement real Circle API calls |
-| Circle Wallet API | ❌ Fully Mocked | No | Implement real Circle API calls |
+| Circle Wallet Backend SDK | ✅ Real Integration | Yes | Circle Web SDK needed for challenges |
+| Circle Auth API | ✅ Real Integration | Yes | Requires CIRCLE_API_KEY env var |
+| Circle Wallet API | ✅ Real Integration | Yes | Requires CIRCLE_API_KEY env var |
+| Circle Web SDK (Browser) | ❌ Not Implemented | No | Need @circle-fin/w3s-pw-web-sdk |
 | NextAuth Social Login | ⚠️ Configured | Partial | Requires OAuth credentials |
 | Contract Tests | ✅ Complete | Yes | None |
 | Frontend Tests | ❌ Not Implemented | No | Need test framework setup |
@@ -349,11 +352,15 @@ providers: [
 
 ### Critical Path Items
 
-1. **Circle Wallet Integration** (HIGH PRIORITY)
-   - Replace mock SDK with `@circle-fin/user-controlled-wallets`
-   - Implement real API calls to Circle's services
-   - Set up proper authentication and encryption
-   - Test wallet creation, recovery, and transaction signing
+1. **Circle Web SDK Integration** (HIGH PRIORITY) ✅ **BACKEND DONE**
+   - ✅ Backend SDK integrated with real Circle API
+   - ✅ Authentication and user token generation working
+   - ✅ Wallet creation initiation working
+   - ⏳ **TODO**: Install browser SDK `@circle-fin/w3s-pw-web-sdk`
+   - ⏳ **TODO**: Implement PIN/challenge handling in frontend
+   - ⏳ **TODO**: Test end-to-end wallet creation with PIN setup
+   - ⏳ **TODO**: Implement transaction signing flow
+   - See `frontend/CIRCLE_SDK_SETUP.md` for integration guide
 
 2. **The Graph Subgraph Deployment** (HIGH PRIORITY)
    - Update `subgraph.yaml` with deployed contract addresses

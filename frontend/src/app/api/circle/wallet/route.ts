@@ -1,76 +1,79 @@
 /**
  * Circle Wallet Management API Route
- * Handles wallet creation, retrieval, and management
+ * Handles wallet creation, retrieval, and management using Circle SDK
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { initiateUserControlledWalletsClient } from '@circle-fin/user-controlled-wallets';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]/route';
 
-// Mock database for development
-// TODO: Replace with actual database in production
-const walletDatabase: Map<string, any> = new Map();
+// Initialize Circle SDK client
+const circleClient = initiateUserControlledWalletsClient({
+  apiKey: process.env.CIRCLE_API_KEY || '',
+});
 
 /**
  * POST /api/circle/wallet
  * Create a new Circle wallet for a user
  *
- * Body: { userId: string, email: string }
- * Returns: { wallet: CircleWallet }
+ * Body: { userId: string, userToken: string, blockchains?: string[], accountType?: string }
+ * Returns: { success: boolean, wallet: CircleWallet, challengeId?: string }
  */
 export async function POST(request: NextRequest) {
   try {
-    const { userId, email } = await request.json();
+    const { userId, userToken, blockchains = ['ETH'], accountType = 'EOA' } = await request.json();
 
-    if (!userId || !email) {
+    if (!userId || !userToken) {
       return NextResponse.json(
-        { error: 'userId and email are required' },
+        { error: 'userId and userToken are required' },
         { status: 400 }
       );
     }
 
-    // Check if wallet already exists
-    const existingWallet = Array.from(walletDatabase.values()).find(
-      (w) => w.userId === userId
-    );
-
-    if (existingWallet) {
-      return NextResponse.json({
-        success: true,
-        wallet: existingWallet,
-        message: 'Wallet already exists',
-      });
+    // Verify the user is authenticated
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Please sign in' },
+        { status: 401 }
+      );
     }
 
-    // TODO: Implement actual Circle Wallet creation
-    // For production, you would:
-    // 1. Verify user authentication
-    // 2. Call Circle API to create wallet
-    // 3. Store wallet information in database
-    // 4. Return wallet details
+    // Create wallet using Circle SDK
+    // This returns a challenge ID that must be completed via PIN entry
+    const walletResponse = await circleClient.createWallet({
+      userToken,
+      blockchains,
+      accountType,
+    });
 
-    // Mock wallet creation
-    const wallet = {
-      id: `wallet_${Math.random().toString(36).substring(2, 15)}`,
-      address: `0x${Math.random().toString(16).substring(2, 42).padStart(40, '0')}`,
-      userId,
-      email,
-      createDate: new Date().toISOString(),
-      updateDate: new Date().toISOString(),
-      accountType: 'EOA', // Externally Owned Account
-      blockchain: 'ARC',
-      status: 'LIVE',
-    };
+    if (!walletResponse.data) {
+      throw new Error('Failed to create wallet');
+    }
 
-    // Save to mock database
-    walletDatabase.set(wallet.id, wallet);
+    const { challengeId } = walletResponse.data;
 
-    console.log(`✅ Created Circle wallet for user ${userId}:`, wallet.address);
+    console.log(`✅ Circle wallet creation initiated for user ${userId}, challengeId: ${challengeId}`);
 
     return NextResponse.json({
       success: true,
-      wallet,
+      challengeId,
+      message: 'Wallet creation challenge created. User must complete PIN setup.',
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Circle wallet creation error:', error);
+
+    if (error.response?.data) {
+      return NextResponse.json(
+        {
+          error: 'Wallet creation failed',
+          details: error.response.data
+        },
+        { status: error.response.status || 500 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'Wallet creation failed' },
       { status: 500 }
@@ -82,45 +85,83 @@ export async function POST(request: NextRequest) {
  * GET /api/circle/wallet
  * Retrieve wallet information
  *
- * Query params: ?walletId=xxx OR ?address=0x... OR ?userId=xxx
- * Returns: { wallet: CircleWallet }
+ * Query params: ?userToken=xxx (lists all wallets for user) OR ?userToken=xxx&walletId=xxx (get specific wallet)
+ * Returns: { success: boolean, wallets: CircleWallet[] } or { success: boolean, wallet: CircleWallet }
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const userToken = searchParams.get('userToken');
     const walletId = searchParams.get('walletId');
-    const address = searchParams.get('address');
     const userId = searchParams.get('userId');
 
-    let wallet = null;
-
-    if (walletId) {
-      wallet = walletDatabase.get(walletId);
-    } else if (address) {
-      wallet = Array.from(walletDatabase.values()).find(
-        (w) => w.address.toLowerCase() === address.toLowerCase()
-      );
-    } else if (userId) {
-      wallet = Array.from(walletDatabase.values()).find(
-        (w) => w.userId === userId
-      );
-    }
-
-    if (!wallet) {
+    if (!userToken && !userId) {
       return NextResponse.json(
-        { error: 'Wallet not found' },
-        { status: 404 }
+        { error: 'userToken or userId is required' },
+        { status: 400 }
       );
     }
 
-    // TODO: In production, call Circle API to get latest wallet state
+    // Verify the user is authenticated
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Please sign in' },
+        { status: 401 }
+      );
+    }
+
+    // If walletId is provided, get specific wallet
+    if (walletId) {
+      const walletResponse = await circleClient.getWallet({
+        id: walletId,
+        userToken: userToken || undefined,
+        userId: userId || undefined,
+      } as any);
+
+      if (!walletResponse.data) {
+        return NextResponse.json(
+          { error: 'Wallet not found' },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        wallet: walletResponse.data.wallet,
+      });
+    }
+
+    // Otherwise, list all wallets for the user
+    const walletsResponse = await circleClient.listWallets({
+      userToken: userToken || undefined,
+      userId: userId || undefined,
+    } as any);
+
+    if (!walletsResponse.data) {
+      return NextResponse.json(
+        { error: 'Failed to retrieve wallets' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      wallet,
+      wallets: walletsResponse.data.wallets || [],
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Circle wallet retrieval error:', error);
+
+    if (error.response?.data) {
+      return NextResponse.json(
+        {
+          error: 'Failed to retrieve wallet',
+          details: error.response.data
+        },
+        { status: error.response.status || 500 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'Failed to retrieve wallet' },
       { status: 500 }
@@ -132,97 +173,61 @@ export async function GET(request: NextRequest) {
  * PATCH /api/circle/wallet
  * Update wallet information
  *
- * Body: { walletId: string, updates: Partial<CircleWallet> }
- * Returns: { wallet: CircleWallet }
+ * Body: { walletId: string, userToken: string, name?: string, refId?: string }
+ * Returns: { success: boolean, wallet: CircleWallet }
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const { walletId, updates } = await request.json();
+    const { walletId, userToken, userId, name, refId } = await request.json();
 
-    if (!walletId) {
+    if (!walletId || (!userToken && !userId)) {
       return NextResponse.json(
-        { error: 'walletId is required' },
+        { error: 'walletId and (userToken or userId) are required' },
         { status: 400 }
       );
     }
 
-    const wallet = walletDatabase.get(walletId);
-
-    if (!wallet) {
+    // Verify the user is authenticated
+    const session = await getServerSession(authOptions);
+    if (!session) {
       return NextResponse.json(
-        { error: 'Wallet not found' },
-        { status: 404 }
+        { error: 'Unauthorized - Please sign in' },
+        { status: 401 }
       );
     }
 
-    // Update wallet
-    const updatedWallet = {
-      ...wallet,
-      ...updates,
-      updateDate: new Date().toISOString(),
-    };
+    // Update wallet using Circle SDK
+    const walletResponse = await circleClient.updateWallet({
+      id: walletId,
+      userToken: userToken || undefined,
+      userId: userId || undefined,
+      name,
+      refId,
+    } as any);
 
-    walletDatabase.set(walletId, updatedWallet);
-
-    // TODO: In production, call Circle API to update wallet
+    if (!walletResponse.data) {
+      throw new Error('Failed to update wallet');
+    }
 
     return NextResponse.json({
       success: true,
-      wallet: updatedWallet,
+      wallet: walletResponse.data.wallet,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Circle wallet update error:', error);
+
+    if (error.response?.data) {
+      return NextResponse.json(
+        {
+          error: 'Wallet update failed',
+          details: error.response.data
+        },
+        { status: error.response.status || 500 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'Wallet update failed' },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * DELETE /api/circle/wallet
- * Delete/disable a wallet
- *
- * Body: { walletId: string }
- * Returns: { success: boolean }
- */
-export async function DELETE(request: NextRequest) {
-  try {
-    const { walletId } = await request.json();
-
-    if (!walletId) {
-      return NextResponse.json(
-        { error: 'walletId is required' },
-        { status: 400 }
-      );
-    }
-
-    const wallet = walletDatabase.get(walletId);
-
-    if (!wallet) {
-      return NextResponse.json(
-        { error: 'Wallet not found' },
-        { status: 404 }
-      );
-    }
-
-    // Soft delete - mark as disabled
-    wallet.status = 'DISABLED';
-    wallet.updateDate = new Date().toISOString();
-    walletDatabase.set(walletId, wallet);
-
-    // TODO: In production, call Circle API to disable wallet
-
-    console.log(`⚠️  Disabled Circle wallet: ${wallet.address}`);
-
-    return NextResponse.json({
-      success: true,
-      message: 'Wallet disabled successfully',
-    });
-  } catch (error) {
-    console.error('Circle wallet deletion error:', error);
-    return NextResponse.json(
-      { error: 'Wallet deletion failed' },
       { status: 500 }
     );
   }
