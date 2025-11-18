@@ -12,7 +12,7 @@ import { truncateAddress } from '@/lib/utils';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { isAuthenticated, currentWallet, wallets } = useCircleWallet();
+  const { isAuthenticated, currentWallet, wallets, createUser, isLoading } = useCircleWallet();
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -23,6 +23,24 @@ export default function Navbar() {
     { href: '/governance', label: 'Governance' },
     { href: '/studio', label: 'Create' },
   ];
+
+  const handleCircleWalletClick = async () => {
+    if (isAuthenticated && wallets.length > 0) {
+      // User exists with wallets - show management
+      setShowWalletModal(true);
+    } else if (isAuthenticated && wallets.length === 0) {
+      // User exists but no wallets - create wallet
+      setShowCreateModal(true);
+    } else {
+      // No user - create user first, then wallet
+      try {
+        await createUser();
+        setShowCreateModal(true);
+      } catch (error) {
+        console.error('Failed to create Circle user:', error);
+      }
+    }
+  };
 
   return (
     <nav className="bg-white dark:bg-secondary-800 border-b border-secondary-200 dark:border-secondary-700">
@@ -61,7 +79,8 @@ export default function Navbar() {
             {isAuthenticated && currentWallet ? (
               <button
                 onClick={() => setShowWalletModal(true)}
-                className="inline-flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                disabled={isLoading}
+                className="inline-flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50"
               >
                 <Wallet className="h-4 w-4" />
                 <span className="hidden sm:inline">{truncateAddress(currentWallet.address as `0x${string}`)}</span>
@@ -69,11 +88,12 @@ export default function Navbar() {
               </button>
             ) : (
               <button
-                onClick={() => wallets.length > 0 ? setShowWalletModal(true) : setShowCreateModal(true)}
-                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                onClick={handleCircleWalletClick}
+                disabled={isLoading}
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
                 <Wallet className="h-4 w-4" />
-                <span className="hidden sm:inline">Circle Wallet</span>
+                <span className="hidden sm:inline">{isLoading ? 'Creating...' : 'Circle Wallet'}</span>
               </button>
             )}
 

@@ -2,35 +2,54 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { fetchListings, fetchMarketplaceStats } from '@/lib/graphql-client';
+import { formatUSDC } from '@/lib/utils';
+import type { Listing } from '@/types';
 
-interface NFTListing {
-  id: string;
-  name: string;
-  image: string;
-  price: string;
-  collection: string;
+interface MarketplaceStats {
+  totalVolume: string;
+  dailyVolume: string;
+  totalSales: number;
+  dailySales: number;
+  activeListings: number;
+  activeAuctions: number;
 }
 
 export default function HomePage() {
-  const [listings, setListings] = useState<NFTListing[]>([]);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [stats, setStats] = useState<MarketplaceStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // TODO: Fetch listings from subgraph/backend
-    // For now, show placeholder data
-    setTimeout(() => {
-      setListings([
-        {
-          id: '1',
-          name: 'Arc NFT #1',
-          image: '/placeholder.png',
-          price: '100',
-          collection: 'Arc Collection',
-        },
-      ]);
-      setLoading(false);
-    }, 1000);
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Fetch featured listings (first 8, most recent)
+      const listingsData = await fetchListings({
+        first: 8,
+        skip: 0,
+        orderBy: 'createdAt',
+        orderDirection: 'desc',
+      });
+
+      // Fetch marketplace stats
+      const statsData = await fetchMarketplaceStats();
+
+      setListings(listingsData || []);
+      setStats(statsData);
+    } catch (err) {
+      console.error('Failed to load home page data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-12">
@@ -57,6 +76,46 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* Live Stats */}
+      {stats && (
+        <section className="bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 rounded-xl p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div>
+              <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-1">
+                Total Volume
+              </p>
+              <p className="text-2xl font-bold text-secondary-900 dark:text-white">
+                {formatUSDC(stats.totalVolume)} USDC
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-1">
+                Total Sales
+              </p>
+              <p className="text-2xl font-bold text-secondary-900 dark:text-white">
+                {stats.totalSales.toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-1">
+                Active Listings
+              </p>
+              <p className="text-2xl font-bold text-secondary-900 dark:text-white">
+                {stats.activeListings.toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-1">
+                Active Auctions
+              </p>
+              <p className="text-2xl font-bold text-secondary-900 dark:text-white">
+                {stats.activeAuctions.toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Features */}
       <section className="grid md:grid-cols-3 gap-8">
@@ -147,9 +206,19 @@ export default function HomePage() {
           </Link>
         </div>
 
-        {loading ? (
+        {error ? (
+          <div className="text-center py-12 bg-red-50 dark:bg-red-900/20 rounded-xl">
+            <p className="text-red-600 dark:text-red-400 mb-4">Failed to load NFTs</p>
+            <button
+              onClick={loadData}
+              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+            >
+              Retry
+            </button>
+          </div>
+        ) : loading ? (
           <div className="grid md:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
               <div
                 key={i}
                 className="bg-white dark:bg-secondary-800 rounded-xl overflow-hidden border border-secondary-200 dark:border-secondary-700 animate-pulse"
@@ -162,44 +231,80 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+        ) : listings.length === 0 ? (
+          <div className="text-center py-12 bg-secondary-50 dark:bg-secondary-800 rounded-xl">
+            <svg
+              className="mx-auto h-12 w-12 text-secondary-400 mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+              />
+            </svg>
+            <h3 className="text-lg font-semibold text-secondary-900 dark:text-white mb-2">
+              No NFTs Listed Yet
+            </h3>
+            <p className="text-secondary-600 dark:text-secondary-400 mb-4">
+              Be the first to list an NFT on ArcMarket
+            </p>
+            <Link
+              href="/studio"
+              className="inline-block px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
+            >
+              Create NFT
+            </Link>
+          </div>
         ) : (
           <div className="grid md:grid-cols-4 gap-6">
-            {listings.map((nft) => (
+            {listings.slice(0, 8).map((listing) => (
               <Link
-                key={nft.id}
-                href={`/nft/${nft.collection}/${nft.id}`}
+                key={listing.id}
+                href={`/nft/${listing.collection}/${listing.tokenId}`}
                 className="bg-white dark:bg-secondary-800 rounded-xl overflow-hidden border border-secondary-200 dark:border-secondary-700 hover:shadow-lg transition group"
               >
                 <div className="aspect-square bg-secondary-200 dark:bg-secondary-700 relative overflow-hidden">
-                  <div className="absolute inset-0 flex items-center justify-center text-secondary-400 dark:text-secondary-600">
-                    <svg
-                      className="w-16 h-16"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                  </div>
+                  {listing.nft?.image ? (
+                    <img
+                      src={listing.nft.image}
+                      alt={listing.nft?.name || `Token #${listing.tokenId}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-secondary-400 dark:text-secondary-600">
+                      <svg
+                        className="w-16 h-16"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
+                  )}
                 </div>
                 <div className="p-4">
-                  <h3 className="font-semibold text-secondary-900 dark:text-white mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition">
-                    {nft.name}
+                  <h3 className="font-semibold text-secondary-900 dark:text-white mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition truncate">
+                    {listing.nft?.name || `Token #${listing.tokenId}`}
                   </h3>
-                  <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-2">
-                    {nft.collection}
+                  <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-2 truncate">
+                    {listing.nft?.collection?.name || 'Unknown Collection'}
                   </p>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-secondary-600 dark:text-secondary-400">
                       Price
                     </span>
                     <span className="font-semibold text-secondary-900 dark:text-white">
-                      {nft.price} USDC
+                      {formatUSDC(listing.price)} USDC
                     </span>
                   </div>
                 </div>
