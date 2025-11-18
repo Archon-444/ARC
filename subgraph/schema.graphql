@@ -1,0 +1,171 @@
+# ArcMarket Subgraph Schema
+# Indexes NFT marketplace activity, collections, users, and sales
+
+type Collection @entity {
+  id: ID! # Collection contract address
+  address: Bytes!
+  name: String
+  symbol: String
+  totalVolume: BigInt!
+  totalSales: BigInt!
+  floorPrice: BigInt
+  nfts: [NFT!]! @derivedFrom(field: "collection")
+  listings: [Listing!]! @derivedFrom(field: "collection")
+  auctions: [Auction!]! @derivedFrom(field: "collection")
+  sales: [Sale!]! @derivedFrom(field: "collection")
+  allowed: Boolean! # Whether collection is allowed on marketplace
+  createdAt: BigInt!
+  updatedAt: BigInt!
+}
+
+type NFT @entity {
+  id: ID! # Collection address + token ID
+  tokenId: BigInt!
+  collection: Collection!
+  creator: User!
+  owner: User!
+  tokenURI: String
+  listing: Listing # Current active listing
+  auction: Auction # Current active auction
+  sales: [Sale!]! @derivedFrom(field: "nft")
+  createdAt: BigInt!
+  updatedAt: BigInt!
+}
+
+type User @entity {
+  id: ID! # User wallet address
+  address: Bytes!
+  profile: Profile
+  ownedNFTs: [NFT!]! @derivedFrom(field: "owner")
+  createdNFTs: [NFT!]! @derivedFrom(field: "creator")
+  listings: [Listing!]! @derivedFrom(field: "seller")
+  auctions: [Auction!]! @derivedFrom(field: "seller")
+  purchases: [Sale!]! @derivedFrom(field: "buyer")
+  sales: [Sale!]! @derivedFrom(field: "seller")
+  bids: [Bid!]! @derivedFrom(field: "bidder")
+  totalSpent: BigInt!
+  totalEarned: BigInt!
+  createdAt: BigInt!
+  updatedAt: BigInt!
+}
+
+type Profile @entity {
+  id: ID! # User address
+  user: User!
+  metadataURI: String!
+  createdAt: BigInt!
+  updatedAt: BigInt!
+}
+
+type Listing @entity {
+  id: ID! # Collection address + token ID + listing index
+  collection: Collection!
+  nft: NFT!
+  seller: User!
+  price: BigInt!
+  active: Boolean!
+  createdAt: BigInt!
+  updatedAt: BigInt!
+  cancelledAt: BigInt
+  soldAt: BigInt
+  sale: Sale # Reference to sale if sold
+}
+
+type Auction @entity {
+  id: ID! # Collection address + token ID + auction index
+  collection: Collection!
+  nft: NFT!
+  seller: User!
+  reservePrice: BigInt!
+  startTime: BigInt!
+  endTime: BigInt!
+  highestBid: BigInt
+  highestBidder: User
+  settled: Boolean!
+  bids: [Bid!]! @derivedFrom(field: "auction")
+  createdAt: BigInt!
+  settledAt: BigInt
+  sale: Sale # Reference to sale if successful
+}
+
+type Bid @entity {
+  id: ID! # Auction ID + bid index
+  auction: Auction!
+  bidder: User!
+  amount: BigInt!
+  refunded: Boolean!
+  createdAt: BigInt!
+  refundedAt: BigInt
+}
+
+type Sale @entity {
+  id: ID! # Transaction hash + log index
+  collection: Collection!
+  nft: NFT!
+  seller: User!
+  buyer: User!
+  price: BigInt!
+  saleType: SaleType!
+  listing: Listing
+  auction: Auction
+  protocolFee: BigInt!
+  royaltyFee: BigInt!
+  createdAt: BigInt!
+  txHash: Bytes!
+}
+
+enum SaleType {
+  Listing
+  Auction
+}
+
+type MarketplaceStats @entity {
+  id: ID! # Singleton "marketplace"
+  totalVolume: BigInt!
+  totalSales: BigInt!
+  totalListings: BigInt!
+  activeListings: BigInt!
+  totalAuctions: BigInt!
+  activeAuctions: BigInt!
+  totalUsers: BigInt!
+  totalCollections: BigInt!
+  protocolFeeBps: Int!
+  updatedAt: BigInt!
+}
+
+type DailyStats @entity {
+  id: ID! # Date (timestamp rounded to day)
+  date: BigInt!
+  volume: BigInt!
+  sales: BigInt!
+  newUsers: BigInt!
+  activeUsers: BigInt!
+  newListings: BigInt!
+  newAuctions: BigInt!
+}
+
+# Fee distribution tracking
+type FeeDistribution @entity {
+  id: ID! # Transaction hash + log index
+  collection: Collection!
+  tokenId: BigInt!
+  amount: BigInt!
+  collectionSplits: [FeeSplit!]!
+  globalSplits: [FeeSplit!]!
+  createdAt: BigInt!
+  txHash: Bytes!
+}
+
+type FeeSplit @entity {
+  id: ID! # Distribution ID + split index
+  distribution: FeeDistribution!
+  recipient: Bytes!
+  amount: BigInt!
+  bps: Int!
+  splitType: SplitType!
+}
+
+enum SplitType {
+  Collection
+  Global
+}

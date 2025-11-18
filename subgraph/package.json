@@ -1,0 +1,16 @@
+{
+  "name": "arcmarket-subgraph",
+  "version": "0.1.0",
+  "description": "The Graph subgraph for ArcMarket NFT Marketplace",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy:local": "graph create --node http://localhost:8020/ arcmarket/arcmarket && graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 arcmarket/arcmarket",
+    "deploy:hosted": "graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ arcmarket/arcmarket",
+    "deploy:studio": "graph deploy --studio arcmarket"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "^0.67.0",
+    "@graphprotocol/graph-ts": "^0.31.0"
+  }
+}
