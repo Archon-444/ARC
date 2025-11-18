@@ -5,14 +5,24 @@
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
+    "test:coverage": "hardhat coverage",
     "compile": "hardhat compile",
-    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
-    "deploy:arc-testnet": "hardhat run scripts/deploy.js --network arcTestnet",
-    "deploy:arc-mainnet": "hardhat run scripts/deploy.js --network arcMainnet"
+    "clean": "hardhat clean",
+    "deploy:local": "hardhat run scripts/deploy.js --network hardhat",
+    "deploy:arc": "hardhat run scripts/deploy-arc.js --network arcTestnet",
+    "deploy:arc-testnet": "hardhat run scripts/deploy-arc.js --network arcTestnet",
+    "deploy:arc-mainnet": "hardhat run scripts/deploy-arc.js --network arcMainnet",
+    "verify:arc-testnet": "hardhat verify --network arcTestnet",
+    "verify:arc-mainnet": "hardhat verify --network arcMainnet",
+    "console:arc": "hardhat console --network arcTestnet",
+    "node:local": "hardhat node"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.3.1"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
