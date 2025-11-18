@@ -21,6 +21,7 @@ import {
   ShoppingCart,
   Gavel,
   AlertCircle,
+  XCircle,
 } from 'lucide-react';
 import { LoadingPage } from '@/components/ui/LoadingSpinner';
 import { ErrorPage } from '@/components/ui/ErrorDisplay';
@@ -28,6 +29,8 @@ import { BuyModal } from '@/components/marketplace/BuyModal';
 import { BidModal } from '@/components/marketplace/BidModal';
 import { ListNFTModal } from '@/components/marketplace/ListNFTModal';
 import { CreateAuctionModal } from '@/components/marketplace/CreateAuctionModal';
+import { CancelListingModal } from '@/components/marketplace/CancelListingModal';
+import { CancelAuctionModal } from '@/components/marketplace/CancelAuctionModal';
 import { fetchNFTDetails } from '@/lib/graphql-client';
 import {
   formatUSDC,
@@ -68,6 +71,8 @@ export default function NFTDetailPage({ params }: PageProps) {
   const [showBidModal, setShowBidModal] = useState(false);
   const [showListModal, setShowListModal] = useState(false);
   const [showAuctionModal, setShowAuctionModal] = useState(false);
+  const [showCancelListingModal, setShowCancelListingModal] = useState(false);
+  const [showCancelAuctionModal, setShowCancelAuctionModal] = useState(false);
 
   // Countdown for auctions
   const [timeRemaining, setTimeRemaining] = useState<ReturnType<typeof getTimeRemaining> | null>(null);
@@ -231,14 +236,24 @@ export default function NFTDetailPage({ params }: PageProps) {
                 <p className="text-sm text-gray-600">Current Price</p>
                 <p className="text-4xl font-bold text-gray-900">{formatUSDC(listing.price)}</p>
               </div>
-              <button
-                onClick={() => setShowBuyModal(true)}
-                disabled={!address || address.toLowerCase() === nft.owner.toLowerCase()}
-                className="w-full rounded-lg bg-blue-600 px-6 py-3 text-lg font-semibold text-white hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ShoppingCart className="h-5 w-5" />
-                {!address ? 'Connect Wallet' : address.toLowerCase() === nft.owner.toLowerCase() ? 'You Own This' : 'Buy Now'}
-              </button>
+              {address && address.toLowerCase() === nft.owner.toLowerCase() ? (
+                <button
+                  onClick={() => setShowCancelListingModal(true)}
+                  className="w-full rounded-lg border-2 border-red-600 bg-white px-6 py-3 text-lg font-semibold text-red-600 hover:bg-red-50 flex items-center justify-center gap-2"
+                >
+                  <XCircle className="h-5 w-5" />
+                  Cancel Listing
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowBuyModal(true)}
+                  disabled={!address}
+                  className="w-full rounded-lg bg-blue-600 px-6 py-3 text-lg font-semibold text-white hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  {!address ? 'Connect Wallet' : 'Buy Now'}
+                </button>
+              )}
             </div>
           )}
 
@@ -274,14 +289,24 @@ export default function NFTDetailPage({ params }: PageProps) {
                   </div>
                 )}
               </div>
-              <button
-                onClick={() => setShowBidModal(true)}
-                disabled={!address || address.toLowerCase() === nft.owner.toLowerCase()}
-                className="w-full rounded-lg bg-purple-600 px-6 py-3 text-lg font-semibold text-white hover:bg-purple-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Gavel className="h-5 w-5" />
-                {!address ? 'Connect Wallet' : address.toLowerCase() === nft.owner.toLowerCase() ? 'You Own This' : 'Place Bid'}
-              </button>
+              {address && address.toLowerCase() === nft.owner.toLowerCase() ? (
+                <button
+                  onClick={() => setShowCancelAuctionModal(true)}
+                  className="w-full rounded-lg border-2 border-red-600 bg-white px-6 py-3 text-lg font-semibold text-red-600 hover:bg-red-50 flex items-center justify-center gap-2"
+                >
+                  <XCircle className="h-5 w-5" />
+                  Cancel Auction
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowBidModal(true)}
+                  disabled={!address}
+                  className="w-full rounded-lg bg-purple-600 px-6 py-3 text-lg font-semibold text-white hover:bg-purple-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Gavel className="h-5 w-5" />
+                  {!address ? 'Connect Wallet' : 'Place Bid'}
+                </button>
+              )}
             </div>
           )}
 
@@ -447,6 +472,32 @@ export default function NFTDetailPage({ params }: PageProps) {
           loadNFT();
         }}
       />
+
+      {listing && (
+        <CancelListingModal
+          isOpen={showCancelListingModal}
+          onClose={() => setShowCancelListingModal(false)}
+          nft={nft}
+          listing={listing}
+          onSuccess={() => {
+            setShowCancelListingModal(false);
+            loadNFT();
+          }}
+        />
+      )}
+
+      {auction && (
+        <CancelAuctionModal
+          isOpen={showCancelAuctionModal}
+          onClose={() => setShowCancelAuctionModal(false)}
+          nft={nft}
+          auction={auction}
+          onSuccess={() => {
+            setShowCancelAuctionModal(false);
+            loadNFT();
+          }}
+        />
+      )}
     </div>
   );
 }
