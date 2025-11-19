@@ -20,16 +20,26 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#2081E2" />
+        <meta name="description" content="Premier NFT marketplace on Circle Arc blockchain with instant USDC settlements" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <title>ArcMarket - NFT Marketplace</title>
+      </head>
+      <body className="antialiased">
         <SessionProvider>
           <WagmiProvider config={config}>
             <QueryClientProvider client={queryClient}>
               <RainbowKitProvider>
                 <CircleWalletProvider>
                   <ToastProvider>
-                    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
+                    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
                       <Navbar />
-                      <main className="container mx-auto px-4 py-8">
+                      <main>
                         {children}
                       </main>
                     </div>

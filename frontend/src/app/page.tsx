@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { ArrowRight, TrendingUp, Clock, Star, Zap } from 'lucide-react';
 import { fetchListings, fetchMarketplaceStats } from '@/lib/graphql-client';
-import { formatUSDC } from '@/lib/utils';
+import { formatUSDC, formatCompactUSDC } from '@/lib/utils';
+import { Button, Card, Badge } from '@/components/ui';
 import type { Listing } from '@/types';
 
 interface MarketplaceStats {
@@ -30,9 +32,9 @@ export default function HomePage() {
     setError(null);
 
     try {
-      // Fetch featured listings (first 8, most recent)
+      // Fetch featured listings (first 12, most recent)
       const listingsData = await fetchListings({
-        first: 8,
+        first: 12,
         skip: 0,
         orderBy: 'createdAt',
         orderDirection: 'desc',
@@ -52,281 +54,304 @@ export default function HomePage() {
   };
 
   return (
-    <div className="space-y-12">
+    <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="text-center py-16">
-        <h1 className="text-5xl font-bold text-secondary-900 dark:text-white mb-4">
-          Discover, Collect, and Sell NFTs
-        </h1>
-        <p className="text-xl text-secondary-600 dark:text-secondary-300 mb-8">
-          The premier NFT marketplace on Arc blockchain with USDC payments
-        </p>
-        <div className="flex justify-center gap-4">
-          <Link
-            href="/explore"
-            className="px-8 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition"
-          >
-            Explore NFTs
-          </Link>
-          <Link
-            href="/studio"
-            className="px-8 py-3 bg-secondary-200 dark:bg-secondary-700 text-secondary-900 dark:text-white rounded-lg font-semibold hover:bg-secondary-300 dark:hover:bg-secondary-600 transition"
-          >
-            Create
-          </Link>
+      <section className="relative bg-gradient-to-br from-primary-50 via-white to-accent-50 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900 py-20 md:py-32">
+        <div className="container-custom">
+          <div className="max-w-4xl mx-auto text-center">
+            <Badge variant="primary" size="lg" className="mb-6 animate-slide-down">
+              <Star className="w-4 h-4" />
+              Premier NFT Marketplace on Arc
+            </Badge>
+
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-slide-up">
+              Discover, Collect & Sell{' '}
+              <span className="text-gradient">Extraordinary NFTs</span>
+            </h1>
+
+            <p className="text-xl md:text-2xl text-neutral-600 dark:text-neutral-300 mb-10 animate-fade-in">
+              The fastest NFT marketplace powered by Circle Arc blockchain with instant USDC settlements
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up">
+              <Button asChild size="lg" className="text-lg">
+                <Link href="/explore">
+                  <Zap className="w-5 h-5" />
+                  Explore NFTs
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+              </Button>
+
+              <Button asChild variant="outline" size="lg" className="text-lg">
+                <Link href="/studio">
+                  Create
+                </Link>
+              </Button>
+            </div>
+          </div>
         </div>
+
+        {/* Decorative gradient orbs */}
+        <div className="absolute top-0 left-0 w-96 h-96 bg-primary-200/30 dark:bg-primary-900/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent-200/30 dark:bg-accent-900/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
       </section>
 
-      {/* Live Stats */}
-      {stats && (
-        <section className="bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 rounded-xl p-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div>
-              <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-1">
-                Total Volume
-              </p>
-              <p className="text-2xl font-bold text-secondary-900 dark:text-white">
-                {formatUSDC(stats.totalVolume)} USDC
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-1">
-                Total Sales
-              </p>
-              <p className="text-2xl font-bold text-secondary-900 dark:text-white">
-                {stats.totalSales.toLocaleString()}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-1">
-                Active Listings
-              </p>
-              <p className="text-2xl font-bold text-secondary-900 dark:text-white">
-                {stats.activeListings.toLocaleString()}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-1">
-                Active Auctions
-              </p>
-              <p className="text-2xl font-bold text-secondary-900 dark:text-white">
-                {stats.activeAuctions.toLocaleString()}
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Features */}
-      <section className="grid md:grid-cols-3 gap-8">
-        <div className="p-6 bg-white dark:bg-secondary-800 rounded-xl border border-secondary-200 dark:border-secondary-700">
-          <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center mb-4">
-            <svg
-              className="w-6 h-6 text-primary-600 dark:text-primary-300"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold text-secondary-900 dark:text-white mb-2">
-            USDC Payments
-          </h3>
-          <p className="text-secondary-600 dark:text-secondary-300">
-            All transactions in USDC with instant finality on Arc blockchain
-          </p>
-        </div>
-
-        <div className="p-6 bg-white dark:bg-secondary-800 rounded-xl border border-secondary-200 dark:border-secondary-700">
-          <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center mb-4">
-            <svg
-              className="w-6 h-6 text-primary-600 dark:text-primary-300"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold text-secondary-900 dark:text-white mb-2">
-            Instant Settlement
-          </h3>
-          <p className="text-secondary-600 dark:text-secondary-300">
-            Sub-second finality means instant ownership transfer
-          </p>
-        </div>
-
-        <div className="p-6 bg-white dark:bg-secondary-800 rounded-xl border border-secondary-200 dark:border-secondary-700">
-          <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center mb-4">
-            <svg
-              className="w-6 h-6 text-primary-600 dark:text-primary-300"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-              />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold text-secondary-900 dark:text-white mb-2">
-            Creator Royalties
-          </h3>
-          <p className="text-secondary-600 dark:text-secondary-300">
-            Automatic royalty distribution on every secondary sale
-          </p>
-        </div>
-      </section>
-
-      {/* Featured NFTs */}
-      <section>
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-secondary-900 dark:text-white">
-            Featured NFTs
-          </h2>
-          <Link
-            href="/explore"
-            className="text-primary-600 dark:text-primary-400 font-semibold hover:underline"
-          >
-            View All →
-          </Link>
-        </div>
-
-        {error ? (
-          <div className="text-center py-12 bg-red-50 dark:bg-red-900/20 rounded-xl">
-            <p className="text-red-600 dark:text-red-400 mb-4">Failed to load NFTs</p>
-            <button
-              onClick={loadData}
-              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-            >
-              Retry
-            </button>
-          </div>
-        ) : loading ? (
-          <div className="grid md:grid-cols-4 gap-6">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div
-                key={i}
-                className="bg-white dark:bg-secondary-800 rounded-xl overflow-hidden border border-secondary-200 dark:border-secondary-700 animate-pulse"
-              >
-                <div className="aspect-square bg-secondary-200 dark:bg-secondary-700" />
-                <div className="p-4 space-y-3">
-                  <div className="h-4 bg-secondary-200 dark:bg-secondary-700 rounded" />
-                  <div className="h-4 bg-secondary-200 dark:bg-secondary-700 rounded w-2/3" />
+      <div className="container-custom space-y-16 py-16">
+        {/* Marketplace Stats */}
+        {stats && (
+          <section>
+            <Card padding="lg" className="bg-gradient-to-r from-primary-50 to-accent-50 dark:from-primary-900/10 dark:to-accent-900/10 border-0">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <TrendingUp className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                    <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                      Total Volume
+                    </p>
+                  </div>
+                  <p className="text-3xl font-bold text-neutral-900 dark:text-white">
+                    {formatCompactUSDC(stats.totalVolume)}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
+                    Total Sales
+                  </p>
+                  <p className="text-3xl font-bold text-neutral-900 dark:text-white">
+                    {stats.totalSales.toLocaleString()}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
+                    Active Listings
+                  </p>
+                  <p className="text-3xl font-bold text-neutral-900 dark:text-white">
+                    {stats.activeListings.toLocaleString()}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
+                    Live Auctions
+                  </p>
+                  <p className="text-3xl font-bold text-neutral-900 dark:text-white">
+                    {stats.activeAuctions.toLocaleString()}
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
-        ) : listings.length === 0 ? (
-          <div className="text-center py-12 bg-secondary-50 dark:bg-secondary-800 rounded-xl">
-            <svg
-              className="mx-auto h-12 w-12 text-secondary-400 mb-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-              />
-            </svg>
-            <h3 className="text-lg font-semibold text-secondary-900 dark:text-white mb-2">
-              No NFTs Listed Yet
-            </h3>
-            <p className="text-secondary-600 dark:text-secondary-400 mb-4">
-              Be the first to list an NFT on ArcMarket
-            </p>
-            <Link
-              href="/studio"
-              className="inline-block px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
-            >
-              Create NFT
-            </Link>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-4 gap-6">
-            {listings.slice(0, 8).map((listing) => (
-              <Link
-                key={listing.id}
-                href={`/nft/${listing.collection}/${listing.tokenId}`}
-                className="bg-white dark:bg-secondary-800 rounded-xl overflow-hidden border border-secondary-200 dark:border-secondary-700 hover:shadow-lg transition group"
-              >
-                <div className="aspect-square bg-secondary-200 dark:bg-secondary-700 relative overflow-hidden">
-                  {listing.nft?.image ? (
-                    <img
-                      src={listing.nft.image}
-                      alt={listing.nft?.name || `Token #${listing.tokenId}`}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-secondary-400 dark:text-secondary-600">
-                      <svg
-                        className="w-16 h-16"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-secondary-900 dark:text-white mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition truncate">
-                    {listing.nft?.name || `Token #${listing.tokenId}`}
-                  </h3>
-                  <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-2 truncate">
-                    {listing.nft?.collection?.name || 'Unknown Collection'}
-                  </p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-secondary-600 dark:text-secondary-400">
-                      Price
-                    </span>
-                    <span className="font-semibold text-secondary-900 dark:text-white">
-                      {formatUSDC(listing.price)} USDC
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+            </Card>
+          </section>
         )}
-      </section>
 
-      {/* Staking CTA */}
-      <section className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-8 text-white text-center">
-        <h2 className="text-3xl font-bold mb-4">Earn Rewards by Staking</h2>
-        <p className="text-lg mb-6 opacity-90">
-          Stake USDC to earn rewards and unlock reduced marketplace fees
-        </p>
-        <Link
-          href="/staking"
-          className="inline-block px-8 py-3 bg-white text-primary-600 rounded-lg font-semibold hover:bg-secondary-50 transition"
-        >
-          Start Staking
-        </Link>
-      </section>
+        {/* Key Features */}
+        <section>
+          <h2 className="text-3xl font-bold text-neutral-900 dark:text-white mb-8 text-center">
+            Why Choose ArcMarket?
+          </h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card hover padding="lg" className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mb-4 mx-auto shadow-primary">
+                <svg
+                  className="w-8 h-8 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold mb-3">USDC Payments</h3>
+              <p className="text-neutral-600 dark:text-neutral-400">
+                All transactions in stable USDC with instant finality on Arc blockchain
+              </p>
+            </Card>
+
+            <Card hover padding="lg" className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-accent-500 to-accent-600 rounded-2xl flex items-center justify-center mb-4 mx-auto shadow-accent">
+                <Zap className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Lightning Fast</h3>
+              <p className="text-neutral-600 dark:text-neutral-400">
+                Sub-second finality means instant ownership transfer and settlements
+              </p>
+            </Card>
+
+            <Card hover padding="lg" className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-success-500 to-success-600 rounded-2xl flex items-center justify-center mb-4 mx-auto">
+                <svg
+                  className="w-8 h-8 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Creator Royalties</h3>
+              <p className="text-neutral-600 dark:text-neutral-400">
+                Automatic royalty distribution on every secondary sale
+              </p>
+            </Card>
+          </div>
+        </section>
+
+        {/* Featured NFTs */}
+        <section>
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h2 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">
+                Featured NFTs
+              </h2>
+              <p className="text-neutral-600 dark:text-neutral-400">
+                Discover the latest and greatest from our community
+              </p>
+            </div>
+            <Button asChild variant="ghost">
+              <Link href="/explore">
+                View All
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </Button>
+          </div>
+
+          {error ? (
+            <Card padding="lg" className="text-center bg-error-50 dark:bg-error-900/20 border-error-200 dark:border-error-800">
+              <p className="text-error-600 dark:text-error-400 mb-4 font-medium">
+                Failed to load NFTs
+              </p>
+              <Button onClick={loadData} variant="danger">
+                Retry
+              </Button>
+            </Card>
+          ) : loading ? (
+            <div className="nft-grid">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <Card key={i} padding="none" className="overflow-hidden animate-pulse">
+                  <div className="aspect-square skeleton-shimmer" />
+                  <div className="p-4 space-y-3">
+                    <div className="h-4 skeleton rounded" />
+                    <div className="h-4 skeleton rounded w-2/3" />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : listings.length === 0 ? (
+            <Card padding="lg" className="text-center bg-neutral-50 dark:bg-neutral-800">
+              <div className="max-w-md mx-auto">
+                <div className="w-16 h-16 bg-neutral-200 dark:bg-neutral-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg
+                    className="w-8 h-8 text-neutral-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold mb-2">No NFTs Listed Yet</h3>
+                <p className="text-neutral-600 dark:text-neutral-400 mb-6">
+                  Be the first to list an NFT on ArcMarket and start your collection
+                </p>
+                <Button asChild>
+                  <Link href="/studio">
+                    Create NFT
+                  </Link>
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            <div className="nft-grid">
+              {listings.map((listing) => (
+                <Link
+                  key={listing.id}
+                  href={`/nft/${listing.collection}/${listing.tokenId}`}
+                >
+                  <Card hover padding="none" className="overflow-hidden h-full group">
+                    <div className="aspect-square bg-neutral-200 dark:bg-neutral-700 relative overflow-hidden">
+                      {listing.nft?.image ? (
+                        <img
+                          src={listing.nft.image}
+                          alt={listing.nft?.name || `Token #${listing.tokenId}`}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-neutral-400 dark:text-neutral-600">
+                          <svg
+                            className="w-16 h-16"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-neutral-900 dark:text-white mb-1 truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition">
+                        {listing.nft?.name || `Token #${listing.tokenId}`}
+                      </h3>
+                      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3 truncate">
+                        {listing.nft?.collection?.name || 'Unknown Collection'}
+                      </p>
+                      <div className="flex justify-between items-center pt-2 border-t border-neutral-200 dark:border-neutral-700">
+                        <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                          Price
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className="font-bold text-neutral-900 dark:text-white">
+                            {formatUSDC(listing.price)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* CTA Section */}
+        <section className="relative overflow-hidden">
+          <Card padding="none" className="bg-gradient-to-r from-primary-600 via-primary-500 to-accent-600 border-0 overflow-hidden">
+            <div className="relative z-10 py-16 px-8 text-center text-white">
+              <h2 className="text-4xl font-bold mb-4">Ready to Earn Rewards?</h2>
+              <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
+                Stake USDC to earn rewards and unlock reduced marketplace fees
+              </p>
+              <Button asChild size="lg" className="bg-white text-primary-600 hover:bg-neutral-100">
+                <Link href="/staking">
+                  Start Staking
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+              </Button>
+            </div>
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent-400/20 rounded-full blur-3xl" />
+          </Card>
+        </section>
+      </div>
     </div>
   );
 }
