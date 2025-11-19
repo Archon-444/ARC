@@ -84,17 +84,37 @@ cp .env.example .env.local
 
 ### Step 2: Configure Circle Credentials
 
-Edit `.env.local`:
+Circle provides separate API credentials for **testnet** and **mainnet** environments. Configure both sets of credentials in `.env.local`:
 
 ```env
-# Circle User-Controlled Wallets Configuration
-CIRCLE_API_KEY=your_circle_api_key_here  # Server-side secret
-NEXT_PUBLIC_CIRCLE_APP_ID=your_circle_app_id_here  # Public client ID
+# ===========================
+# Circle Configuration
+# ===========================
+# Choose environment: 'testnet' or 'mainnet'
+NEXT_PUBLIC_CIRCLE_ENVIRONMENT=testnet
+
+# Circle Testnet Credentials
+# Get these from https://console.circle.com/api-keys (Testnet Environment)
+CIRCLE_API_KEY_TESTNET=your_testnet_api_key_here
+NEXT_PUBLIC_CIRCLE_APP_ID_TESTNET=your_testnet_app_id_here
+CIRCLE_ENTITY_SECRET_TESTNET=your_testnet_entity_secret_here  # Optional, for Smart Contract Platform
+
+# Circle Mainnet Credentials
+# Get these from https://console.circle.com/api-keys (Mainnet Environment)
+CIRCLE_API_KEY_MAINNET=your_mainnet_api_key_here
+NEXT_PUBLIC_CIRCLE_APP_ID_MAINNET=your_mainnet_app_id_here
+CIRCLE_ENTITY_SECRET_MAINNET=your_mainnet_entity_secret_here  # Optional, for Smart Contract Platform
 ```
 
 ⚠️ **Security Note**:
-- `CIRCLE_API_KEY` = Server-side secret (NO `NEXT_PUBLIC_` prefix)
-- `NEXT_PUBLIC_CIRCLE_APP_ID` = Public client ID (safe to expose)
+- `CIRCLE_API_KEY_*` and `CIRCLE_ENTITY_SECRET_*` = Server-side secrets (NO `NEXT_PUBLIC_` prefix)
+- `NEXT_PUBLIC_CIRCLE_APP_ID_*` and `NEXT_PUBLIC_CIRCLE_ENVIRONMENT` = Public, safe to expose
+
+🔄 **Environment Switching**:
+- Set `NEXT_PUBLIC_CIRCLE_ENVIRONMENT=testnet` for development/testing
+- Set `NEXT_PUBLIC_CIRCLE_ENVIRONMENT=mainnet` for production
+- All SDKs automatically use the correct credentials based on this setting
+- No code changes needed - just change the environment variable!
 
 ### Step 3: Configure OAuth Providers
 
@@ -125,12 +145,28 @@ APPLE_CLIENT_SECRET=your_apple_private_key
 3. Choose **User-Controlled Wallets**
 4. Name your project (e.g., "ArcMarket")
 
-### 2. Generate API Key
+### 2. Generate API Keys (Testnet and Mainnet)
 
-1. Go to **API Keys** section
-2. Click **Create API Key**
-3. Copy the key immediately (it won't be shown again)
-4. Add it to your `.env.local` file
+Circle provides separate credentials for testnet and mainnet environments:
+
+**Testnet Credentials:**
+1. In Circle Console, switch to **Testnet** environment (top-right selector)
+2. Go to **API Keys** section
+3. Click **Create API Key**
+4. Copy the API key and App ID immediately (won't be shown again)
+5. Add to your `.env.local` as `CIRCLE_API_KEY_TESTNET` and `NEXT_PUBLIC_CIRCLE_APP_ID_TESTNET`
+
+**Mainnet Credentials:**
+1. In Circle Console, switch to **Mainnet** environment (top-right selector)
+2. Go to **API Keys** section
+3. Click **Create API Key**
+4. Copy the API key and App ID
+5. Add to your `.env.local` as `CIRCLE_API_KEY_MAINNET` and `NEXT_PUBLIC_CIRCLE_APP_ID_MAINNET`
+
+**Smart Contract Platform (Optional):**
+- If using programmatic contract deployment, also generate Entity Secrets for both environments
+- Follow: https://developers.circle.com/interactive-quickstarts/dev-controlled-wallets
+- Add to `.env.local` as `CIRCLE_ENTITY_SECRET_TESTNET` and `CIRCLE_ENTITY_SECRET_MAINNET`
 
 ### 3. Configure Webhooks (Optional)
 
@@ -142,6 +178,58 @@ For production, set up webhooks to receive wallet creation events:
    - `wallet.created`
    - `transaction.created`
    - `transaction.confirmed`
+
+## Environment-Based Configuration
+
+ArcMarket uses an intelligent environment-based configuration system that automatically selects the correct Circle credentials based on the `NEXT_PUBLIC_CIRCLE_ENVIRONMENT` variable.
+
+### How It Works
+
+The system uses helper functions in `src/lib/circle-config.ts`:
+
+- `getCircleEnvironment()` - Returns current environment ('testnet' or 'mainnet')
+- `getCircleApiKey()` - Returns API key for current environment
+- `getCircleAppId()` - Returns App ID for current environment
+- `getCircleEntitySecret()` - Returns Entity Secret for current environment
+
+All Circle SDKs automatically use these functions, so you don't need to manually manage which credentials to use.
+
+### Switching Environments
+
+**Development/Testing:**
+```env
+NEXT_PUBLIC_CIRCLE_ENVIRONMENT=testnet
+```
+- Uses `CIRCLE_API_KEY_TESTNET`, `NEXT_PUBLIC_CIRCLE_APP_ID_TESTNET`, etc.
+- Safe for testing without affecting real funds
+- Free Circle testnet credits available
+
+**Production:**
+```env
+NEXT_PUBLIC_CIRCLE_ENVIRONMENT=mainnet
+```
+- Uses `CIRCLE_API_KEY_MAINNET`, `NEXT_PUBLIC_CIRCLE_APP_ID_MAINNET`, etc.
+- Real transactions with actual USDC
+- Production-ready Circle infrastructure
+
+### Validation
+
+The configuration includes built-in validation:
+
+```typescript
+import { validateCircleConfig, getCircleConfigSummary } from '@/lib/circle-config';
+
+// Check if configuration is complete
+const { isValid, errors } = validateCircleConfig();
+if (!isValid) {
+  console.error('Circle configuration errors:', errors);
+}
+
+// Get configuration summary for debugging
+const summary = getCircleConfigSummary();
+console.log('Circle Config:', summary);
+// Output: { environment: 'testnet', hasApiKey: true, hasAppId: true, hasEntitySecret: true }
+```
 
 ## OAuth Provider Setup
 
