@@ -6,8 +6,20 @@ const nextConfig = {
     config.externals.push('pino-pretty', 'lokijs', 'encoding');
     return config;
   },
+  // Add empty turbopack config for Next.js 16+ compatibility
+  turbopack: {},
   images: {
-    domains: ['ipfs.io', 'gateway.pinata.cloud'],
+    // Updated from deprecated 'domains' to 'remotePatterns'
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'ipfs.io',
+      },
+      {
+        protocol: 'https',
+        hostname: 'gateway.pinata.cloud',
+      },
+    ],
   },
 };
 
