@@ -1,0 +1,169 @@
+/**
+ * Circle Smart Contract Platform API Route
+ * Handles smart contract deployment using Circle's infrastructure
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { initiateSmartContractPlatformClient } from '@circle-fin/smart-contract-platform';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../auth/[...nextauth]/route';
+
+// Initialize Circle Smart Contract Platform client
+const scpClient = initiateSmartContractPlatformClient({
+  apiKey: process.env.CIRCLE_API_KEY || '',
+  entitySecret: process.env.CIRCLE_ENTITY_SECRET || '',
+});
+
+/**
+ * POST /api/circle/contracts
+ * Deploy a new smart contract using Circle's infrastructure
+ *
+ * Body: {
+ *   name: string,
+ *   description?: string,
+ *   walletId: string,  // Developer-controlled wallet ID
+ *   abiJson: string,   // Contract ABI as JSON string
+ *   bytecode: string,  // Compiled contract bytecode
+ *   constructorParameters?: any[],  // Constructor parameters
+ *   feeLevel?: 'LOW' | 'MEDIUM' | 'HIGH'
+ * }
+ *
+ * Returns: { success: boolean, contractId: string, deploymentStatus: string }
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const {
+      name,
+      description,
+      walletId,
+      abiJson,
+      bytecode,
+      constructorParameters = [],
+      feeLevel = 'MEDIUM',
+    } = await request.json();
+
+    // Validate required fields
+    if (!name || !walletId || !abiJson || !bytecode) {
+      return NextResponse.json(
+        { error: 'name, walletId, abiJson, and bytecode are required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify the user is authenticated (optional, recommended for production)
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Please sign in' },
+        { status: 401 }
+      );
+    }
+
+    // Deploy contract via Circle Smart Contract Platform
+    const response = await scpClient.deployContract({
+      name,
+      description: description || `Contract deployed by ${session.user?.name || 'user'}`,
+      walletId,
+      abiJson,
+      bytecode,
+      constructorParameters,
+      feeLevel,
+    });
+
+    if (!response.data) {
+      throw new Error('Failed to deploy contract');
+    }
+
+    console.log(`✅ Contract deployment initiated: ${name}`);
+    console.log(`   Contract ID: ${response.data.id}`);
+    console.log(`   Status: ${response.data.deployStatus}`);
+
+    return NextResponse.json({
+      success: true,
+      contractId: response.data.id,
+      deploymentStatus: response.data.deployStatus,
+      transactionHash: response.data.transactionHash,
+      contractAddress: response.data.contractAddress,
+    });
+  } catch (error: any) {
+    console.error('Circle contract deployment error:', error);
+
+    // Handle specific Circle API errors
+    if (error.response?.data) {
+      return NextResponse.json(
+        {
+          error: 'Contract deployment failed',
+          details: error.response.data,
+        },
+        { status: error.response.status || 500 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'Contract deployment failed' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * GET /api/circle/contracts
+ * Get deployed contract status
+ *
+ * Query params: ?contractId=xxx
+ * Returns: { success: boolean, contract: ContractDetails }
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const contractId = searchParams.get('contractId');
+
+    if (!contractId) {
+      return NextResponse.json(
+        { error: 'contractId is required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify the user is authenticated
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Please sign in' },
+        { status: 401 }
+      );
+    }
+
+    // Get contract details from Circle
+    const response = await scpClient.getContract({ id: contractId });
+
+    if (!response.data) {
+      return NextResponse.json(
+        { error: 'Contract not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      contract: response.data.contract,
+    });
+  } catch (error: any) {
+    console.error('Circle contract retrieval error:', error);
+
+    if (error.response?.data) {
+      return NextResponse.json(
+        {
+          error: 'Failed to retrieve contract',
+          details: error.response.data,
+        },
+        { status: error.response.status || 500 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to retrieve contract' },
+      { status: 500 }
+    );
+  }
+}
