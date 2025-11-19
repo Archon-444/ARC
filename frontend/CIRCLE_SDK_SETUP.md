@@ -1,17 +1,19 @@
 # Circle SDK Integration Guide
 
-**Status:** ✅ **FULLY INTEGRATED** (Wallets + Smart Contract Platform)
+**Status:** ✅ **FULLY INTEGRATED** (Wallets + Smart Contracts + Cross-Chain Bridging)
 
 **What's Working:**
 - ✅ **User-Controlled Wallets** (`@circle-fin/user-controlled-wallets@9.3.0`)
 - ✅ **Web SDK** (`@circle-fin/w3s-pw-web-sdk@1.1.11`)
 - ✅ **Smart Contract Platform** (`@circle-fin/smart-contract-platform@1.8.11`)
+- ✅ **Bridge Kit** (`@circle-fin/bridge-kit@3.5.0`) - Cross-chain USDC transfers
 - ✅ Automatic PIN/challenge handling
 - ✅ NextAuth social login integration
 - ✅ Complete wallet creation flow
 - ✅ Programmatic contract deployment
+- ✅ Cross-chain USDC bridging (34 chains, 544 routes)
 
-This guide explains how to set up and use Circle's SDKs in ArcMarket.
+This guide explains how to set up and use Circle's complete SDK suite in ArcMarket.
 
 ## Overview
 
@@ -385,6 +387,159 @@ Before deploying to production:
 - [ ] Verify session security and token expiration
 - [ ] Add proper error handling and user feedback
 - [ ] Configure CORS if needed for API routes
+
+## Cross-Chain Bridging (Bridge Kit)
+
+ArcMarket integrates Circle's **Bridge Kit** for seamless USDC transfers between blockchains. This enables users to bridge USDC from other chains to Arc blockchain.
+
+### Features
+
+- **34 Supported Chains**: Ethereum, Base, Arbitrum, Polygon, Avalanche, Optimism, Solana, and more
+- **544 Bridge Routes**: Comprehensive cross-chain coverage
+- **Circle CCTP**: Uses Circle's Cross-Chain Transfer Protocol for secure, native USDC transfers
+- **Type-Safe API**: Full TypeScript support with runtime validation
+- **Speed Options**: FAST (higher fees, ~15 min) or SLOW (lower fees, ~30 min)
+- **Cost Estimation**: Get fees upfront before bridging
+- **Browser Wallet Support**: Works with MetaMask, Rainbow, etc.
+
+### Usage
+
+**Basic Bridge Operation:**
+
+```typescript
+import { useCircleBridge } from '@/hooks/useCircleBridge';
+
+function BridgeComponent() {
+  const { bridge, estimateBridge, isLoading } = useCircleBridge();
+
+  const handleBridge = async () => {
+    // 1. Get cost estimate first
+    const estimate = await estimateBridge({
+      fromChain: 'Ethereum',
+      toChain: 'Base',
+      amount: '100.00',
+    });
+    console.log('Bridge fees:', estimate.fees);
+    console.log('Total cost:', estimate.totalCost);
+
+    // 2. Execute bridge
+    const result = await bridge({
+      fromChain: 'Ethereum',
+      toChain: 'Base',
+      amount: '100.00',
+      speed: 'FAST', // or 'SLOW'
+    });
+
+    if (result.state === 'success') {
+      console.log('USDC bridged successfully!');
+    }
+  };
+
+  return (
+    <button onClick={handleBridge} disabled={isLoading}>
+      {isLoading ? 'Bridging...' : 'Bridge USDC'}
+    </button>
+  );
+}
+```
+
+**Bridge to Different Address:**
+
+```typescript
+const result = await bridge({
+  fromChain: 'Ethereum',
+  toChain: 'Base',
+  amount: '100.00',
+  recipientAddress: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e', // Send to someone else
+  speed: 'FAST',
+});
+```
+
+**Check Route Support:**
+
+```typescript
+const { checkRouteSupport } = useCircleBridge();
+
+const isSupported = await checkRouteSupport('Ethereum', 'Arc');
+if (isSupported) {
+  console.log('Ethereum → Arc bridging is supported!');
+}
+```
+
+**Retry Failed Bridge:**
+
+```typescript
+const { retryBridge } = useCircleBridge();
+
+// If bridge fails, retry it
+if (result.state === 'error') {
+  const retryResult = await retryBridge(result);
+}
+```
+
+### Supported Chains
+
+**Mainnet (17 chains):**
+- Ethereum, Base, Arbitrum, Polygon PoS, Optimism
+- Avalanche, Solana, Linea, Sei, Sonic
+- Unichain, World Chain, XDC, Plume, Ink
+- HyperEVM, Codex
+
+**Testnet (17 chains):**
+- Ethereum Sepolia, Base Sepolia, Arbitrum Sepolia
+- Polygon Amoy, OP Sepolia, Avalanche Fuji
+- Solana Devnet, and more...
+
+### Use Cases for ArcMarket
+
+1. **User Onboarding**
+   - Users have USDC on Ethereum/Base/Polygon
+   - Bridge it to Arc blockchain to use in marketplace
+   - No need to use centralized exchanges
+
+2. **Liquidity Provision**
+   - Bring liquidity from other chains to Arc
+   - Expand user base beyond Arc-native users
+
+3. **Multi-Chain NFT Sales**
+   - Sell NFTs on Arc, accept USDC from any chain
+   - Auto-bridge payments to Arc for settlement
+
+4. **Cross-Chain Marketplace**
+   - Buy NFT on Arc with Ethereum USDC
+   - Bridge happens automatically behind the scenes
+
+### Important Notes
+
+- ⚠️ **Wallet Required**: Requires MetaMask or compatible browser wallet
+- ⚠️ **Gas Fees**: User pays gas on both source and destination chains
+- ⚠️ **USDC Only**: Currently supports USDC transfers only
+- ⚠️ **Time**: FAST ~15 min, SLOW ~30 min (network dependent)
+- ✅ **Native USDC**: Uses Circle's native USDC (not wrapped tokens)
+
+### Error Handling
+
+```typescript
+const { bridge, error } = useCircleBridge();
+
+try {
+  const result = await bridge({
+    fromChain: 'Ethereum',
+    toChain: 'Base',
+    amount: '100.00',
+  });
+
+  if (result.state === 'error') {
+    console.error('Bridge failed:', result.error);
+    // Show user-friendly error message
+  } else if (result.state === 'partial') {
+    console.warn('Partial success:', result.steps);
+    // Some steps succeeded, user can retry
+  }
+} catch (err) {
+  console.error('Bridge error:', err);
+}
+```
 
 ## Smart Contract Platform (Advanced)
 
