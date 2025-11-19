@@ -4,6 +4,15 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { initiateUserControlledWalletsClient } from '@circle-fin/user-controlled-wallets';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]/route';
+import { getCircleApiKey } from '@/lib/circle-config';
+
+// Initialize Circle SDK client
+const circleClient = initiateUserControlledWalletsClient({
+  apiKey: getCircleApiKey(),
+});
 
 /**
  * POST /api/circle/transaction
@@ -14,13 +23,14 @@ import { NextRequest, NextResponse } from 'next/server';
  *   to: string,
  *   value: string,
  *   data?: string,
- *   gasLimit?: string
+ *   gasLimit?: string,
+ *   blockchain?: string
  * }
- * Returns: { transactionHash: string, status: string }
+ * Returns: { challengeId: string, transactionId: string }
  */
 export async function POST(request: NextRequest) {
   try {
-    const { walletId, to, value, data, gasLimit } = await request.json();
+    const { walletId, to, value, data, gasLimit, blockchain } = await request.json();
 
     // Validate required fields
     if (!walletId || !to) {
@@ -38,30 +48,78 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Implement actual Circle transaction execution
-    // For production, you would:
-    // 1. Verify wallet ownership
-    // 2. Validate transaction parameters
-    // 3. Call Circle API to execute transaction
-    // 4. Return transaction hash
+    // Verify user is authenticated
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Please sign in' },
+        { status: 401 }
+      );
+    }
 
-    // Mock transaction execution
-    const transactionHash = `0x${Math.random().toString(16).substring(2, 66).padStart(64, '0')}`;
+    // Verify wallet ownership (optional, recommended)
+    try {
+      const walletResponse = await circleClient.getWallet({ id: walletId });
+      if (!walletResponse.data?.wallet) {
+        return NextResponse.json(
+          { error: 'Wallet not found' },
+          { status: 404 }
+        );
+      }
+    } catch (error: any) {
+      console.error('Failed to verify wallet:', error);
+      return NextResponse.json(
+        { error: 'Failed to verify wallet ownership' },
+        { status: 403 }
+      );
+    }
 
-    console.log(`📤 Circle transaction executed from wallet ${walletId}`);
+    // Create contract execution transaction
+    const txResponse = await circleClient.createContractExecutionTransaction({
+      walletId,
+      contractAddress: to,
+      abiFunctionSignature: data || '0x', // Use provided data or empty for simple transfer
+      abiParameters: [],
+      amount: value || '0',
+      feeLevel: 'MEDIUM',
+      // Use Arc blockchain when available, default to ETH-SEPOLIA for testing
+      blockchain: blockchain || 'ETH-SEPOLIA',
+    });
+
+    if (!txResponse.data) {
+      throw new Error('Failed to create transaction');
+    }
+
+    const { challengeId, transaction } = txResponse.data;
+
+    console.log(`📤 Circle transaction created from wallet ${walletId}`);
     console.log(`   To: ${to}`);
     console.log(`   Value: ${value || '0'}`);
-    console.log(`   Tx Hash: ${transactionHash}`);
+    console.log(`   Challenge ID: ${challengeId}`);
+    console.log(`   Transaction ID: ${transaction?.id}`);
 
     return NextResponse.json({
       success: true,
-      transactionHash,
-      status: 'PENDING',
+      challengeId,
+      transactionId: transaction?.id,
       wallet: walletId,
+      status: 'PENDING_CHALLENGE',
       estimatedConfirmationTime: '< 1 second', // Arc's fast finality
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Circle transaction error:', error);
+
+    // Handle specific Circle API errors
+    if (error.response?.data) {
+      return NextResponse.json(
+        {
+          error: 'Transaction creation failed',
+          details: error.response.data
+        },
+        { status: error.response.status || 500 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'Transaction failed' },
       { status: 500 }
