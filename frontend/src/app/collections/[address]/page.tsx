@@ -78,6 +78,19 @@ export default function CollectionPage() {
     return summary;
   }, [nfts]);
 
+  const parsePriceInput = (value: string) => {
+    if (!value) return null;
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return null;
+    }
+    const scaled = Math.round(parsed * 1_000_000);
+    if (!Number.isFinite(scaled)) {
+      return null;
+    }
+    return BigInt(scaled);
+  };
+
   const applyFilters = () => {
     let result = [...nfts];
 
@@ -85,16 +98,19 @@ export default function CollectionPage() {
       result = result.filter((nft) => nft.name?.toLowerCase().includes(searchTerm.toLowerCase()));
     }
 
-    if (priceRange.min || priceRange.max) {
-      const min = priceRange.min ? BigInt(parseFloat(priceRange.min) * 1e6) : BigInt(0);
-      const max = priceRange.max ? BigInt(parseFloat(priceRange.max) * 1e6) : BigInt(Number.MAX_SAFE_INTEGER);
+    const min = parsePriceInput(priceRange.min);
+    const max = parsePriceInput(priceRange.max);
+
+    if (min !== null || max !== null) {
       result = result.filter((nft) => {
         const price = nft.listing?.active
           ? BigInt(nft.listing.price)
           : nft.auction
           ? BigInt(nft.auction.highestBid || nft.auction.reservePrice)
           : BigInt(0);
-        return (!priceRange.min || price >= min) && (!priceRange.max || price <= max);
+        const meetsMin = min === null || price >= min;
+        const meetsMax = max === null || price <= max;
+        return meetsMin && meetsMax;
       });
     }
 
