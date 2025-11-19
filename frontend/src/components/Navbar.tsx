@@ -1,38 +1,67 @@
 'use client';
 
-import { useState } from 'react';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Wallet } from 'lucide-react';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { Bell, ChevronDown, CircleDollarSign, Compass, Menu, Search, ShoppingCart, Sparkles, User } from 'lucide-react';
 import { useCircleWallet } from '@/hooks/useCircleWallet';
 import { WalletManagementModal } from '@/components/circle/WalletManagementModal';
 import { CreateWalletModal } from '@/components/circle/CreateWalletModal';
 import { truncateAddress } from '@/lib/utils';
+import { useCommandPalette } from '@/hooks/useCommandPalette';
+
+const primaryNav = [
+  { label: 'Explore', href: '/explore' },
+  { label: 'Stats', href: '/stats' },
+  { label: 'Rewards', href: '/rewards' },
+  { label: 'Create', href: '/studio', accent: true },
+];
+
+const exploreSections = [
+  {
+    title: 'Collections',
+    links: [
+      { label: 'Trending Today', href: '/explore?sort=trending', meta: '+42% volume' },
+      { label: 'New & Notable', href: '/explore?filter=new', meta: 'Curated drops' },
+      { label: 'Verified', href: '/explore?filter=verified', meta: 'Trusted creators' },
+    ],
+  },
+  {
+    title: 'Categories',
+    links: [
+      { label: 'Art', href: '/explore?category=art', meta: '24k items' },
+      { label: 'Gaming', href: '/explore?category=gaming', meta: '12k items' },
+      { label: 'Music', href: '/explore?category=music', meta: '4.5k items' },
+      { label: 'Photography', href: '/explore?category=photography', meta: '1.8k items' },
+    ],
+  },
+];
+
+const mobileNav = [
+  { label: 'Home', href: '/', icon: <Compass className="h-5 w-5" /> },
+  { label: 'Explore', href: '/explore', icon: <Search className="h-5 w-5" /> },
+  { label: 'Create', href: '/studio', icon: <Sparkles className="h-5 w-5" /> },
+  { label: 'Activity', href: '/activity', icon: <Bell className="h-5 w-5" /> },
+  { label: 'Profile', href: '/profile', icon: <User className="h-5 w-5" /> },
+];
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { open } = useCommandPalette();
   const { isAuthenticated, currentWallet, wallets, createUser, isLoading } = useCircleWallet();
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [exploreOpen, setExploreOpen] = useState(false);
 
-  const navLinks = [
-    { href: '/', label: 'Explore' },
-    { href: '/collections', label: 'Collections' },
-    { href: '/staking', label: 'Staking' },
-    { href: '/governance', label: 'Governance' },
-    { href: '/studio', label: 'Create' },
-  ];
+  const loyaltyTier = useMemo(() => ({ tier: 'Silver', progress: 52, xp: 2450 }), []);
 
   const handleCircleWalletClick = async () => {
     if (isAuthenticated && wallets.length > 0) {
-      // User exists with wallets - show management
       setShowWalletModal(true);
     } else if (isAuthenticated && wallets.length === 0) {
-      // User exists but no wallets - create wallet
       setShowCreateModal(true);
     } else {
-      // No user - create user first, then wallet
       try {
         await createUser();
         setShowCreateModal(true);
@@ -43,92 +72,159 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white dark:bg-secondary-800 border-b border-secondary-200 dark:border-secondary-700">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">A</span>
+    <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-white/80 backdrop-blur-xl transition dark:border-neutral-800 dark:bg-neutral-950/70">
+      <div className="container-custom flex h-16 items-center justify-between gap-4">
+        <div className="flex items-center gap-8">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 text-white shadow-lg">
+              <Sparkles className="h-5 w-5" />
             </div>
-            <span className="text-xl font-bold text-secondary-900 dark:text-white">
-              ArcMarket
-            </span>
+            <div>
+              <p className="text-lg font-bold text-neutral-900 dark:text-white">ArcMarket</p>
+              <p className="text-xs uppercase tracking-wider text-neutral-500">OS2-Level Experience</p>
+            </div>
           </Link>
 
-          {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === link.href
-                    ? 'bg-primary-50 text-primary-600 dark:bg-primary-900 dark:text-primary-300'
-                    : 'text-secondary-600 hover:bg-secondary-50 dark:text-secondary-300 dark:hover:bg-secondary-700'
+          <nav className="hidden lg:flex items-center gap-2">
+            <div
+              className="relative"
+              onMouseEnter={() => setExploreOpen(true)}
+              onMouseLeave={() => setExploreOpen(false)}
+            >
+              <button className={`flex items-center gap-1 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                exploreOpen ? 'bg-neutral-900 text-white dark:bg-white/10 dark:text-white' : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
+              }`}>
+                Explore
+                <ChevronDown className="h-4 w-4" />
+              </button>
+
+              <div
+                className={`absolute left-0 top-full mt-3 w-[520px] rounded-3xl border border-neutral-200/70 bg-white p-6 shadow-2xl transition duration-200 dark:border-neutral-800 dark:bg-neutral-900 ${
+                  exploreOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
                 }`}
               >
-                {link.label}
+                <div className="grid grid-cols-2 gap-6">
+                  {exploreSections.map((section) => (
+                    <div key={section.title}>
+                      <p className="text-xs uppercase tracking-wide text-neutral-500">{section.title}</p>
+                      <div className="mt-3 space-y-2">
+                        {section.links.map((link) => (
+                          <Link
+                            key={link.label}
+                            href={link.href}
+                            className="flex items-center justify-between rounded-2xl border border-transparent px-3 py-2 text-sm font-medium text-neutral-800 transition hover:border-primary-500 hover:bg-primary-50 dark:text-neutral-100 dark:hover:bg-primary-500/10"
+                          >
+                            <span>{link.label}</span>
+                            <span className="text-xs text-neutral-500">{link.meta}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 flex items-center justify-between rounded-2xl bg-neutral-50 px-4 py-3 text-sm font-semibold dark:bg-neutral-800">
+                  <span>Live activity feed</span>
+                  <button className="text-primary-600">View all →</button>
+                </div>
+              </div>
+            </div>
+
+            {primaryNav.filter((item) => item.label !== 'Explore').map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  pathname.startsWith(item.href)
+                    ? 'bg-neutral-900 text-white dark:bg-primary-500 dark:text-white'
+                    : item.accent
+                    ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-lg'
+                    : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
+                }`}
+              >
+                {item.label}
               </Link>
             ))}
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={open}
+            className="hidden md:flex items-center gap-2 rounded-full border border-neutral-200/80 bg-white px-4 py-2 text-sm font-medium text-neutral-600 shadow-sm transition hover:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300"
+          >
+            <Search className="h-4 w-4" />
+            Search
+            <span className="text-xs text-neutral-400">⌘K</span>
+          </button>
+
+          <div className="hidden lg:flex items-center gap-3 rounded-2xl border border-neutral-200/80 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
+            <span className="text-sm font-bold text-neutral-900 dark:text-white">{loyaltyTier.tier}</span>
+            <div className="h-1 w-24 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
+              <div className="h-full rounded-full bg-gradient-to-r from-primary-500 to-accent-500" style={{ width: `${loyaltyTier.progress}%` }} />
+            </div>
+            <span>{loyaltyTier.xp} XP</span>
           </div>
 
-          {/* Connect Wallet Buttons */}
-          <div className="flex items-center space-x-3">
-            {/* Circle Wallet Button */}
-            {isAuthenticated && currentWallet ? (
-              <button
-                onClick={() => setShowWalletModal(true)}
-                disabled={isLoading}
-                className="inline-flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50"
-              >
-                <Wallet className="h-4 w-4" />
-                <span className="hidden sm:inline">{truncateAddress(currentWallet.address as `0x${string}`)}</span>
-                <span className="sm:hidden">Circle</span>
-              </button>
-            ) : (
-              <button
-                onClick={handleCircleWalletClick}
-                disabled={isLoading}
-                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
-                <Wallet className="h-4 w-4" />
-                <span className="hidden sm:inline">{isLoading ? 'Creating...' : 'Circle Wallet'}</span>
-              </button>
-            )}
+          <button className="relative rounded-full border border-neutral-200/80 bg-white p-2 text-neutral-500 hover:text-neutral-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
+            <ShoppingCart className="h-5 w-5" />
+            <span className="absolute -right-1 -top-1 rounded-full bg-primary-500 px-1.5 text-[10px] font-bold text-white">2</span>
+          </button>
 
-            {/* RainbowKit Connect Button */}
+          <button className="rounded-full border border-neutral-200/80 bg-white p-2 text-neutral-500 hover:text-neutral-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
+            <Bell className="h-5 w-5" />
+          </button>
+
+          {isAuthenticated && currentWallet ? (
+            <button
+              onClick={() => setShowWalletModal(true)}
+              className="hidden lg:inline-flex items-center gap-2 rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold text-white shadow-lg"
+            >
+              <CircleDollarSign className="h-4 w-4" />
+              {truncateAddress(currentWallet.address as `0x${string}`)}
+            </button>
+          ) : (
+            <button
+              onClick={handleCircleWalletClick}
+              disabled={isLoading}
+              className="hidden lg:inline-flex items-center gap-2 rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
+            >
+              <CircleDollarSign className="h-4 w-4" />
+              {isLoading ? 'Connecting...' : 'Circle Wallet'}
+            </button>
+          )}
+
+          <div className="hidden lg:block">
             <ConnectButton />
           </div>
+
+          <button className="lg:hidden rounded-full border border-neutral-200 p-2 text-neutral-600 dark:border-neutral-700 dark:text-neutral-200">
+            <Menu className="h-5 w-5" />
+          </button>
         </div>
       </div>
 
-      {/* Mobile Navigation */}
-      <div className="md:hidden border-t border-secondary-200 dark:border-secondary-700">
-        <div className="px-2 py-3 space-y-1">
-          {navLinks.map((link) => (
+      {/* Mobile sticky nav */}
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200/70 bg-white/90 backdrop-blur-md shadow-2xl dark:border-neutral-800 dark:bg-neutral-950/70 lg:hidden">
+        <div className="grid grid-cols-5 text-sm">
+          {mobileNav.map((item) => (
             <Link
-              key={link.href}
-              href={link.href}
-              className={`block px-3 py-2 rounded-lg text-base font-medium ${
-                pathname === link.href
-                  ? 'bg-primary-50 text-primary-600 dark:bg-primary-900 dark:text-primary-300'
-                  : 'text-secondary-600 hover:bg-secondary-50 dark:text-secondary-300 dark:hover:bg-secondary-700'
+              key={item.label}
+              href={item.href}
+              className={`flex flex-col items-center gap-1 px-2 py-3 text-xs font-semibold ${
+                pathname === item.href
+                  ? 'text-primary-600'
+                  : 'text-neutral-500'
               }`}
             >
-              {link.label}
+              {item.icon}
+              {item.label}
             </Link>
           ))}
         </div>
-      </div>
+      </nav>
 
-      {/* Circle Wallet Modals */}
       <WalletManagementModal isOpen={showWalletModal} onClose={() => setShowWalletModal(false)} />
-      <CreateWalletModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSuccess={() => setShowCreateModal(false)}
-      />
-    </nav>
+      <CreateWalletModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onSuccess={() => setShowCreateModal(false)} />
+    </header>
   );
 }

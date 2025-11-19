@@ -1,13 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { Filter, RefreshCcw, Search, Sparkles, X } from 'lucide-react';
 import NFTCard from '@/components/NFTCard';
+import { Card } from '@/components/ui';
 import { fetchGraphQL } from '@/lib/graphql-client';
 import { GET_COLLECTION } from '@/graphql/queries';
 import { formatUSDC } from '@/hooks/useMarketplace';
 
-type SortOption = 'recently-listed' | 'price-low-high' | 'price-high-low' | 'token-id';
+const statusFilters = [
+  { id: 'buy-now', label: 'Buy Now', predicate: (nft: any) => nft.listing?.active },
+  { id: 'auction', label: 'On Auction', predicate: (nft: any) => nft.auction && !nft.auction.settled },
+  { id: 'new', label: 'Recently Minted', predicate: (nft: any) => Date.now() / 1000 - Number(nft.createdAt || 0) < 86400 * 7 },
+  { id: 'offers', label: 'Has Offers', predicate: (nft: any) => (nft.offers?.length || 0) > 0 },
+];
+
+const sortOptions = [
+  { value: 'recent', label: 'Recently Listed' },
+  { value: 'ending', label: 'Ending Soon' },
+  { value: 'low-high', label: 'Price: Low to High' },
+  { value: 'high-low', label: 'Price: High to Low' },
+  { value: 'oldest', label: 'Oldest' },
+];
 
 export default function CollectionPage() {
   const params = useParams();
@@ -17,9 +32,11 @@ export default function CollectionPage() {
   const [nfts, setNfts] = useState<any[]>([]);
   const [filteredNFTs, setFilteredNFTs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<SortOption>('recently-listed');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'listed' | 'auction'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedTraits, setSelectedTraits] = useState<Record<string, string[]>>({});
+  const [sortBy, setSortBy] = useState('recent');
 
   useEffect(() => {
     if (address) {
@@ -28,8 +45,8 @@ export default function CollectionPage() {
   }, [address]);
 
   useEffect(() => {
-    applyFiltersAndSort();
-  }, [nfts, sortBy, filterStatus, priceRange]);
+    applyFilters();
+  }, [nfts, searchTerm, priceRange, selectedStatuses, selectedTraits, sortBy]);
 
   const loadCollection = async () => {
     setLoading(true);
@@ -37,7 +54,6 @@ export default function CollectionPage() {
       const data: any = await fetchGraphQL(GET_COLLECTION, {
         id: address.toLowerCase(),
       });
-
       if (data.collection) {
         setCollection(data.collection);
         setNfts(data.collection.nfts || []);
@@ -49,101 +65,108 @@ export default function CollectionPage() {
     }
   };
 
-  const applyFiltersAndSort = () => {
-    let filtered = [...nfts];
+  const traitSummary = useMemo(() => {
+    const summary: Record<string, Record<string, number>> = {};
+    nfts.forEach((nft) => {
+      nft.attributes?.forEach((attr: any) => {
+        if (!summary[attr.trait_type]) {
+          summary[attr.trait_type] = {};
+        }
+        summary[attr.trait_type][attr.value] = (summary[attr.trait_type][attr.value] || 0) + 1;
+      });
+    });
+    return summary;
+  }, [nfts]);
 
-    // Filter by status
-    if (filterStatus === 'listed') {
-      filtered = filtered.filter((nft) => nft.listing?.active);
-    } else if (filterStatus === 'auction') {
-      filtered = filtered.filter((nft) => nft.auction && !nft.auction.settled);
+  const applyFilters = () => {
+    let result = [...nfts];
+
+    if (searchTerm) {
+      result = result.filter((nft) => nft.name?.toLowerCase().includes(searchTerm.toLowerCase()));
     }
 
-    // Filter by price range
     if (priceRange.min || priceRange.max) {
-      filtered = filtered.filter((nft) => {
+      const min = priceRange.min ? BigInt(parseFloat(priceRange.min) * 1e6) : BigInt(0);
+      const max = priceRange.max ? BigInt(parseFloat(priceRange.max) * 1e6) : BigInt(Number.MAX_SAFE_INTEGER);
+      result = result.filter((nft) => {
         const price = nft.listing?.active
           ? BigInt(nft.listing.price)
-          : nft.auction && !nft.auction.settled
+          : nft.auction
           ? BigInt(nft.auction.highestBid || nft.auction.reservePrice)
           : BigInt(0);
-
-        const minPrice = priceRange.min ? BigInt(parseFloat(priceRange.min) * 1e6) : BigInt(0);
-        const maxPrice = priceRange.max ? BigInt(parseFloat(priceRange.max) * 1e6) : BigInt(Number.MAX_SAFE_INTEGER);
-
-        return price >= minPrice && price <= maxPrice && price > BigInt(0);
+        return (!priceRange.min || price >= min) && (!priceRange.max || price <= max);
       });
     }
 
-    // Sort
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'price-low-high': {
-          const priceA = a.listing?.active
-            ? BigInt(a.listing.price)
-            : a.auction
-            ? BigInt(a.auction.highestBid || a.auction.reservePrice)
-            : BigInt(Number.MAX_SAFE_INTEGER);
-          const priceB = b.listing?.active
-            ? BigInt(b.listing.price)
-            : b.auction
-            ? BigInt(b.auction.highestBid || b.auction.reservePrice)
-            : BigInt(Number.MAX_SAFE_INTEGER);
-          return priceA < priceB ? -1 : 1;
-        }
-        case 'price-high-low': {
-          const priceA = a.listing?.active
-            ? BigInt(a.listing.price)
-            : a.auction
-            ? BigInt(a.auction.highestBid || a.auction.reservePrice)
-            : BigInt(0);
-          const priceB = b.listing?.active
-            ? BigInt(b.listing.price)
-            : b.auction
-            ? BigInt(b.auction.highestBid || b.auction.reservePrice)
-            : BigInt(0);
-          return priceB > priceA ? 1 : -1;
-        }
-        case 'token-id':
-          return parseInt(a.tokenId) - parseInt(b.tokenId);
-        default: // recently-listed
-          return (b.listing?.createdAt || 0) - (a.listing?.createdAt || 0);
-      }
+    if (selectedStatuses.length > 0) {
+      result = result.filter((nft) =>
+        selectedStatuses.some((status) => statusFilters.find((f) => f.id === status)?.predicate(nft))
+      );
+    }
+
+    Object.entries(selectedTraits).forEach(([traitType, values]) => {
+      if (values.length === 0) return;
+      result = result.filter((nft) => {
+        const nftTraits = nft.attributes || [];
+        return values.some((value) => nftTraits.some((attr: any) => attr.trait_type === traitType && attr.value === value));
+      });
     });
 
-    setFilteredNFTs(filtered);
+    switch (sortBy) {
+      case 'low-high':
+        result.sort((a, b) => Number(a.listing?.price || a.auction?.reservePrice || 0) - Number(b.listing?.price || b.auction?.reservePrice || 0));
+        break;
+      case 'high-low':
+        result.sort((a, b) => Number(b.listing?.price || b.auction?.reservePrice || 0) - Number(a.listing?.price || a.auction?.reservePrice || 0));
+        break;
+      case 'ending':
+        result.sort((a, b) => Number(a.auction?.endTime || Number.MAX_SAFE_INTEGER) - Number(b.auction?.endTime || Number.MAX_SAFE_INTEGER));
+        break;
+      case 'oldest':
+        result.sort((a, b) => Number(a.listing?.createdAt || 0) - Number(b.listing?.createdAt || 0));
+        break;
+      default:
+        result.sort((a, b) => Number(b.listing?.createdAt || 0) - Number(a.listing?.createdAt || 0));
+    }
+
+    setFilteredNFTs(result);
+  };
+
+  const toggleStatus = (statusId: string) => {
+    setSelectedStatuses((prev) =>
+      prev.includes(statusId) ? prev.filter((status) => status !== statusId) : [...prev, statusId]
+    );
+  };
+
+  const toggleTrait = (traitType: string, value: string) => {
+    setSelectedTraits((prev) => {
+      const existing = prev[traitType] || [];
+      const updated = existing.includes(value) ? existing.filter((v) => v !== value) : [...existing, value];
+      return { ...prev, [traitType]: updated };
+    });
+  };
+
+  const resetFilters = () => {
+    setSelectedStatuses([]);
+    setSelectedTraits({});
+    setPriceRange({ min: '', max: '' });
+    setSearchTerm('');
+    setSortBy('recent');
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="skeleton h-20 w-20 rounded-full" />
       </div>
     );
   }
 
   if (!collection) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <svg
-          className="h-16 w-16 text-gray-400 mb-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Collection Not Found
-        </h2>
-        <p className="text-gray-600 dark:text-gray-400">
-          The collection you're looking for doesn't exist or hasn't been indexed yet.
-        </p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 text-center">
+        <Sparkles className="h-10 w-10 text-neutral-400" />
+        <p className="text-xl font-semibold">Collection not found</p>
       </div>
     );
   }
@@ -156,177 +179,187 @@ export default function CollectionPage() {
     listed: nfts.filter((nft) => nft.listing?.active).length,
   };
 
+  const appliedFilters = [
+    ...selectedStatuses.map((status) => ({
+      label: statusFilters.find((f) => f.id === status)?.label || '',
+      onRemove: () => toggleStatus(status),
+    })),
+    ...Object.entries(selectedTraits)
+      .flatMap(([traitType, values]) =>
+        values.map((value) => ({
+          label: `${traitType}: ${value}`,
+          onRemove: () => toggleTrait(traitType, value),
+        }))
+      )
+      .filter((entry) => entry.label),
+  ];
+
   return (
-    <div className="space-y-8">
-      {/* Header Section */}
-      <div className="relative">
-        {/* Banner */}
-        <div className="h-48 md:h-64 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg"></div>
+    <div className="space-y-10">
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary-500 to-accent-500 p-10 text-white">
+        <div className="max-w-3xl">
+          <p className="text-sm uppercase tracking-wide text-white/70">Verified collection</p>
+          <h1 className="mt-2 text-4xl font-bold">{collection.name || 'Unknown Collection'}</h1>
+          <p className="mt-4 text-white/80">{collection.description || 'Explore rare items and live market data.'}</p>
+        </div>
+        <div className="mt-8 grid gap-6 sm:grid-cols-3 lg:grid-cols-6">
+          <Card className="bg-white/10 p-4 text-sm">
+            <p className="text-white/70">Floor</p>
+            <p className="text-xl font-bold text-white">{stats.floorPrice}</p>
+          </Card>
+          <Card className="bg-white/10 p-4 text-sm">
+            <p className="text-white/70">Total Volume</p>
+            <p className="text-xl font-bold text-white">{stats.totalVolume}</p>
+          </Card>
+          <Card className="bg-white/10 p-4 text-sm">
+            <p className="text-white/70">Items</p>
+            <p className="text-xl font-bold text-white">{stats.items}</p>
+          </Card>
+          <Card className="bg-white/10 p-4 text-sm">
+            <p className="text-white/70">Owners</p>
+            <p className="text-xl font-bold text-white">{collection.owners || '--'}</p>
+          </Card>
+          <Card className="bg-white/10 p-4 text-sm">
+            <p className="text-white/70">Listed</p>
+            <p className="text-xl font-bold text-white">{stats.listed}</p>
+          </Card>
+          <Card className="bg-white/10 p-4 text-sm">
+            <p className="text-white/70">Total Sales</p>
+            <p className="text-xl font-bold text-white">{stats.totalSales}</p>
+          </Card>
+        </div>
+      </section>
 
-        {/* Collection Info */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative -mt-16 sm:-mt-20">
-            <div className="flex flex-col md:flex-row md:items-end md:space-x-6">
-              {/* Collection Avatar */}
-              <div className="w-32 h-32 md:w-40 md:h-40 bg-white dark:bg-gray-800 rounded-xl border-4 border-white dark:border-gray-900 shadow-xl flex items-center justify-center">
-                <svg
-                  className="w-16 h-16 md:w-20 md:h-20 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                  />
-                </svg>
-              </div>
+      <div className="grid gap-10 lg:grid-cols-[280px_1fr]">
+        <aside className="space-y-6 rounded-3xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Filters</h3>
+            <button onClick={resetFilters} className="text-sm text-primary-600">
+              Reset
+            </button>
+          </div>
 
-              {/* Collection Details */}
-              <div className="mt-6 md:mt-0 md:mb-4 flex-1">
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                  {collection.name || 'Unknown Collection'}
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  {collection.symbol || 'N/A'}
-                </p>
-                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                  <span className="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-lg">
-                    {address.slice(0, 6)}...{address.slice(-4)}
-                  </span>
-                  <button
-                    onClick={() => navigator.clipboard.writeText(address)}
-                    className="hover:text-blue-600 dark:hover:text-blue-400 transition"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+          <div className="space-y-4">
+            <label className="text-sm font-semibold text-neutral-600 dark:text-neutral-300">Search</label>
+            <div className="flex items-center gap-2 rounded-2xl border border-neutral-200 px-3 py-2 dark:border-neutral-700">
+              <Search className="h-4 w-4 text-neutral-400" />
+              <input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search by name"
+                className="w-full bg-transparent text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none dark:text-white"
+              />
             </div>
           </div>
-        </div>
+
+          <div>
+            <p className="text-sm font-semibold">Status</p>
+            <div className="mt-3 space-y-2">
+              {statusFilters.map((filter) => (
+                <label key={filter.id} className="flex cursor-pointer items-center gap-3 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={selectedStatuses.includes(filter.id)}
+                    onChange={() => toggleStatus(filter.id)}
+                    className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  {filter.label}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold">Price Range (USDC)</p>
+            <div className="mt-3 flex gap-3">
+              <input
+                type="number"
+                placeholder="Min"
+                value={priceRange.min}
+                onChange={(event) => setPriceRange((prev) => ({ ...prev, min: event.target.value }))}
+                className="input"
+              />
+              <input
+                type="number"
+                placeholder="Max"
+                value={priceRange.max}
+                onChange={(event) => setPriceRange((prev) => ({ ...prev, max: event.target.value }))}
+                className="input"
+              />
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold">Traits</p>
+            <div className="mt-3 space-y-4">
+              {Object.entries(traitSummary)
+                .slice(0, 4)
+                .map(([traitType, values]) => (
+                  <div key={traitType}>
+                    <p className="text-xs uppercase tracking-wide text-neutral-500">{traitType}</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {Object.entries(values)
+                        .slice(0, 6)
+                        .map(([value, count]) => (
+                          <button
+                            key={value}
+                            onClick={() => toggleTrait(traitType, value)}
+                            className={`chip ${selectedTraits[traitType]?.includes(value) ? 'border-primary-500 text-primary-600' : ''}`}
+                          >
+                            {value} · {Math.round((count / nfts.length) * 100) || 1}%
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </aside>
+
+        <section className="space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Filter className="h-4 w-4 text-neutral-400" />
+              <p className="text-sm text-neutral-500">{filteredNFTs.length} results</p>
+              {appliedFilters.map((filter) => (
+                <span key={filter.label} className="filter-chip">
+                  {filter.label}
+                  <button onClick={filter.onRemove}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-neutral-500">Sort by</label>
+              <select
+                value={sortBy}
+                onChange={(event) => setSortBy(event.target.value)}
+                className="rounded-full border border-neutral-200 px-4 py-2 text-sm dark:border-neutral-700"
+              >
+                {sortOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="nft-grid">
+            {filteredNFTs.map((nft) => (
+              <NFTCard key={nft.id} nft={nft} />
+            ))}
+            {filteredNFTs.length === 0 && (
+              <div className="col-span-full flex flex-col items-center rounded-3xl border border-dashed border-neutral-200 p-12 text-center dark:border-neutral-700">
+                <RefreshCcw className="h-8 w-8 text-neutral-400" />
+                <p className="mt-3 text-lg font-semibold">No items match these filters</p>
+                <p className="text-sm text-neutral-500">Adjust filters to widen your search.</p>
+              </div>
+            )}
+          </div>
+        </section>
       </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Volume</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalVolume}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">USDC</p>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Floor Price</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.floorPrice}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">USDC</p>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Sales</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalSales}</p>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Items</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.items}</p>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Listed</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.listed}</p>
-        </div>
-      </div>
-
-      {/* Filters and Sort */}
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-        {/* Filter Tabs */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setFilterStatus('all')}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              filterStatus === 'all'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }`}
-          >
-            All ({nfts.length})
-          </button>
-          <button
-            onClick={() => setFilterStatus('listed')}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              filterStatus === 'listed'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }`}
-          >
-            Listed ({stats.listed})
-          </button>
-          <button
-            onClick={() => setFilterStatus('auction')}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              filterStatus === 'auction'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }`}
-          >
-            Auctions
-          </button>
-        </div>
-
-        {/* Sort Dropdown */}
-        <div className="flex items-center gap-4">
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="recently-listed">Recently Listed</option>
-            <option value="price-low-high">Price: Low to High</option>
-            <option value="price-high-low">Price: High to Low</option>
-            <option value="token-id">Token ID</option>
-          </select>
-        </div>
-      </div>
-
-      {/* NFT Grid */}
-      {filteredNFTs.length === 0 ? (
-        <div className="text-center py-12">
-          <svg
-            className="mx-auto h-12 w-12 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-            />
-          </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-            No NFTs found
-          </h3>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Try adjusting your filters
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredNFTs.map((nft) => (
-            <NFTCard key={nft.id} nft={nft} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

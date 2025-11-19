@@ -2,7 +2,7 @@
 
 import './globals.css';
 import '@rainbow-me/rainbowkit/styles.css';
-import { QueryClient, QueryClientProvider } from '@tantml:tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider } from 'wagmi';
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { SessionProvider } from 'next-auth/react';
@@ -10,8 +10,17 @@ import { config } from '@/lib/wagmi';
 import Navbar from '@/components/Navbar';
 import { ToastProvider } from '@/hooks/useToast';
 import { CircleWalletProvider } from '@/hooks/useCircleWallet';
+import CommandPalette from '@/components/navigation/CommandPalette';
+import { CommandPaletteProvider } from '@/hooks/useCommandPalette';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 export default function RootLayout({
   children,
@@ -37,12 +46,18 @@ export default function RootLayout({
               <RainbowKitProvider>
                 <CircleWalletProvider>
                   <ToastProvider>
-                    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
-                      <Navbar />
-                      <main>
-                        {children}
-                      </main>
-                    </div>
+                    <CommandPaletteProvider>
+                      <a href="#main-content" className="skip-link">
+                        Skip to content
+                      </a>
+                      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
+                        <Navbar />
+                        <CommandPalette />
+                        <main id="main-content" className="pb-24">
+                          {children}
+                        </main>
+                      </div>
+                    </CommandPaletteProvider>
                   </ToastProvider>
                 </CircleWalletProvider>
               </RainbowKitProvider>
