@@ -1,15 +1,17 @@
-# Circle User-Controlled Wallets SDK Integration Guide
+# Circle SDK Integration Guide
 
-**Status:** ✅ **FULLY INTEGRATED** (Backend SDK + Web SDK)
+**Status:** ✅ **FULLY INTEGRATED** (Wallets + Smart Contract Platform)
 
 **What's Working:**
-- ✅ Backend Circle SDK (`@circle-fin/user-controlled-wallets@9.3.0`)
-- ✅ Frontend Web SDK (`@circle-fin/w3s-pw-web-sdk@1.1.11`)
+- ✅ **User-Controlled Wallets** (`@circle-fin/user-controlled-wallets@9.3.0`)
+- ✅ **Web SDK** (`@circle-fin/w3s-pw-web-sdk@1.1.11`)
+- ✅ **Smart Contract Platform** (`@circle-fin/smart-contract-platform@1.8.11`)
 - ✅ Automatic PIN/challenge handling
 - ✅ NextAuth social login integration
 - ✅ Complete wallet creation flow
+- ✅ Programmatic contract deployment
 
-This guide explains how to set up and use Circle's User-Controlled Wallets in ArcMarket.
+This guide explains how to set up and use Circle's SDKs in ArcMarket.
 
 ## Overview
 
@@ -384,6 +386,112 @@ Before deploying to production:
 - [ ] Add proper error handling and user feedback
 - [ ] Configure CORS if needed for API routes
 
+## Smart Contract Platform (Advanced)
+
+ArcMarket also integrates Circle's **Smart Contract Platform SDK** for programmatic contract deployment. This is useful for deploying NFT collections or custom marketplace contracts.
+
+### Use Cases
+
+- **Deploy NFT Collections**: Create ERC-721 or ERC-1155 contracts for users
+- **Custom Marketplaces**: Deploy specialized marketplace contracts
+- **Token Contracts**: Deploy ERC-20 tokens for rewards or governance
+- **Automated Deployments**: Deploy contracts as part of your application workflow
+
+### Setup
+
+1. **Generate Entity Secret** (one-time setup):
+   - Follow [Circle's Developer-Controlled Wallets QuickStart](https://developers.circle.com/interactive-quickstarts/dev-controlled-wallets)
+   - Add to `.env.local`:
+     ```env
+     CIRCLE_ENTITY_SECRET=your_entity_secret_here
+     ```
+
+2. **Create Developer-Controlled Wallet**:
+   - Use Circle Console or API to create a wallet for contract deployments
+   - Fund the wallet with gas tokens for the target blockchain
+
+### Usage
+
+**Deploy a Contract:**
+
+```typescript
+// Frontend call
+const response = await fetch('/api/circle/contracts', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    name: 'My NFT Collection',
+    description: 'Limited edition NFT collection',
+    walletId: 'developer-wallet-id',  // Your developer-controlled wallet
+    abiJson: JSON.stringify(contractABI),  // Contract ABI
+    bytecode: '0x60806040...',  // Compiled bytecode
+    constructorParameters: ['Collection Name', 'SYMBOL', 10000],  // Constructor args
+    feeLevel: 'MEDIUM',  // Gas fee level
+  }),
+});
+
+const { contractId, contractAddress, transactionHash } = await response.json();
+console.log('Contract deployed at:', contractAddress);
+```
+
+**Check Deployment Status:**
+
+```typescript
+const response = await fetch(`/api/circle/contracts?contractId=${contractId}`);
+const { contract } = await response.json();
+
+console.log('Deployment status:', contract.deployStatus);
+// PENDING → IN_PROGRESS → SUCCESS
+```
+
+### Example: Deploy ERC-721 NFT Contract
+
+```typescript
+import { compile } from '@/lib/solidity-compiler';
+
+// 1. Compile your Solidity contract
+const compiled = await compile(`
+  pragma solidity ^0.8.0;
+  import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+
+  contract MyNFT is ERC721 {
+    constructor(string memory name, string memory symbol)
+      ERC721(name, symbol) {}
+  }
+`);
+
+// 2. Deploy via Circle
+const response = await fetch('/api/circle/contracts', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    name: 'My NFT Collection',
+    walletId: process.env.DEVELOPER_WALLET_ID,
+    abiJson: JSON.stringify(compiled.abi),
+    bytecode: compiled.bytecode,
+    constructorParameters: ['My NFT', 'MNFT'],
+    feeLevel: 'HIGH',  // Faster deployment
+  }),
+});
+```
+
+### Important Notes
+
+- ⚠️ **Server-Side Only**: Smart Contract Platform SDK requires `entitySecret` (server secret)
+- ⚠️ **Developer-Controlled**: Uses your developer wallets, not user wallets
+- ⚠️ **Gas Costs**: Your wallet pays for deployment gas fees
+- ⚠️ **Blockchain Support**: Check Circle's docs for supported blockchains
+
+### API Reference
+
+**POST /api/circle/contracts**
+- Deploy a new smart contract
+- Returns: `contractId`, `contractAddress`, `transactionHash`, `deploymentStatus`
+
+**GET /api/circle/contracts?contractId=xxx**
+- Get deployment status and contract details
+- Returns: Full contract information including deployment status
+
 ## Troubleshooting
 
 ### "Unauthorized - Please sign in"
@@ -410,9 +518,14 @@ Before deploying to production:
 
 ## Resources
 
-- **Circle Documentation**: https://developers.circle.com/w3s/docs
+**Circle Documentation:**
+- **Main Docs**: https://developers.circle.com/w3s/docs
 - **User-Controlled Wallets Guide**: https://learn.circle.com/quickstarts/user-controlled-wallets
+- **Smart Contract Platform Guide**: https://developers.circle.com/w3s/smart-contract-platform
+- **Developer-Controlled Wallets QuickStart**: https://developers.circle.com/interactive-quickstarts/dev-controlled-wallets
 - **Circle Console**: https://console.circle.com/
+
+**Other Resources:**
 - **NextAuth Documentation**: https://next-auth.js.org/
 - **ArcMarket Implementation Status**: See `IMPLEMENTATION_STATUS.md`
 
