@@ -7,10 +7,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { initiateUserControlledWalletsClient } from '@circle-fin/user-controlled-wallets';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
+import { getCircleApiKey } from '@/lib/circle-config';
 
 // Initialize Circle SDK client
+// Automatically uses testnet or mainnet credentials based on NEXT_PUBLIC_CIRCLE_ENVIRONMENT
 const circleClient = initiateUserControlledWalletsClient({
-  apiKey: process.env.CIRCLE_API_KEY || '',
+  apiKey: getCircleApiKey(),
 });
 
 /**

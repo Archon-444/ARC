@@ -7,11 +7,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { initiateSmartContractPlatformClient } from '@circle-fin/smart-contract-platform';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/route';
+import { getCircleApiKey, getCircleEntitySecret } from '@/lib/circle-config';
 
 // Initialize Circle Smart Contract Platform client
+// Automatically uses testnet or mainnet credentials based on NEXT_PUBLIC_CIRCLE_ENVIRONMENT
 const scpClient = initiateSmartContractPlatformClient({
-  apiKey: process.env.CIRCLE_API_KEY || '',
-  entitySecret: process.env.CIRCLE_ENTITY_SECRET || '',
+  apiKey: getCircleApiKey(),
+  entitySecret: getCircleEntitySecret(),
 });
 
 /**

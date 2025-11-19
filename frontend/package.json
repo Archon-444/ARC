@@ -29,6 +29,7 @@
   "author": "ArcMarket Team",
   "license": "MIT",
   "dependencies": {
+    "@circle-fin/bridge-kit": "^1.1.2",
     "@circle-fin/developer-controlled-wallets": "^9.3.0",
     "@circle-fin/smart-contract-platform": "^9.3.0",
     "@circle-fin/user-controlled-wallets": "^9.3.0",

@@ -1,17 +1,19 @@
 # Circle SDK Integration Guide
 
-**Status:** ✅ **FULLY INTEGRATED** (Wallets + Smart Contract Platform)
+**Status:** ✅ **FULLY INTEGRATED** (Wallets + Smart Contracts + Cross-Chain Bridging)
 
 **What's Working:**
 - ✅ **User-Controlled Wallets** (`@circle-fin/user-controlled-wallets@9.3.0`)
 - ✅ **Web SDK** (`@circle-fin/w3s-pw-web-sdk@1.1.11`)
 - ✅ **Smart Contract Platform** (`@circle-fin/smart-contract-platform@1.8.11`)
+- ✅ **Bridge Kit** (`@circle-fin/bridge-kit@3.5.0`) - Cross-chain USDC transfers
 - ✅ Automatic PIN/challenge handling
 - ✅ NextAuth social login integration
 - ✅ Complete wallet creation flow
 - ✅ Programmatic contract deployment
+- ✅ Cross-chain USDC bridging (34 chains, 544 routes)
 
-This guide explains how to set up and use Circle's SDKs in ArcMarket.
+This guide explains how to set up and use Circle's complete SDK suite in ArcMarket.
 
 ## Overview
 
@@ -82,17 +84,37 @@ cp .env.example .env.local
 
 ### Step 2: Configure Circle Credentials
 
-Edit `.env.local`:
+Circle provides separate API credentials for **testnet** and **mainnet** environments. Configure both sets of credentials in `.env.local`:
 
 ```env
-# Circle User-Controlled Wallets Configuration
-CIRCLE_API_KEY=your_circle_api_key_here  # Server-side secret
-NEXT_PUBLIC_CIRCLE_APP_ID=your_circle_app_id_here  # Public client ID
+# ===========================
+# Circle Configuration
+# ===========================
+# Choose environment: 'testnet' or 'mainnet'
+NEXT_PUBLIC_CIRCLE_ENVIRONMENT=testnet
+
+# Circle Testnet Credentials
+# Get these from https://console.circle.com/api-keys (Testnet Environment)
+CIRCLE_API_KEY_TESTNET=your_testnet_api_key_here
+NEXT_PUBLIC_CIRCLE_APP_ID_TESTNET=your_testnet_app_id_here
+CIRCLE_ENTITY_SECRET_TESTNET=your_testnet_entity_secret_here  # Optional, for Smart Contract Platform
+
+# Circle Mainnet Credentials
+# Get these from https://console.circle.com/api-keys (Mainnet Environment)
+CIRCLE_API_KEY_MAINNET=your_mainnet_api_key_here
+NEXT_PUBLIC_CIRCLE_APP_ID_MAINNET=your_mainnet_app_id_here
+CIRCLE_ENTITY_SECRET_MAINNET=your_mainnet_entity_secret_here  # Optional, for Smart Contract Platform
 ```
 
 ⚠️ **Security Note**:
-- `CIRCLE_API_KEY` = Server-side secret (NO `NEXT_PUBLIC_` prefix)
-- `NEXT_PUBLIC_CIRCLE_APP_ID` = Public client ID (safe to expose)
+- `CIRCLE_API_KEY_*` and `CIRCLE_ENTITY_SECRET_*` = Server-side secrets (NO `NEXT_PUBLIC_` prefix)
+- `NEXT_PUBLIC_CIRCLE_APP_ID_*` and `NEXT_PUBLIC_CIRCLE_ENVIRONMENT` = Public, safe to expose
+
+🔄 **Environment Switching**:
+- Set `NEXT_PUBLIC_CIRCLE_ENVIRONMENT=testnet` for development/testing
+- Set `NEXT_PUBLIC_CIRCLE_ENVIRONMENT=mainnet` for production
+- All SDKs automatically use the correct credentials based on this setting
+- No code changes needed - just change the environment variable!
 
 ### Step 3: Configure OAuth Providers
 
@@ -123,12 +145,28 @@ APPLE_CLIENT_SECRET=your_apple_private_key
 3. Choose **User-Controlled Wallets**
 4. Name your project (e.g., "ArcMarket")
 
-### 2. Generate API Key
+### 2. Generate API Keys (Testnet and Mainnet)
 
-1. Go to **API Keys** section
-2. Click **Create API Key**
-3. Copy the key immediately (it won't be shown again)
-4. Add it to your `.env.local` file
+Circle provides separate credentials for testnet and mainnet environments:
+
+**Testnet Credentials:**
+1. In Circle Console, switch to **Testnet** environment (top-right selector)
+2. Go to **API Keys** section
+3. Click **Create API Key**
+4. Copy the API key and App ID immediately (won't be shown again)
+5. Add to your `.env.local` as `CIRCLE_API_KEY_TESTNET` and `NEXT_PUBLIC_CIRCLE_APP_ID_TESTNET`
+
+**Mainnet Credentials:**
+1. In Circle Console, switch to **Mainnet** environment (top-right selector)
+2. Go to **API Keys** section
+3. Click **Create API Key**
+4. Copy the API key and App ID
+5. Add to your `.env.local` as `CIRCLE_API_KEY_MAINNET` and `NEXT_PUBLIC_CIRCLE_APP_ID_MAINNET`
+
+**Smart Contract Platform (Optional):**
+- If using programmatic contract deployment, also generate Entity Secrets for both environments
+- Follow: https://developers.circle.com/interactive-quickstarts/dev-controlled-wallets
+- Add to `.env.local` as `CIRCLE_ENTITY_SECRET_TESTNET` and `CIRCLE_ENTITY_SECRET_MAINNET`
 
 ### 3. Configure Webhooks (Optional)
 
@@ -140,6 +178,58 @@ For production, set up webhooks to receive wallet creation events:
    - `wallet.created`
    - `transaction.created`
    - `transaction.confirmed`
+
+## Environment-Based Configuration
+
+ArcMarket uses an intelligent environment-based configuration system that automatically selects the correct Circle credentials based on the `NEXT_PUBLIC_CIRCLE_ENVIRONMENT` variable.
+
+### How It Works
+
+The system uses helper functions in `src/lib/circle-config.ts`:
+
+- `getCircleEnvironment()` - Returns current environment ('testnet' or 'mainnet')
+- `getCircleApiKey()` - Returns API key for current environment
+- `getCircleAppId()` - Returns App ID for current environment
+- `getCircleEntitySecret()` - Returns Entity Secret for current environment
+
+All Circle SDKs automatically use these functions, so you don't need to manually manage which credentials to use.
+
+### Switching Environments
+
+**Development/Testing:**
+```env
+NEXT_PUBLIC_CIRCLE_ENVIRONMENT=testnet
+```
+- Uses `CIRCLE_API_KEY_TESTNET`, `NEXT_PUBLIC_CIRCLE_APP_ID_TESTNET`, etc.
+- Safe for testing without affecting real funds
+- Free Circle testnet credits available
+
+**Production:**
+```env
+NEXT_PUBLIC_CIRCLE_ENVIRONMENT=mainnet
+```
+- Uses `CIRCLE_API_KEY_MAINNET`, `NEXT_PUBLIC_CIRCLE_APP_ID_MAINNET`, etc.
+- Real transactions with actual USDC
+- Production-ready Circle infrastructure
+
+### Validation
+
+The configuration includes built-in validation:
+
+```typescript
+import { validateCircleConfig, getCircleConfigSummary } from '@/lib/circle-config';
+
+// Check if configuration is complete
+const { isValid, errors } = validateCircleConfig();
+if (!isValid) {
+  console.error('Circle configuration errors:', errors);
+}
+
+// Get configuration summary for debugging
+const summary = getCircleConfigSummary();
+console.log('Circle Config:', summary);
+// Output: { environment: 'testnet', hasApiKey: true, hasAppId: true, hasEntitySecret: true }
+```
 
 ## OAuth Provider Setup
 
@@ -385,6 +475,159 @@ Before deploying to production:
 - [ ] Verify session security and token expiration
 - [ ] Add proper error handling and user feedback
 - [ ] Configure CORS if needed for API routes
+
+## Cross-Chain Bridging (Bridge Kit)
+
+ArcMarket integrates Circle's **Bridge Kit** for seamless USDC transfers between blockchains. This enables users to bridge USDC from other chains to Arc blockchain.
+
+### Features
+
+- **34 Supported Chains**: Ethereum, Base, Arbitrum, Polygon, Avalanche, Optimism, Solana, and more
+- **544 Bridge Routes**: Comprehensive cross-chain coverage
+- **Circle CCTP**: Uses Circle's Cross-Chain Transfer Protocol for secure, native USDC transfers
+- **Type-Safe API**: Full TypeScript support with runtime validation
+- **Speed Options**: FAST (higher fees, ~15 min) or SLOW (lower fees, ~30 min)
+- **Cost Estimation**: Get fees upfront before bridging
+- **Browser Wallet Support**: Works with MetaMask, Rainbow, etc.
+
+### Usage
+
+**Basic Bridge Operation:**
+
+```typescript
+import { useCircleBridge } from '@/hooks/useCircleBridge';
+
+function BridgeComponent() {
+  const { bridge, estimateBridge, isLoading } = useCircleBridge();
+
+  const handleBridge = async () => {
+    // 1. Get cost estimate first
+    const estimate = await estimateBridge({
+      fromChain: 'Ethereum',
+      toChain: 'Base',
+      amount: '100.00',
+    });
+    console.log('Bridge fees:', estimate.fees);
+    console.log('Total cost:', estimate.totalCost);
+
+    // 2. Execute bridge
+    const result = await bridge({
+      fromChain: 'Ethereum',
+      toChain: 'Base',
+      amount: '100.00',
+      speed: 'FAST', // or 'SLOW'
+    });
+
+    if (result.state === 'success') {
+      console.log('USDC bridged successfully!');
+    }
+  };
+
+  return (
+    <button onClick={handleBridge} disabled={isLoading}>
+      {isLoading ? 'Bridging...' : 'Bridge USDC'}
+    </button>
+  );
+}
+```
+
+**Bridge to Different Address:**
+
+```typescript
+const result = await bridge({
+  fromChain: 'Ethereum',
+  toChain: 'Base',
+  amount: '100.00',
+  recipientAddress: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e', // Send to someone else
+  speed: 'FAST',
+});
+```
+
+**Check Route Support:**
+
+```typescript
+const { checkRouteSupport } = useCircleBridge();
+
+const isSupported = await checkRouteSupport('Ethereum', 'Arc');
+if (isSupported) {
+  console.log('Ethereum → Arc bridging is supported!');
+}
+```
+
+**Retry Failed Bridge:**
+
+```typescript
+const { retryBridge } = useCircleBridge();
+
+// If bridge fails, retry it
+if (result.state === 'error') {
+  const retryResult = await retryBridge(result);
+}
+```
+
+### Supported Chains
+
+**Mainnet (17 chains):**
+- Ethereum, Base, Arbitrum, Polygon PoS, Optimism
+- Avalanche, Solana, Linea, Sei, Sonic
+- Unichain, World Chain, XDC, Plume, Ink
+- HyperEVM, Codex
+
+**Testnet (17 chains):**
+- Ethereum Sepolia, Base Sepolia, Arbitrum Sepolia
+- Polygon Amoy, OP Sepolia, Avalanche Fuji
+- Solana Devnet, and more...
+
+### Use Cases for ArcMarket
+
+1. **User Onboarding**
+   - Users have USDC on Ethereum/Base/Polygon
+   - Bridge it to Arc blockchain to use in marketplace
+   - No need to use centralized exchanges
+
+2. **Liquidity Provision**
+   - Bring liquidity from other chains to Arc
+   - Expand user base beyond Arc-native users
+
+3. **Multi-Chain NFT Sales**
+   - Sell NFTs on Arc, accept USDC from any chain
+   - Auto-bridge payments to Arc for settlement
+
+4. **Cross-Chain Marketplace**
+   - Buy NFT on Arc with Ethereum USDC
+   - Bridge happens automatically behind the scenes
+
+### Important Notes
+
+- ⚠️ **Wallet Required**: Requires MetaMask or compatible browser wallet
+- ⚠️ **Gas Fees**: User pays gas on both source and destination chains
+- ⚠️ **USDC Only**: Currently supports USDC transfers only
+- ⚠️ **Time**: FAST ~15 min, SLOW ~30 min (network dependent)
+- ✅ **Native USDC**: Uses Circle's native USDC (not wrapped tokens)
+
+### Error Handling
+
+```typescript
+const { bridge, error } = useCircleBridge();
+
+try {
+  const result = await bridge({
+    fromChain: 'Ethereum',
+    toChain: 'Base',
+    amount: '100.00',
+  });
+
+  if (result.state === 'error') {
+    console.error('Bridge failed:', result.error);
+    // Show user-friendly error message
+  } else if (result.state === 'partial') {
+    console.warn('Partial success:', result.steps);
+    // Some steps succeeded, user can retry
+  }
+} catch (err) {
+  console.error('Bridge error:', err);
+}
+```
 
 ## Smart Contract Platform (Advanced)
 

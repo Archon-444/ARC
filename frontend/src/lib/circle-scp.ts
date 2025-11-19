@@ -5,11 +5,15 @@
  * Server-side only - requires API key and entity secret.
  */
 
+import { getCircleApiKey, getCircleEntitySecret } from './circle-config';
+
 // Circle API key (shared with User-Controlled Wallets)
-export const CIRCLE_API_KEY = process.env.CIRCLE_API_KEY;
+// Automatically selected based on NEXT_PUBLIC_CIRCLE_ENVIRONMENT
+export const CIRCLE_API_KEY = getCircleApiKey();
 
 // Circle entity secret for developer-controlled operations
-export const CIRCLE_ENTITY_SECRET = process.env.CIRCLE_ENTITY_SECRET;
+// Automatically selected based on NEXT_PUBLIC_CIRCLE_ENVIRONMENT
+export const CIRCLE_ENTITY_SECRET = getCircleEntitySecret();
 
 /**
  * Circle Smart Contract Platform Error

@@ -6,10 +6,11 @@
  */
 
 import { W3SSdk } from '@circle-fin/w3s-pw-web-sdk';
+import { getCircleAppId, getCircleEnvironment } from './circle-config';
 
 // Circle SDK App ID (public, frontend)
-// Get this from https://console.circle.com/
-export const CIRCLE_APP_ID = process.env.NEXT_PUBLIC_CIRCLE_APP_ID || '';
+// Automatically selected based on NEXT_PUBLIC_CIRCLE_ENVIRONMENT
+export const CIRCLE_APP_ID = getCircleAppId();
 
 /**
  * Initialize Circle Web SDK
@@ -19,7 +20,10 @@ export const CIRCLE_APP_ID = process.env.NEXT_PUBLIC_CIRCLE_APP_ID || '';
  */
 export function initializeCircleSDK(): W3SSdk | null {
   if (!CIRCLE_APP_ID) {
-    console.warn('Circle App ID not configured. Set NEXT_PUBLIC_CIRCLE_APP_ID in .env');
+    const env = getCircleEnvironment();
+    console.warn(
+      `Circle App ID not configured. Set NEXT_PUBLIC_CIRCLE_APP_ID_${env.toUpperCase()} in .env`
+    );
     return null;
   }
 
@@ -31,7 +35,8 @@ export function initializeCircleSDK(): W3SSdk | null {
       appId: CIRCLE_APP_ID,
     });
 
-    console.log('✅ Circle Web SDK initialized');
+    const env = getCircleEnvironment();
+    console.log(`✅ Circle Web SDK initialized (${env})`);
     return sdk;
   } catch (error) {
     console.error('Failed to initialize Circle Web SDK:', error);
