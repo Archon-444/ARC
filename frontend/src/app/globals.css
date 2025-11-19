@@ -3,11 +3,15 @@
 @tailwind utilities;
 
 :root {
+  /* ========================================
+     PRIMITIVE TOKENS (Base Colors)
+     ======================================== */
   --color-primary-50: #E6F2FF;
   --color-primary-100: #BAE0FF;
   --color-primary-500: #2081E2;
   --color-primary-600: #1868B7;
   --color-primary-700: #0D4F8C;
+  --color-accent-50: #F5F3FF;
   --color-accent-500: #8B5CF6;
   --color-accent-600: #7C3AED;
   --color-neutral-0: #FFFFFF;
@@ -21,21 +25,96 @@
   --color-success: #10B981;
   --color-warning: #F59E0B;
   --color-error: #EF4444;
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
-  --space-10: 2.5rem;
-  --space-12: 3rem;
+  --color-info: #3B82F6;
+
+  /* ========================================
+     SEMANTIC TOKENS (Application Colors)
+     ======================================== */
+  --color-bg-primary: #F9FAFB;
+  --color-bg-secondary: #FFFFFF;
+  --color-bg-tertiary: #F3F4F6;
+  --color-surface: #FFFFFF;
+  --color-surface-elevated: #FFFFFF;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-text-tertiary: #9CA3AF;
+  --color-text-inverse: #FFFFFF;
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-border-hover: rgba(32, 129, 226, 0.3);
+  --color-divider: #E5E7EB;
+
+  /* ========================================
+     COMPONENT TOKENS (Specific Components)
+     ======================================== */
+  --card-bg: var(--color-surface);
+  --card-border: 1px solid var(--color-border);
+  --card-border-radius: 1rem;
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --card-shadow-hover: 0 12px 24px rgba(0, 0, 0, 0.1);
+  --card-shadow-elevated: 0 20px 40px rgba(0, 0, 0, 0.12);
+
+  --button-radius: 9999px;
+  --input-radius: 1rem;
+  --modal-bg: rgba(0, 0, 0, 0.5);
+
+  /* ========================================
+     SPACING SYSTEM
+     ======================================== */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+
+  /* ========================================
+     LAYOUT
+     ======================================== */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
   --container-2xl: 1440px;
+
+  /* ========================================
+     SHADOWS & ELEVATION
+     ======================================== */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.04);
   --shadow-base: 0 10px 40px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.12);
   --shadow-glow: 0 20px 80px rgba(32, 129, 226, 0.2);
+  --shadow-glow-accent: 0 20px 80px rgba(139, 92, 246, 0.2);
+
+  /* ========================================
+     ANIMATION TOKENS
+     ======================================== */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* ========================================
+     Z-INDEX SYSTEM
+     ======================================== */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
+    /* Override primitive tokens */
     --color-neutral-0: #0B1120;
     --color-neutral-50: #0F172A;
     --color-neutral-100: #1E293B;
@@ -44,8 +123,57 @@
     --color-neutral-600: #CBD5F5;
     --color-neutral-800: #E2E8F0;
     --color-neutral-900: #F8FAFC;
+
+    /* Override semantic tokens */
+    --color-bg-primary: #0B1120;
+    --color-bg-secondary: #0F172A;
+    --color-bg-tertiary: #1E293B;
+    --color-surface: #1E293B;
+    --color-surface-elevated: #334155;
+    --color-text-primary: #F8FAFC;
+    --color-text-secondary: #CBD5F5;
+    --color-text-tertiary: #94A3B8;
+    --color-border: rgba(255, 255, 255, 0.1);
+    --color-border-hover: rgba(32, 129, 226, 0.5);
+    --color-divider: #334155;
+
+    /* Override component tokens */
+    --card-bg: var(--color-surface);
+    --card-border: 1px solid var(--color-border);
+    --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    --card-shadow-hover: 0 20px 60px rgba(0, 0, 0, 0.6);
     --shadow-base: 0 10px 40px rgba(0, 0, 0, 0.4);
   }
+}
+
+[data-theme="dark"] {
+  /* Same as dark mode media query, but manually triggered */
+  --color-neutral-0: #0B1120;
+  --color-neutral-50: #0F172A;
+  --color-neutral-100: #1E293B;
+  --color-neutral-200: #334155;
+  --color-neutral-400: #94A3B8;
+  --color-neutral-600: #CBD5F5;
+  --color-neutral-800: #E2E8F0;
+  --color-neutral-900: #F8FAFC;
+
+  --color-bg-primary: #0B1120;
+  --color-bg-secondary: #0F172A;
+  --color-bg-tertiary: #1E293B;
+  --color-surface: #1E293B;
+  --color-surface-elevated: #334155;
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #CBD5F5;
+  --color-text-tertiary: #94A3B8;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-hover: rgba(32, 129, 226, 0.5);
+  --color-divider: #334155;
+
+  --card-bg: var(--color-surface);
+  --card-border: 1px solid var(--color-border);
+  --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  --card-shadow-hover: 0 20px 60px rgba(0, 0, 0, 0.6);
+  --shadow-base: 0 10px 40px rgba(0, 0, 0, 0.4);
 }
 
 @layer base {
@@ -84,12 +212,28 @@
 }
 
 @layer components {
+  /* ========================================
+     CARD COMPONENTS
+     ======================================== */
   .card {
-    @apply rounded-2xl border border-neutral-200/80 bg-white p-6 shadow-lg transition-all duration-300 dark:border-neutral-700 dark:bg-neutral-800;
+    background: var(--card-bg);
+    border: var(--card-border);
+    border-radius: var(--card-border-radius);
+    box-shadow: var(--card-shadow);
+    transition: all var(--transition-base);
   }
 
   .card-hover {
-    @apply hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-primary-500/20;
+    transition: all var(--transition-base);
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--card-shadow-hover);
+  }
+
+  .card-elevated {
+    box-shadow: var(--card-shadow-elevated);
   }
 
   .btn {
