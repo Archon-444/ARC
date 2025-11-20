@@ -16,6 +16,7 @@ import { Search, Clock, TrendingUp, X } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { getSearchSuggestions } from '@/lib/algolia';
 
 interface SearchResult {
   id: string;
@@ -60,7 +61,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     }
   }, [isOpen]);
 
-  // Search functionality (mock - replace with real search)
+  // Search functionality with Algolia
   useEffect(() => {
     if (!query.trim()) {
       setResults([]);
@@ -68,28 +69,45 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     }
 
     setIsLoading(true);
-    const timeoutId = setTimeout(() => {
-      // Mock search results - replace with actual API call
-      const mockResults: SearchResult[] = [
-        {
-          id: '1',
-          type: 'nft',
-          title: `NFT matching "${query}"`,
-          subtitle: 'Test Collection',
-          image: 'https://via.placeholder.com/50',
-          url: '/nft/0x123/1',
-        },
-        {
-          id: '2',
-          type: 'collection',
-          title: `Collection matching "${query}"`,
-          subtitle: '1.2K items',
-          image: 'https://via.placeholder.com/50',
-          url: '/collection/0x456',
-        },
-      ];
-      setResults(mockResults);
-      setIsLoading(false);
+    const timeoutId = setTimeout(async () => {
+      try {
+        const suggestions = await getSearchSuggestions(query, { limit: 8 });
+
+        // Map Algolia results to SearchResult format
+        const mappedResults: SearchResult[] = [
+          ...suggestions.nfts.map((nft) => ({
+            id: nft.objectID,
+            type: 'nft' as const,
+            title: nft.name,
+            subtitle: nft.collectionName,
+            image: nft.image,
+            url: `/nft/${nft.collectionAddress}/${nft.tokenId}`,
+          })),
+          ...suggestions.collections.map((collection) => ({
+            id: collection.objectID,
+            type: 'collection' as const,
+            title: collection.name,
+            subtitle: `${collection.totalSupply.toLocaleString()} items`,
+            image: collection.image,
+            url: `/collection/${collection.address}`,
+          })),
+          ...suggestions.users.map((user) => ({
+            id: user.objectID,
+            type: 'user' as const,
+            title: user.username || user.address.slice(0, 8),
+            subtitle: `${user.nftCount} NFTs owned`,
+            image: user.avatar,
+            url: `/profile/${user.address}`,
+          })),
+        ];
+
+        setResults(mappedResults);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Search error:', error);
+        setResults([]);
+        setIsLoading(false);
+      }
     }, 300);
 
     return () => clearTimeout(timeoutId);
