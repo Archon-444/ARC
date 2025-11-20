@@ -9,6 +9,46 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { getCircleApiKey } from '@/lib/circle-config';
 
+const ETH_ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
+const HEX_DATA_REGEX = /^0x[a-fA-F0-9]*$/;
+const TX_HASH_REGEX = /^0x([A-Fa-f0-9]{64})$/;
+
+type ParsedBody<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: NextResponse };
+
+async function parseJsonBody<T>(request: NextRequest): Promise<ParsedBody<T>> {
+  try {
+    const value = (await request.json()) as T;
+    return { ok: true, value };
+  } catch (error) {
+    console.error('Failed to parse JSON body:', error);
+    return {
+      ok: false,
+      error: NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 }),
+    };
+  }
+}
+
+function isPositiveNumericString(value: unknown): value is string {
+  return typeof value === 'string' && /^\d+(\.\d+)?$/.test(value);
+}
+
+function isOptionalHexData(value: unknown): value is string | undefined {
+  return value === undefined || (typeof value === 'string' && HEX_DATA_REGEX.test(value));
+}
+
+function isOptionalGasLimit(value: unknown): value is string | undefined {
+  return value === undefined || (typeof value === 'string' && /^\d+$/.test(value));
+}
+
+function isOptionalBlockchain(value: unknown): value is string | undefined {
+  return (
+    value === undefined ||
+    (typeof value === 'string' && /^[A-Z0-9-]{1,50}$/.test(value.trim()))
+  );
+}
+
 // Initialize Circle SDK client
 const circleClient = initiateUserControlledWalletsClient({
   apiKey: getCircleApiKey(),
@@ -30,10 +70,23 @@ const circleClient = initiateUserControlledWalletsClient({
  */
 export async function POST(request: NextRequest) {
   try {
-    const { walletId, to, value, data, gasLimit, blockchain } = await request.json();
+    const parsedBody = await parseJsonBody<{
+      walletId?: unknown;
+      to?: unknown;
+      value?: unknown;
+      data?: unknown;
+      gasLimit?: unknown;
+      blockchain?: unknown;
+    }>(request);
+
+    if (!parsedBody.ok) {
+      return parsedBody.error;
+    }
+
+    const { walletId, to, value, data, gasLimit, blockchain } = parsedBody.value;
 
     // Validate required fields
-    if (!walletId || !to) {
+    if (typeof walletId !== 'string' || typeof to !== 'string') {
       return NextResponse.json(
         { error: 'walletId and to address are required' },
         { status: 400 }
@@ -41,9 +94,37 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate address format
-    if (!to.match(/^0x[a-fA-F0-9]{40}$/)) {
+    if (!ETH_ADDRESS_REGEX.test(to)) {
       return NextResponse.json(
         { error: 'Invalid to address' },
+        { status: 400 }
+      );
+    }
+
+    if (value !== undefined && !isPositiveNumericString(value)) {
+      return NextResponse.json(
+        { error: 'value must be a positive numeric string when provided' },
+        { status: 400 }
+      );
+    }
+
+    if (!isOptionalHexData(data)) {
+      return NextResponse.json(
+        { error: 'data must be a hex-encoded string starting with 0x' },
+        { status: 400 }
+      );
+    }
+
+    if (!isOptionalGasLimit(gasLimit)) {
+      return NextResponse.json(
+        { error: 'gasLimit must be an integer string when provided' },
+        { status: 400 }
+      );
+    }
+
+    if (!isOptionalBlockchain(blockchain)) {
+      return NextResponse.json(
+        { error: 'blockchain must contain only uppercase letters, numbers, or hyphens' },
         { status: 400 }
       );
     }
@@ -74,16 +155,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const normalizedValue = typeof value === 'string' ? value : '0';
+    const normalizedData = typeof data === 'string' && data.length > 0 ? data : '0x';
+    const normalizedGasLimit = typeof gasLimit === 'string' ? gasLimit : undefined;
+    const normalizedBlockchain =
+      typeof blockchain === 'string' && blockchain.trim().length > 0
+        ? blockchain.trim()
+        : undefined;
+
     // Create contract execution transaction
     const txResponse = await circleClient.createContractExecutionTransaction({
       walletId,
       contractAddress: to,
-      abiFunctionSignature: data || '0x', // Use provided data or empty for simple transfer
+      abiFunctionSignature: normalizedData, // Use provided data or empty for simple transfer
       abiParameters: [],
-      amount: value || '0',
+      amount: normalizedValue,
       feeLevel: 'MEDIUM',
       // Use Arc blockchain when available, default to ETH-SEPOLIA for testing
-      blockchain: blockchain || 'ETH-SEPOLIA',
+      blockchain: normalizedBlockchain || 'ETH-SEPOLIA',
+      gasLimit: normalizedGasLimit,
     });
 
     if (!txResponse.data) {
@@ -146,6 +236,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (!TX_HASH_REGEX.test(transactionHash)) {
+      return NextResponse.json(
+        { error: 'transactionHash must be a 0x-prefixed 64-byte hash' },
+        { status: 400 }
+      );
+    }
+
     // TODO: Implement actual transaction status check
     // For production, call Circle API or Arc blockchain RPC
 
@@ -182,11 +279,43 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    const { walletId, to, value, data } = await request.json();
+    const parsedBody = await parseJsonBody<{
+      walletId?: unknown;
+      to?: unknown;
+      value?: unknown;
+      data?: unknown;
+    }>(request);
 
-    if (!walletId || !to) {
+    if (!parsedBody.ok) {
+      return parsedBody.error;
+    }
+
+    const { walletId, to, value, data } = parsedBody.value;
+
+    if (typeof walletId !== 'string' || typeof to !== 'string') {
       return NextResponse.json(
         { error: 'walletId and to address are required' },
+        { status: 400 }
+      );
+    }
+
+    if (!ETH_ADDRESS_REGEX.test(to)) {
+      return NextResponse.json(
+        { error: 'Invalid to address' },
+        { status: 400 }
+      );
+    }
+
+    if (value !== undefined && !isPositiveNumericString(value)) {
+      return NextResponse.json(
+        { error: 'value must be a positive numeric string when provided' },
+        { status: 400 }
+      );
+    }
+
+    if (!isOptionalHexData(data)) {
+      return NextResponse.json(
+        { error: 'data must be a hex-encoded string starting with 0x' },
         { status: 400 }
       );
     }
