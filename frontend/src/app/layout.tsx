@@ -12,6 +12,8 @@ import { ToastProvider } from '@/hooks/useToast';
 import { CircleWalletProvider } from '@/hooks/useCircleWallet';
 import CommandPalette from '@/components/navigation/CommandPalette';
 import { CommandPaletteProvider } from '@/hooks/useCommandPalette';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { SkipLink } from '@/components/ui/SkipLink';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,30 +42,30 @@ export default function RootLayout({
         <title>ArcMarket - NFT Marketplace</title>
       </head>
       <body className="antialiased">
-        <SessionProvider>
-          <WagmiProvider config={config}>
-            <QueryClientProvider client={queryClient}>
-              <RainbowKitProvider>
-                <CircleWalletProvider>
-                  <ToastProvider>
-                    <CommandPaletteProvider>
-                      <a href="#main-content" className="skip-link">
-                        Skip to content
-                      </a>
-                      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
-                        <Navbar />
-                        <CommandPalette />
-                        <main id="main-content" className="pb-24">
-                          {children}
-                        </main>
-                      </div>
-                    </CommandPaletteProvider>
-                  </ToastProvider>
-                </CircleWalletProvider>
-              </RainbowKitProvider>
-            </QueryClientProvider>
-          </WagmiProvider>
-        </SessionProvider>
+        <ErrorBoundary>
+          <SessionProvider>
+            <WagmiProvider config={config}>
+              <QueryClientProvider client={queryClient}>
+                <RainbowKitProvider>
+                  <CircleWalletProvider>
+                    <ToastProvider>
+                      <CommandPaletteProvider>
+                        <SkipLink />
+                        <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
+                          <Navbar />
+                          <CommandPalette />
+                          <main id="main-content" className="pb-24">
+                            {children}
+                          </main>
+                        </div>
+                      </CommandPaletteProvider>
+                    </ToastProvider>
+                  </CircleWalletProvider>
+                </RainbowKitProvider>
+              </QueryClientProvider>
+            </WagmiProvider>
+          </SessionProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
