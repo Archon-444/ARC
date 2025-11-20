@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { Search, Clock, Flame, Folder, Users, Sparkles, X } from 'lucide-react';
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, useState, useEffect, useRef, type ReactNode } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCommandPalette } from '@/hooks/useCommandPalette';
 import { formatUSDC } from '@/lib/utils';
 
@@ -60,6 +61,9 @@ const MOCK_DATA: CommandPaletteItem[] = [
 
 export default function CommandPalette() {
   const { isOpen, query, setQuery, close, recentSearches, trendingSearches, addRecentSearch } = useCommandPalette();
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const filteredItems = useMemo(() => {
     if (!query) {
@@ -74,27 +78,102 @@ export default function CommandPalette() {
     close();
   };
 
+  // Reset selected index when query changes
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [query]);
+
+  // Focus input when modal opens
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setSelectedIndex((prev) => (prev + 1) % filteredItems.length);
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setSelectedIndex((prev) => (prev - 1 + filteredItems.length) % filteredItems.length);
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (filteredItems[selectedIndex]) {
+            handleSelect(filteredItems[selectedIndex].title);
+            // Navigate to the selected item
+            window.location.href = filteredItems[selectedIndex].href;
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, filteredItems, selectedIndex]);
+
+  // Scroll selected item into view
+  useEffect(() => {
+    if (resultsRef.current) {
+      const selectedElement = resultsRef.current.children[selectedIndex] as HTMLElement;
+      if (selectedElement) {
+        selectedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [selectedIndex]);
+
   return (
-    <div
-      aria-hidden={!isOpen}
-      className={`fixed inset-0 z-50 transition-all duration-200 ${
-        isOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
-      }`}
-    >
-      <div className="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" onClick={close} />
-      <div className="absolute left-1/2 top-20 w-full max-w-3xl -translate-x-1/2 px-4">
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/90 shadow-2xl backdrop-blur-xl dark:bg-neutral-900/95">
-          <div className="flex items-center gap-3 border-b border-neutral-100/60 px-4 py-3 dark:border-neutral-800">
-            <Search className="h-5 w-5 text-neutral-400" />
-            <input
-              autoFocus
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search collections, NFTs, users or chains"
-              className="flex-1 bg-transparent text-base text-neutral-900 placeholder:text-neutral-400 focus:outline-none dark:text-white"
-            />
-            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">ESC</span>
-          </div>
+    <AnimatePresence>
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-50"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Command palette"
+        >
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm"
+            onClick={close}
+          />
+
+          {/* Modal */}
+          <div className="absolute left-1/2 top-20 w-full max-w-3xl -translate-x-1/2 px-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -20 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="overflow-hidden rounded-2xl border border-white/10 bg-white/90 shadow-2xl backdrop-blur-xl dark:bg-neutral-900/95"
+            >
+              <div className="flex items-center gap-3 border-b border-neutral-100/60 px-4 py-3 dark:border-neutral-800">
+                <Search className="h-5 w-5 text-neutral-400" />
+                <input
+                  ref={inputRef}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search collections, NFTs, users or chains"
+                  className="flex-1 bg-transparent text-base text-neutral-900 placeholder:text-neutral-400 focus:outline-none dark:text-white"
+                  role="combobox"
+                  aria-expanded="true"
+                  aria-controls="command-palette-results"
+                  aria-activedescendant={filteredItems[selectedIndex] ? `result-${selectedIndex}` : undefined}
+                />
+                <kbd className="hidden sm:inline-flex items-center gap-1 rounded border border-neutral-300 bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
+                  ESC
+                </kbd>
+              </div>
 
           {recentSearches.length > 0 && !query && (
             <div className="border-b border-neutral-100/60 px-4 py-3 text-xs uppercase tracking-wide text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
@@ -131,55 +210,103 @@ export default function CommandPalette() {
             </div>
           )}
 
-          <div className="max-h-[420px] overflow-y-auto">
-            {filteredItems.length === 0 && (
-              <div className="flex flex-col items-center gap-3 px-6 py-12 text-center text-neutral-500 dark:text-neutral-400">
-                <X className="h-10 w-10" />
-                <p className="text-base font-medium">No matches</p>
-                <p className="text-sm">Try a different query or explore trending searches.</p>
-              </div>
-            )}
-
-            {filteredItems.length > 0 && (
-              <div className="divide-y divide-neutral-100/70 dark:divide-neutral-800">
-                {filteredItems.map((item) => (
-                  <Link
-                    key={item.title}
-                    href={item.href}
-                    onClick={() => handleSelect(item.title)}
-                    className="group flex items-center gap-4 px-5 py-4 transition hover:bg-primary-50/60 dark:hover:bg-primary-500/10"
+              <div className="max-h-[420px] overflow-y-auto">
+                {filteredItems.length === 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col items-center gap-3 px-6 py-12 text-center text-neutral-500 dark:text-neutral-400"
                   >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 text-neutral-700 group-hover:bg-primary-600 group-hover:text-white dark:bg-neutral-800 dark:text-neutral-200">
-                      {item.icon}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-neutral-900 group-hover:text-primary-600 dark:text-white">
-                        {item.title}
-                      </p>
-                      {item.subtitle && (
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400">{item.subtitle}</p>
-                      )}
-                    </div>
-                    {item.metric && (
-                      <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-300">{item.metric}</span>
-                    )}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
+                    <X className="h-10 w-10" />
+                    <p className="text-base font-medium">No matches</p>
+                    <p className="text-sm">Try a different query or explore trending searches.</p>
+                  </motion.div>
+                )}
 
-          <div className="flex items-center justify-between border-t border-neutral-100/60 px-4 py-3 text-xs text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Cmd/Ctrl + K to open anywhere
-            </div>
-            <button onClick={close} className="flex items-center gap-2 rounded-full border border-neutral-200 px-3 py-1 hover:border-neutral-400 dark:border-neutral-700">
-              Close
-            </button>
+                {filteredItems.length > 0 && (
+                  <div
+                    ref={resultsRef}
+                    id="command-palette-results"
+                    role="listbox"
+                    className="divide-y divide-neutral-100/70 dark:divide-neutral-800"
+                  >
+                    {filteredItems.map((item, index) => (
+                      <Link
+                        key={item.title}
+                        id={`result-${index}`}
+                        href={item.href}
+                        onClick={() => handleSelect(item.title)}
+                        role="option"
+                        aria-selected={index === selectedIndex}
+                        className={`group flex items-center gap-4 px-5 py-4 transition ${
+                          index === selectedIndex
+                            ? 'bg-primary-50/80 dark:bg-primary-500/20'
+                            : 'hover:bg-primary-50/60 dark:hover:bg-primary-500/10'
+                        }`}
+                      >
+                        <div
+                          className={`flex h-10 w-10 items-center justify-center rounded-xl transition ${
+                            index === selectedIndex
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-neutral-100 text-neutral-700 group-hover:bg-primary-600 group-hover:text-white dark:bg-neutral-800 dark:text-neutral-200'
+                          }`}
+                        >
+                          {item.icon}
+                        </div>
+                        <div className="flex-1">
+                          <p
+                            className={`text-sm font-semibold transition ${
+                              index === selectedIndex
+                                ? 'text-primary-600 dark:text-primary-400'
+                                : 'text-neutral-900 group-hover:text-primary-600 dark:text-white'
+                            }`}
+                          >
+                            {item.title}
+                          </p>
+                          {item.subtitle && (
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400">{item.subtitle}</p>
+                          )}
+                        </div>
+                        {item.metric && (
+                          <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-300">
+                            {item.metric}
+                          </span>
+                        )}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between border-t border-neutral-100/60 px-4 py-3 text-xs text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    <kbd className="rounded border border-neutral-300 bg-neutral-100 px-1.5 py-0.5 font-mono text-[10px] dark:border-neutral-700 dark:bg-neutral-800">
+                      ↑
+                    </kbd>
+                    <kbd className="rounded border border-neutral-300 bg-neutral-100 px-1.5 py-0.5 font-mono text-[10px] dark:border-neutral-700 dark:bg-neutral-800">
+                      ↓
+                    </kbd>
+                    <span className="ml-1">Navigate</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <kbd className="rounded border border-neutral-300 bg-neutral-100 px-1.5 py-0.5 font-mono text-[10px] dark:border-neutral-700 dark:bg-neutral-800">
+                      ↵
+                    </kbd>
+                    <span className="ml-1">Select</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <kbd className="rounded border border-neutral-300 bg-neutral-100 px-1.5 py-0.5 font-mono text-[10px] dark:border-neutral-700 dark:bg-neutral-800">
+                      ESC
+                    </kbd>
+                    <span className="ml-1">Close</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 }

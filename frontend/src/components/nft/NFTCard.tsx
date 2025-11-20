@@ -9,8 +9,9 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Clock, Heart } from 'lucide-react';
+import { Clock, Heart, Share2, MoreVertical } from 'lucide-react';
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import type { NFT, Listing, Auction } from '@/types';
 import {
   cn,
@@ -32,6 +33,46 @@ interface NFTCardProps {
   onClick?: () => void;
 }
 
+// Animation variants
+const cardVariants = {
+  rest: {
+    scale: 1,
+    y: 0,
+    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+  },
+  hover: {
+    scale: 1.02,
+    y: -4,
+    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+    transition: {
+      duration: 0.2,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  },
+};
+
+const imageVariants = {
+  rest: { scale: 1 },
+  hover: { scale: 1.05, transition: { duration: 0.3 } },
+};
+
+const quickActionsVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.2,
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const actionButtonVariants = {
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: { opacity: 1, scale: 1 },
+};
+
 export function NFTCard({
   nft,
   listing,
@@ -43,6 +84,7 @@ export function NFTCard({
 }: NFTCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const imageUrl = getImageUrl(nft.image);
   const nftUrl = getNFTUrl(nft.collection.id, nft.tokenId);
@@ -50,6 +92,18 @@ export function NFTCard({
   const handleClick = () => {
     if (onClick) {
       onClick();
+    }
+  };
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Share functionality
+    if (navigator.share) {
+      navigator.share({
+        title: nft.name || `NFT #${nft.tokenId}`,
+        url: window.location.origin + nftUrl,
+      });
     }
   };
 
@@ -62,9 +116,15 @@ export function NFTCard({
     : 'Price';
 
   return (
-    <div
+    <motion.div
+      initial="rest"
+      whileHover="hover"
+      animate="rest"
+      variants={cardVariants}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
       className={cn(
-        'group relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all hover:shadow-lg',
+        'group relative overflow-hidden rounded-xl border border-gray-200/60 bg-white',
         onClick && 'cursor-pointer',
         className
       )}
@@ -72,45 +132,90 @@ export function NFTCard({
     >
       {/* Image Container */}
       <Link href={nftUrl} className="block aspect-square relative overflow-hidden bg-gray-100">
-        {!imageError ? (
-          <Image
-            src={imageUrl}
-            alt={nft.name || `NFT #${nft.tokenId}`}
-            fill
-            className="object-cover transition-transform group-hover:scale-105"
-            onError={() => setImageError(true)}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-            <span className="text-4xl font-bold text-gray-400">#{nft.tokenId}</span>
-          </div>
-        )}
+        <motion.div variants={imageVariants} className="h-full w-full">
+          {!imageError ? (
+            <Image
+              src={imageUrl}
+              alt={nft.name || `NFT #${nft.tokenId}`}
+              fill
+              className="object-cover"
+              onError={() => setImageError(true)}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+              <span className="text-4xl font-bold text-gray-400">#{nft.tokenId}</span>
+            </div>
+          )}
+        </motion.div>
 
         {/* Auction Badge */}
         {auction && (
-          <div className="absolute top-3 left-3">
-            <div className="flex items-center gap-1 rounded-full bg-purple-600 px-3 py-1 text-xs font-medium text-white shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="absolute top-3 left-3"
+          >
+            <div className="flex items-center gap-1 rounded-full bg-purple-600 px-3 py-1 text-xs font-medium text-white shadow-lg backdrop-blur-sm">
               <Clock className="h-3 w-3" />
               Auction
             </div>
-          </div>
+          </motion.div>
         )}
 
-        {/* Like Button */}
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsLiked(!isLiked);
-          }}
-          className="absolute top-3 right-3 rounded-full bg-white/90 p-2 backdrop-blur-sm transition-all hover:bg-white hover:scale-110"
-          aria-label={isLiked ? 'Unlike' : 'Like'}
-        >
-          <Heart
-            className={cn('h-4 w-4', isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600')}
-          />
-        </button>
+        {/* Quick Actions - Top Right */}
+        <div className="absolute top-3 right-3 flex flex-col gap-2">
+          {/* Like Button - Always visible */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsLiked(!isLiked);
+            }}
+            className="rounded-full bg-white/90 p-2 backdrop-blur-sm shadow-sm transition-colors hover:bg-white"
+            aria-label={isLiked ? 'Unlike' : 'Like'}
+          >
+            <Heart
+              className={cn('h-4 w-4 transition-colors', isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600')}
+            />
+          </motion.button>
+
+          {/* Additional quick actions - Show on hover */}
+          <motion.div
+            initial="hidden"
+            animate={isHovered ? 'visible' : 'hidden'}
+            variants={quickActionsVariants}
+            className="flex flex-col gap-2"
+          >
+            <motion.button
+              variants={actionButtonVariants}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleShare}
+              className="rounded-full bg-white/90 p-2 backdrop-blur-sm shadow-sm transition-colors hover:bg-white"
+              aria-label="Share"
+            >
+              <Share2 className="h-4 w-4 text-gray-600" />
+            </motion.button>
+
+            <motion.button
+              variants={actionButtonVariants}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // More actions menu
+              }}
+              className="rounded-full bg-white/90 p-2 backdrop-blur-sm shadow-sm transition-colors hover:bg-white"
+              aria-label="More options"
+            >
+              <MoreVertical className="h-4 w-4 text-gray-600" />
+            </motion.button>
+          </motion.div>
+        </div>
 
         {/* Auction Time Remaining Overlay */}
         {auction && (
@@ -181,7 +286,7 @@ export function NFTCard({
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
