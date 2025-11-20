@@ -434,9 +434,12 @@ export function setLocalStorage<T>(key: string, value: T): void {
 }
 
 // ============================================
-// Debounce Utility
+// Performance Utilities
 // ============================================
 
+/**
+ * Debounce function execution
+ */
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
@@ -452,4 +455,98 @@ export function debounce<T extends (...args: any[]) => any>(
     if (timeout) clearTimeout(timeout);
     timeout = setTimeout(later, wait);
   };
+}
+
+/**
+ * Throttle function execution
+ */
+export function throttle<T extends (...args: any[]) => any>(
+  func: T,
+  limit: number
+): (...args: Parameters<T>) => void {
+  let inThrottle: boolean;
+
+  return function executedFunction(...args: Parameters<T>) {
+    if (!inThrottle) {
+      func(...args);
+      inThrottle = true;
+      setTimeout(() => (inThrottle = false), limit);
+    }
+  };
+}
+
+// ============================================
+// Browser Utilities
+// ============================================
+
+/**
+ * Copy text to clipboard
+ */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (err) {
+    console.error('Failed to copy:', err);
+    return false;
+  }
+}
+
+/**
+ * Get optimized image URL
+ */
+export function getOptimizedImageUrl(url: string, width?: number): string {
+  // Add image optimization parameters for supported providers
+  if (url.includes('ipfs.io') && width) {
+    return `${url}?w=${width}&auto=format`;
+  }
+  if (url.includes('cloudinary.com') && width) {
+    return url.replace('/upload/', `/upload/w_${width},f_auto,q_auto/`);
+  }
+  return url;
+}
+
+// ============================================
+// Price Calculation Utilities
+// ============================================
+
+/**
+ * Calculate price change percentage
+ */
+export function calculatePriceChange(current: string, previous: string): number {
+  const currentNum = Number(current) / 1e6;
+  const previousNum = Number(previous) / 1e6;
+
+  if (previousNum === 0) return 0;
+  return ((currentNum - previousNum) / previousNum) * 100;
+}
+
+/**
+ * Calculate royalty amount
+ */
+export function calculateRoyalty(price: string, royaltyBps: number): string {
+  const priceNum = BigInt(price);
+  const royalty = (priceNum * BigInt(royaltyBps)) / BigInt(10000);
+  return royalty.toString();
+}
+
+/**
+ * Format percentage with sign
+ */
+export function formatPercent(value: number, decimals: number = 2): string {
+  return `${value >= 0 ? '+' : ''}${value.toFixed(decimals)}%`;
+}
+
+/**
+ * Format time ago (compact)
+ */
+export function formatTimeAgo(timestamp: number): string {
+  const seconds = Math.floor(Date.now() / 1000 - timestamp);
+
+  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  if (seconds < 2592000) return `${Math.floor(seconds / 86400)}d ago`;
+  if (seconds < 31536000) return `${Math.floor(seconds / 2592000)}mo ago`;
+  return `${Math.floor(seconds / 31536000)}y ago`;
 }
