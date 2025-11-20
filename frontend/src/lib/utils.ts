@@ -240,6 +240,23 @@ export function formatPercentage(value: number, decimals: number = 2): string {
   return `${value.toFixed(decimals)}%`;
 }
 
+/**
+ * Format large numbers in compact notation (1K, 1M, 1B)
+ */
+export function formatCompactNumber(num: number | string): string {
+  const value = typeof num === 'string' ? parseFloat(num) : num;
+
+  if (value >= 1_000_000_000) {
+    return `${(value / 1_000_000_000).toFixed(1)}B`;
+  } else if (value >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(1)}M`;
+  } else if (value >= 1_000) {
+    return `${(value / 1_000).toFixed(1)}K`;
+  } else {
+    return value.toFixed(0);
+  }
+}
+
 // ============================================
 // Validation
 // ============================================
