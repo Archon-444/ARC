@@ -3,7 +3,12 @@
  *
  * Tracks Core Web Vitals and custom metrics
  * Helps identify performance bottlenecks
+ * Includes React hooks for performance optimization
  */
+
+'use client';
+
+import { useEffect, useRef, useCallback, useState } from 'react';
 
 export interface PerformanceMetric {
   name: string;
@@ -319,4 +324,248 @@ export function initPerformanceMonitoring() {
   if (process.env.NODE_ENV === 'development') {
     setInterval(logMemoryUsage, 30000); // Every 30 seconds
   }
+}
+
+/**
+ * ============================================
+ * REACT HOOKS FOR PERFORMANCE OPTIMIZATION
+ * ============================================
+ */
+
+/**
+ * Debounce Hook
+ *
+ * Delays function execution until after a specified delay
+ * Perfect for search inputs, resize handlers, etc.
+ */
+export function useDebounce<T extends (...args: any[]) => any>(
+  callback: T,
+  delay: number
+): T {
+  const timeoutRef = useRef<NodeJS.Timeout>();
+
+  const debouncedCallback = useCallback(
+    (...args: Parameters<T>) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      timeoutRef.current = setTimeout(() => {
+        callback(...args);
+      }, delay);
+    },
+    [callback, delay]
+  ) as T;
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  return debouncedCallback;
+}
+
+/**
+ * Throttle Hook
+ *
+ * Limits function execution to once per specified delay
+ * Perfect for scroll handlers, mouse move events, etc.
+ */
+export function useThrottle<T extends (...args: any[]) => any>(
+  callback: T,
+  delay: number
+): T {
+  const lastRan = useRef(Date.now());
+
+  const throttledCallback = useCallback(
+    (...args: Parameters<T>) => {
+      if (Date.now() - lastRan.current >= delay) {
+        callback(...args);
+        lastRan.current = Date.now();
+      }
+    },
+    [callback, delay]
+  ) as T;
+
+  return throttledCallback;
+}
+
+/**
+ * Intersection Observer Hook
+ *
+ * Detects when an element enters the viewport
+ * Perfect for lazy loading images, infinite scroll, analytics
+ */
+export function useIntersectionObserver(
+  elementRef: React.RefObject<Element>,
+  options: IntersectionObserverInit = {}
+) {
+  const [isIntersecting, setIsIntersecting] = useState(false);
+  const [hasIntersected, setHasIntersected] = useState(false);
+
+  useEffect(() => {
+    const element = elementRef.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsIntersecting(entry.isIntersecting);
+        if (entry.isIntersecting && !hasIntersected) {
+          setHasIntersected(true);
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '50px',
+        ...options,
+      }
+    );
+
+    observer.observe(element);
+
+    return () => {
+      observer.unobserve(element);
+    };
+  }, [elementRef, options, hasIntersected]);
+
+  return { isIntersecting, hasIntersected };
+}
+
+/**
+ * Prefetch Hook
+ *
+ * Prefetches resources on hover for faster navigation
+ * Perfect for link prefetching, image preloading
+ */
+export function usePrefetch() {
+  const prefetchedUrls = useRef(new Set<string>());
+
+  const prefetch = useCallback((url: string) => {
+    if (prefetchedUrls.current.has(url)) return;
+
+    const link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.href = url;
+    link.as = 'document';
+    document.head.appendChild(link);
+
+    prefetchedUrls.current.add(url);
+  }, []);
+
+  const prefetchImage = useCallback((src: string) => {
+    if (prefetchedUrls.current.has(src)) return;
+
+    const link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.href = src;
+    link.as = 'image';
+    document.head.appendChild(link);
+
+    prefetchedUrls.current.add(src);
+  }, []);
+
+  return { prefetch, prefetchImage };
+}
+
+/**
+ * Idle Callback Hook
+ *
+ * Executes callback when browser is idle
+ * Perfect for non-critical work like analytics, preloading
+ */
+export function useIdleCallback(callback: () => void, deps: React.DependencyList = []) {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleIdle = () => {
+      callback();
+    };
+
+    if ('requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(handleIdle);
+      return () => window.cancelIdleCallback(id);
+    } else {
+      // Fallback for browsers without requestIdleCallback
+      const id = setTimeout(handleIdle, 1);
+      return () => clearTimeout(id);
+    }
+  }, deps); // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+/**
+ * Media Query Hook
+ *
+ * Detects media query changes
+ * Perfect for responsive behavior
+ */
+export function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    setMatches(media.matches);
+
+    const listener = (e: MediaQueryListEvent) => {
+      setMatches(e.matches);
+    };
+
+    media.addEventListener('change', listener);
+    return () => media.removeEventListener('change', listener);
+  }, [query]);
+
+  return matches;
+}
+
+/**
+ * Page Visibility Hook
+ *
+ * Detects when page becomes visible/hidden
+ * Perfect for pausing/resuming work
+ */
+export function usePageVisibility(): boolean {
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsVisible(!document.hidden);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  return isVisible;
+}
+
+/**
+ * Network Status Hook
+ *
+ * Detects online/offline status
+ * Perfect for handling network errors
+ */
+export function useNetworkStatus() {
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Set initial state
+    setIsOnline(navigator.onLine);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  return isOnline;
 }
