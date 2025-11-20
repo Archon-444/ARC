@@ -1,0 +1,872 @@
+openapi: 3.0.0
+info:
+  title: ArcMarket API
+  description: API specification for ArcMarket NFT Marketplace
+  version: 1.0.0
+  contact:
+    name: ArcMarket Team
+    url: https://arcmarket.io
+
+servers:
+  - url: https://api.arcmarket.io/v1
+    description: Production server
+  - url: http://localhost:3001/v1
+    description: Development server
+
+components:
+  schemas:
+    NFT:
+      type: object
+      required:
+        - id
+        - tokenId
+        - contractAddress
+        - name
+        - image
+        - collection
+        - owner
+      properties:
+        id:
+          type: string
+          description: Internal NFT ID
+        tokenId:
+          type: string
+          description: On-chain token ID
+        contractAddress:
+          type: string
+          description: NFT contract address
+        name:
+          type: string
+        description:
+          type: string
+        image:
+          type: string
+          format: uri
+        collection:
+          $ref: '#/components/schemas/Collection'
+        owner:
+          type: string
+          description: Owner wallet address
+        creator:
+          type: string
+          description: Creator wallet address
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attribute'
+        price:
+          type: string
+          description: Current listing price in USDC
+        listingId:
+          type: string
+          description: Active listing ID if listed
+
+    Collection:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        image:
+          type: string
+          format: uri
+        banner:
+          type: string
+          format: uri
+        verified:
+          type: boolean
+        creator:
+          type: string
+        creatorAddress:
+          type: string
+        stats:
+          $ref: '#/components/schemas/CollectionStats'
+        socials:
+          $ref: '#/components/schemas/Socials'
+
+    CollectionStats:
+      type: object
+      properties:
+        floorPrice:
+          type: string
+        totalVolume:
+          type: string
+        owners:
+          type: integer
+        items:
+          type: integer
+        listed:
+          type: integer
+        royalty:
+          type: number
+        change24h:
+          type: object
+          properties:
+            floorPrice:
+              type: number
+            volume:
+              type: number
+            sales:
+              type: number
+
+    Attribute:
+      type: object
+      required:
+        - trait_type
+        - value
+      properties:
+        trait_type:
+          type: string
+        value:
+          type: string
+        rarity:
+          type: number
+          description: Percentage rarity (0-100)
+
+    Offer:
+      type: object
+      required:
+        - id
+        - nftId
+        - offerer
+        - price
+        - expiresAt
+        - createdAt
+        - status
+      properties:
+        id:
+          type: string
+        nftId:
+          type: string
+        offerer:
+          type: string
+          description: Offerer wallet address
+        offererUsername:
+          type: string
+        offererAvatar:
+          type: string
+          format: uri
+        price:
+          type: string
+          description: Offer price in USDC
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [pending, accepted, cancelled, expired]
+        onChainOfferId:
+          type: string
+          description: On-chain offer ID
+
+    Activity:
+      type: object
+      required:
+        - id
+        - type
+        - nftId
+        - from
+        - timestamp
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [sale, listing, transfer, offer, offer_accepted, bid, bid_accepted, cancel_listing, cancel_offer]
+        nftId:
+          type: string
+        from:
+          $ref: '#/components/schemas/User'
+        to:
+          $ref: '#/components/schemas/User'
+        price:
+          type: string
+          description: Transaction price in USDC
+        timestamp:
+          type: integer
+          description: Unix timestamp
+        txHash:
+          type: string
+          description: Transaction hash
+
+    User:
+      type: object
+      required:
+        - address
+      properties:
+        address:
+          type: string
+        username:
+          type: string
+        avatar:
+          type: string
+          format: uri
+        verified:
+          type: boolean
+
+    SearchResult:
+      type: object
+      properties:
+        nfts:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              image:
+                type: string
+              collectionName:
+                type: string
+              price:
+                type: string
+        collections:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              image:
+                type: string
+              verified:
+                type: boolean
+              floorPrice:
+                type: string
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+
+    AnalyticsVolume:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              volume:
+                type: number
+              sales:
+                type: integer
+              avgPrice:
+                type: number
+        summary:
+          type: object
+          properties:
+            totalVolume:
+              type: string
+            totalSales:
+              type: integer
+            avgPrice:
+              type: string
+            change24h:
+              type: number
+
+    Socials:
+      type: object
+      properties:
+        twitter:
+          type: string
+        discord:
+          type: string
+        website:
+          type: string
+
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+        code:
+          type: string
+        details:
+          type: object
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+    WalletSignature:
+      type: apiKey
+      in: header
+      name: X-Wallet-Signature
+
+paths:
+  # NFT Endpoints
+  /nft/{id}:
+    get:
+      summary: Get NFT details
+      tags:
+        - NFT
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: NFT object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NFT'
+        404:
+          description: NFT not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /nft/{contractAddress}/{tokenId}/price-history:
+    get:
+      summary: Get price history for NFT
+      tags:
+        - NFT
+      parameters:
+        - name: contractAddress
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tokenId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d, 1y, all]
+            default: 30d
+      responses:
+        200:
+          description: Price history data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        timestamp:
+                          type: integer
+                        price:
+                          type: string
+                        eventType:
+                          type: string
+                          enum: [sale, listing]
+                        txHash:
+                          type: string
+                  stats:
+                    type: object
+                    properties:
+                      minPrice:
+                        type: string
+                      maxPrice:
+                        type: string
+                      avgPrice:
+                        type: string
+                      currentPrice:
+                        type: string
+                      priceChange:
+                        type: number
+
+  # Collection Endpoints
+  /collection/{slug}:
+    get:
+      summary: Get collection details
+      tags:
+        - Collection
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Collection object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+        404:
+          description: Collection not found
+
+  /collection/{slug}/nfts:
+    get:
+      summary: Get NFTs in collection
+      tags:
+        - Collection
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [price_low, price_high, recently_listed, recently_created, most_viewed, ending_soon]
+      responses:
+        200:
+          description: List of NFTs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nfts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NFT'
+                  total:
+                    type: integer
+                  hasMore:
+                    type: boolean
+
+  /collection/{slug}/stats:
+    get:
+      summary: Get collection statistics
+      tags:
+        - Collection
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Collection statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectionStats'
+
+  # Offer Endpoints
+  /offers:
+    post:
+      summary: Create new offer
+      tags:
+        - Offers
+      security:
+        - WalletSignature: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nftId
+                - contractAddress
+                - tokenId
+                - price
+                - expirationDays
+              properties:
+                nftId:
+                  type: string
+                contractAddress:
+                  type: string
+                tokenId:
+                  type: string
+                price:
+                  type: string
+                  description: Price in USDC (with 6 decimals)
+                expirationDays:
+                  type: integer
+                  minimum: 1
+                  maximum: 30
+                signature:
+                  type: string
+      responses:
+        201:
+          description: Offer created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  offerId:
+                    type: string
+                  status:
+                    type: string
+                  requiresApproval:
+                    type: boolean
+                  approvalTxData:
+                    type: object
+                    properties:
+                      to:
+                        type: string
+                      data:
+                        type: string
+                      value:
+                        type: string
+        400:
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /nft/{id}/offers:
+    get:
+      summary: Get offers for NFT
+      tags:
+        - Offers
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: List of offers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Offer'
+
+  /offers/{offerId}/accept:
+    post:
+      summary: Accept offer (owner only)
+      tags:
+        - Offers
+      security:
+        - WalletSignature: []
+      parameters:
+        - name: offerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Offer accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  txHash:
+                    type: string
+                  status:
+                    type: string
+        403:
+          description: Not authorized
+
+  /offers/{offerId}/cancel:
+    post:
+      summary: Cancel offer (offerer only)
+      tags:
+        - Offers
+      security:
+        - WalletSignature: []
+      parameters:
+        - name: offerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Offer cancelled
+
+  # Activity Endpoints
+  /activity:
+    get:
+      summary: Get activity feed
+      tags:
+        - Activity
+      parameters:
+        - name: nftId
+          in: query
+          schema:
+            type: string
+        - name: collectionId
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [sale, listing, transfer, offer, bid, cancel_listing, cancel_offer]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        200:
+          description: Activity feed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activities:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Activity'
+                  hasMore:
+                    type: boolean
+                  total:
+                    type: integer
+
+  # Search Endpoints
+  /search/autocomplete:
+    post:
+      summary: Search autocomplete
+      tags:
+        - Search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                types:
+                  type: array
+                  items:
+                    type: string
+                    enum: [nft, collection, user]
+                  default: [nft, collection, user]
+                limit:
+                  type: integer
+                  default: 10
+      responses:
+        200:
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResult'
+
+  # Analytics Endpoints
+  /analytics/volume:
+    get:
+      summary: Get volume data
+      tags:
+        - Analytics
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d, 1y, all]
+            default: 30d
+        - name: collectionId
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Volume data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsVolume'
+
+  /analytics/sales-distribution:
+    get:
+      summary: Get sales distribution by price range
+      tags:
+        - Analytics
+      parameters:
+        - name: collectionId
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Sales distribution
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    range:
+                      type: string
+                    count:
+                      type: integer
+                    percentage:
+                      type: number
+
+  /analytics/holder-stats:
+    get:
+      summary: Get holder statistics
+      tags:
+        - Analytics
+      parameters:
+        - name: collectionId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Holder statistics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    range:
+                      type: string
+                    holders:
+                      type: integer
+
+  /analytics/top-sales:
+    get:
+      summary: Get top sales
+      tags:
+        - Analytics
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: collectionId
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Top sales
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    nft:
+                      $ref: '#/components/schemas/NFT'
+                    price:
+                      type: string
+                    buyer:
+                      type: string
+                    seller:
+                      type: string
+                    timestamp:
+                      type: integer
+
+  # User Endpoints
+  /user/{address}:
+    get:
+      summary: Get user profile
+      tags:
+        - User
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: User profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  address:
+                    type: string
+                  username:
+                    type: string
+                  bio:
+                    type: string
+                  avatar:
+                    type: string
+                  banner:
+                    type: string
+                  verified:
+                    type: boolean
+                  social:
+                    $ref: '#/components/schemas/Socials'
+                  stats:
+                    type: object
+                    properties:
+                      owned:
+                        type: integer
+                      created:
+                        type: integer
+                      favorited:
+                        type: integer
+                      volumeTraded:
+                        type: string
+
+tags:
+  - name: NFT
+    description: NFT operations
+  - name: Collection
+    description: Collection operations
+  - name: Offers
+    description: Offer management
+  - name: Activity
+    description: Activity feed
+  - name: Search
+    description: Search operations
+  - name: Analytics
+    description: Analytics and insights
+  - name: User
+    description: User operations
