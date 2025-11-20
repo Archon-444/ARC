@@ -12,6 +12,10 @@ import { Address, USDC_DECIMALS } from '@/types';
 // CSS Class Utilities
 // ============================================
 
+/**
+ * Combine class names with clsx
+ * Note: For Tailwind class merging, consider using tailwind-merge
+ */
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
 }
