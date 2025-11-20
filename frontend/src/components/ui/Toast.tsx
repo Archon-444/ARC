@@ -6,9 +6,11 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, createContext, useContext, useCallback, ReactNode } from 'react';
 import { X, CheckCircle2, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn, getTransactionUrl } from '@/lib/utils';
+import { toastVariants } from '@/lib/animations';
 import type { TransactionHash } from '@/types';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning' | 'pending';
@@ -28,24 +30,15 @@ interface ToastItemProps {
 }
 
 function ToastItem({ toast, onDismiss }: ToastItemProps) {
-  const [isExiting, setIsExiting] = useState(false);
-
   useEffect(() => {
     if (toast.duration && toast.duration > 0 && toast.type !== 'pending') {
       const timer = setTimeout(() => {
-        handleDismiss();
+        onDismiss(toast.id);
       }, toast.duration);
 
       return () => clearTimeout(timer);
     }
-  }, [toast.duration, toast.type]);
-
-  const handleDismiss = () => {
-    setIsExiting(true);
-    setTimeout(() => {
-      onDismiss(toast.id);
-    }, 200);
-  };
+  }, [toast.duration, toast.type, toast.id, onDismiss]);
 
   const Icon = {
     success: CheckCircle2,
@@ -88,11 +81,15 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
   }[toast.type];
 
   return (
-    <div
+    <motion.div
+      variants={toastVariants('top')}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      layout
       className={cn(
-        'pointer-events-auto w-full max-w-sm rounded-lg border shadow-lg transition-all duration-200',
-        colorClasses,
-        isExiting ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'
+        'pointer-events-auto w-full max-w-sm rounded-lg border shadow-lg',
+        colorClasses
       )}
       role="alert"
     >
@@ -125,7 +122,7 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -149,9 +146,11 @@ export function ToastContainer({ toasts, onDismiss, position = 'top-right' }: To
 
   return (
     <div className={cn('pointer-events-none fixed z-50 flex flex-col gap-3', positionClasses)}>
-      {toasts.map((toast) => (
-        <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
-      ))}
+      <AnimatePresence mode="popLayout">
+        {toasts.map((toast) => (
+          <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
+        ))}
+      </AnimatePresence>
     </div>
   );
 }
@@ -230,4 +229,67 @@ export function createWarningToast(title: string, description?: string, duration
     description,
     duration,
   };
+}
+
+/**
+ * Toast Context and Provider
+ *
+ * Provides a simple API for showing toasts from anywhere in the app
+ */
+interface ToastContextValue {
+  toasts: Toast[];
+  showToast: (toast: Omit<Toast, 'id'>) => void;
+  hideToast: (id: string) => void;
+  showSuccess: (title: string, description?: string) => void;
+  showError: (title: string, description?: string) => void;
+  showInfo: (title: string, description?: string) => void;
+  showWarning: (title: string, description?: string) => void;
+}
+
+const ToastContext = createContext<ToastContextValue | undefined>(undefined);
+
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const showToast = useCallback((toast: Omit<Toast, 'id'>) => {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const newToast = { ...toast, id };
+
+    setToasts((prev) => [...prev, newToast]);
+  }, []);
+
+  const hideToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
+  const showSuccess = useCallback((title: string, description?: string) => {
+    showToast(createSuccessToast(title, description));
+  }, [showToast]);
+
+  const showError = useCallback((title: string, description?: string) => {
+    showToast(createErrorToast(title, description));
+  }, [showToast]);
+
+  const showInfo = useCallback((title: string, description?: string) => {
+    showToast(createInfoToast(title, description));
+  }, [showToast]);
+
+  const showWarning = useCallback((title: string, description?: string) => {
+    showToast(createWarningToast(title, description));
+  }, [showToast]);
+
+  return (
+    <ToastContext.Provider value={{ toasts, showToast, hideToast, showSuccess, showError, showInfo, showWarning }}>
+      {children}
+      <ToastContainer toasts={toasts} onDismiss={hideToast} />
+    </ToastContext.Provider>
+  );
+}
+
+export function useToast() {
+  const context = useContext(ToastContext);
+  if (!context) {
+    throw new Error('useToast must be used within ToastProvider');
+  }
+  return context;
 }
