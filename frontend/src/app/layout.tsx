@@ -14,6 +14,7 @@ import CommandPalette from '@/components/navigation/CommandPalette';
 import { CommandPaletteProvider } from '@/hooks/useCommandPalette';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { SkipLink } from '@/components/ui/SkipLink';
+import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,6 +58,7 @@ export default function RootLayout({
                           <main id="main-content" className="pb-24">
                             {children}
                           </main>
+                          <InstallPrompt />
                         </div>
                       </CommandPaletteProvider>
                     </ToastProvider>
