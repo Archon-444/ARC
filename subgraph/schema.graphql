@@ -1,11 +1,31 @@
 type User @entity {
-  id: ID!
-  tokens: [Token!]! @derivedFrom(field: "owner")
+  id: ID! # wallet address
+  nftsOwned: [Token!]! @derivedFrom(field: "owner")
   listings: [Listing!]! @derivedFrom(field: "seller")
-  auctions: [Auction!]! @derivedFrom(field: "seller")
   bids: [Bid!]! @derivedFrom(field: "bidder")
-  offersMade: [Offer!]! @derivedFrom(field: "maker")
-  offersReceived: [Offer!]! @derivedFrom(field: "taker")
+  offers: [Offer!]! @derivedFrom(field: "maker")
+  sales: [Listing!]! @derivedFrom(field: "buyer")
+  totalSpent: BigInt!
+  totalEarned: BigInt!
+  xp: BigInt! # Gamification XP
+  badges: [UserBadge!]! @derivedFrom(field: "user")
+  joinedAt: BigInt!
+  lastActive: BigInt!
+}
+
+type Badge @entity {
+  id: ID! # badge_id from frontend (e.g., "early_adopter")
+  name: String!
+  description: String!
+  icon: String!
+  users: [UserBadge!]! @derivedFrom(field: "badge")
+}
+
+type UserBadge @entity {
+  id: ID! # user.id + badge.id
+  user: User!
+  badge: Badge!
+  unlockedAt: BigInt!
 }
 
 type Collection @entity {

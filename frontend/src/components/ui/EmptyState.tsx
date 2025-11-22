@@ -10,6 +10,7 @@
 import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import React from 'react';
 
 interface EmptyStateProps {
   icon?: LucideIcon;
@@ -19,7 +20,7 @@ interface EmptyStateProps {
     label: string;
     href?: string;
     onClick?: () => void;
-  };
+  } | React.ReactNode;
   className?: string;
 }
 
@@ -53,20 +54,26 @@ export function EmptyState({
 
       {/* Action Button */}
       {action && (
-        action.href ? (
-          <Link
-            href={action.href}
-            className="btn-primary"
-          >
-            {action.label}
-          </Link>
+        // Check if action is a ReactNode (not an object with label)
+        React.isValidElement(action) ? (
+          action
         ) : (
-          <button
-            onClick={action.onClick}
-            className="btn-primary"
-          >
-            {action.label}
-          </button>
+          // It's the object shape
+          (action as any).href ? (
+            <Link
+              href={(action as any).href}
+              className="btn-primary"
+            >
+              {(action as any).label}
+            </Link>
+          ) : (
+            <button
+              onClick={(action as any).onClick}
+              className="btn-primary"
+            >
+              {(action as any).label}
+            </button>
+          )
         )
       )}
     </div>

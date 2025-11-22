@@ -1,11 +1,11 @@
 /**
  * useSearch Hook
  *
- * React hook for search functionality with Algolia integration
+ * React hook for search functionality with Typesense integration
  * Provides search state management, debouncing, and recent searches
  */
 
-import { useState, useEffect, useCallback } from 'use';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   searchAll,
@@ -15,7 +15,9 @@ import {
   CollectionSearchResult,
   UserSearchResult,
   SearchResult,
-} from '@/lib/algolia';
+  SearchFacet,
+  SEARCH_INDEXES,
+} from '@/lib/search';
 import { debounce, getLocalStorage, setLocalStorage } from '@/lib/utils';
 
 const RECENT_SEARCHES_KEY = 'arc_recent_searches';
@@ -25,6 +27,7 @@ export interface UseSearchOptions {
   category?: 'all' | 'nfts' | 'collections' | 'users';
   autoSearch?: boolean;
   debounceMs?: number;
+  initialFacets?: Record<string, string[]>;
 }
 
 export function useSearch(options: UseSearchOptions = {}) {
@@ -32,10 +35,14 @@ export function useSearch(options: UseSearchOptions = {}) {
     category = 'all',
     autoSearch = true,
     debounceMs = 300,
+    initialFacets = {},
   } = options;
 
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [activeFacets, setActiveFacets] = useState<Record<string, string[]>>(initialFacets);
+  const [facets, setFacets] = useState<SearchFacet[]>([]);
+
   const [results, setResults] = useState<{
     nfts: NFTSearchResult[];
     collections: CollectionSearchResult[];
@@ -55,16 +62,33 @@ export function useSearch(options: UseSearchOptions = {}) {
     setRecentSearches(recent);
   }, []);
 
+  // Build Typesense filter string from active facets
+  const buildFilterString = useCallback(() => {
+    const filters: string[] = [];
+
+    Object.entries(activeFacets).forEach(([field, values]) => {
+      if (values.length > 0) {
+        // Typesense filter format: field:=[value1,value2]
+        filters.push(`${field}:=[${values.map(v => `\`${v}\``).join(',')}]`);
+      }
+    });
+
+    return filters.join(' && ');
+  }, [activeFacets]);
+
   // Perform search
   const performSearch = useCallback(async (searchQuery: string) => {
-    if (!searchQuery.trim()) {
+    if (!searchQuery.trim() && category === 'all') {
       setResults({ nfts: [], collections: [], users: [], total: 0 });
+      setFacets([]);
       return;
     }
 
     setIsLoading(true);
 
     try {
+      const filterBy = buildFilterString();
+
       if (category === 'all') {
         const response = await searchAll(searchQuery, { hitsPerPage: 20 });
         setResults({
@@ -73,30 +97,43 @@ export function useSearch(options: UseSearchOptions = {}) {
           users: response.users.hits,
           total: response.nfts.nbHits + response.collections.nbHits + response.users.nbHits,
         });
+        setFacets([]); // No facets for 'all' category yet
       } else if (category === 'nfts') {
-        const response = await searchIndex<NFTSearchResult>('nfts', searchQuery);
+        // Facet by common fields for NFTs
+        const facetBy = 'collection_name,status,traits';
+        const response = await searchIndex<NFTSearchResult>(SEARCH_INDEXES.NFT, searchQuery, {
+          filterBy,
+          facetBy
+        });
         setResults({
           nfts: response.hits,
           collections: [],
           users: [],
           total: response.nbHits,
         });
+        setFacets(response.facets || []);
       } else if (category === 'collections') {
-        const response = await searchIndex<CollectionSearchResult>('collections', searchQuery);
+        const facetBy = 'verified';
+        const response = await searchIndex<CollectionSearchResult>(SEARCH_INDEXES.COLLECTION, searchQuery, {
+          filterBy,
+          facetBy
+        });
         setResults({
           nfts: [],
           collections: response.hits,
           users: [],
           total: response.nbHits,
         });
+        setFacets(response.facets || []);
       } else if (category === 'users') {
-        const response = await searchIndex<UserSearchResult>('users', searchQuery);
+        const response = await searchIndex<UserSearchResult>(SEARCH_INDEXES.USER, searchQuery, { filterBy });
         setResults({
           nfts: [],
           collections: [],
           users: response.hits,
           total: response.nbHits,
         });
+        setFacets(response.facets || []);
       }
     } catch (error) {
       console.error('Search error:', error);
@@ -104,7 +141,7 @@ export function useSearch(options: UseSearchOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [category]);
+  }, [category, buildFilterString]);
 
   // Debounced search
   const debouncedSearch = useCallback(
@@ -114,14 +151,12 @@ export function useSearch(options: UseSearchOptions = {}) {
     [performSearch, debounceMs]
   );
 
-  // Auto search when query changes
+  // Auto search when query or facets change
   useEffect(() => {
-    if (autoSearch && query) {
+    if (autoSearch) {
       debouncedSearch(query);
-    } else if (!query) {
-      setResults({ nfts: [], collections: [], users: [], total: 0 });
     }
-  }, [query, autoSearch, debouncedSearch]);
+  }, [query, activeFacets, autoSearch, debouncedSearch]);
 
   // Save to recent searches
   const saveToRecentSearches = useCallback((searchQuery: string) => {
@@ -152,11 +187,33 @@ export function useSearch(options: UseSearchOptions = {}) {
     }
   }, [query, performSearch, saveToRecentSearches]);
 
+  const toggleFacet = useCallback((field: string, value: string) => {
+    setActiveFacets(prev => {
+      const current = prev[field] || [];
+      const updated = current.includes(value)
+        ? current.filter(v => v !== value)
+        : [...current, value];
+
+      return {
+        ...prev,
+        [field]: updated
+      };
+    });
+  }, []);
+
+  const clearFacets = useCallback(() => {
+    setActiveFacets({});
+  }, []);
+
   return {
     query,
     setQuery,
     isLoading,
     results,
+    facets,
+    activeFacets,
+    toggleFacet,
+    clearFacets,
     recentSearches,
     search,
     clearRecentSearches,

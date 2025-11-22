@@ -1,6 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { SearchInput } from '@/components/search/SearchInput';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { XPDisplay } from '@/components/gamification/XPDisplay';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
@@ -49,7 +52,7 @@ const mobileNav = [
 export default function Navbar() {
   const pathname = usePathname();
   const { open } = useCommandPalette();
-  const { isAuthenticated, currentWallet, wallets, createUser, isLoading } = useCircleWallet();
+  const { isConnected, activeWallet, wallets, createWallet, loading } = useCircleWallet();
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [exploreOpen, setExploreOpen] = useState(false);
@@ -57,13 +60,13 @@ export default function Navbar() {
   const loyaltyTier = useMemo(() => ({ tier: 'Silver', progress: 52, xp: 2450 }), []);
 
   const handleCircleWalletClick = async () => {
-    if (isAuthenticated && wallets.length > 0) {
+    if (isConnected && wallets.length > 0) {
       setShowWalletModal(true);
-    } else if (isAuthenticated && wallets.length === 0) {
+    } else if (isConnected && wallets.length === 0) {
       setShowCreateModal(true);
     } else {
       try {
-        await createUser();
+        await createWallet();
         setShowCreateModal(true);
       } catch (error) {
         console.error('Failed to create Circle user:', error);
@@ -91,17 +94,15 @@ export default function Navbar() {
               onMouseEnter={() => setExploreOpen(true)}
               onMouseLeave={() => setExploreOpen(false)}
             >
-              <button className={`flex items-center gap-1 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                exploreOpen ? 'bg-neutral-900 text-white dark:bg-white/10 dark:text-white' : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
-              }`}>
+              <button className={`flex items-center gap-1 rounded-full px-4 py-2 text-sm font-semibold transition ${exploreOpen ? 'bg-neutral-900 text-white dark:bg-white/10 dark:text-white' : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
+                }`}>
                 Explore
                 <ChevronDown className="h-4 w-4" />
               </button>
 
               <div
-                className={`absolute left-0 top-full mt-3 w-[520px] rounded-3xl border border-neutral-200/70 bg-white p-6 shadow-2xl transition duration-200 dark:border-neutral-800 dark:bg-neutral-900 ${
-                  exploreOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
-                }`}
+                className={`absolute left-0 top-full mt-3 w-[520px] rounded-3xl border border-neutral-200/70 bg-white p-6 shadow-2xl transition duration-200 dark:border-neutral-800 dark:bg-neutral-900 ${exploreOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+                  }`}
               >
                 <div className="grid grid-cols-2 gap-6">
                   {exploreSections.map((section) => (
@@ -133,13 +134,12 @@ export default function Navbar() {
               <Link
                 key={item.label}
                 href={item.href}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  pathname.startsWith(item.href)
-                    ? 'bg-neutral-900 text-white dark:bg-primary-500 dark:text-white'
-                    : item.accent
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${pathname.startsWith(item.href)
+                  ? 'bg-neutral-900 text-white dark:bg-primary-500 dark:text-white'
+                  : item.accent
                     ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-lg'
                     : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
-                }`}
+                  }`}
               >
                 {item.label}
               </Link>
@@ -174,22 +174,22 @@ export default function Navbar() {
             <Bell className="h-5 w-5" />
           </button>
 
-          {isAuthenticated && currentWallet ? (
+          {isConnected && activeWallet ? (
             <button
               onClick={() => setShowWalletModal(true)}
               className="hidden lg:inline-flex items-center gap-2 rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold text-white shadow-lg"
             >
               <CircleDollarSign className="h-4 w-4" />
-              {truncateAddress(currentWallet.address as `0x${string}`)}
+              {truncateAddress(activeWallet.address as `0x${string}`)}
             </button>
           ) : (
             <button
               onClick={handleCircleWalletClick}
-              disabled={isLoading}
+              disabled={loading}
               className="hidden lg:inline-flex items-center gap-2 rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
             >
               <CircleDollarSign className="h-4 w-4" />
-              {isLoading ? 'Connecting...' : 'Circle Wallet'}
+              {loading ? 'Connecting...' : 'Circle Wallet'}
             </button>
           )}
 
@@ -210,11 +210,10 @@ export default function Navbar() {
             <Link
               key={item.label}
               href={item.href}
-              className={`flex flex-col items-center gap-1 px-2 py-3 text-xs font-semibold ${
-                pathname === item.href
-                  ? 'text-primary-600'
-                  : 'text-neutral-500'
-              }`}
+              className={`flex w-full flex-col items-center justify-center gap-1 py-3 text-xs font-semibold transition-colors active:bg-neutral-100 dark:active:bg-neutral-800 ${pathname === item.href
+                ? 'text-primary-600 dark:text-primary-400'
+                : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200'
+                }`}
             >
               {item.icon}
               {item.label}

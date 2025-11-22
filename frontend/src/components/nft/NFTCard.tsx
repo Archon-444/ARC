@@ -46,7 +46,6 @@ const cardVariants = {
     boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
     transition: {
       duration: 0.2,
-      ease: [0.16, 1, 0.3, 1],
     },
   },
 };
@@ -369,7 +368,7 @@ export function NFTGrid({
   listings?: Record<string, Listing>;
   auctions?: Record<string, Auction>;
   isLoading?: boolean;
-  emptyMessage?: string;
+  emptyMessage?: React.ReactNode;
   className?: string;
 }) {
   if (isLoading) {
@@ -385,7 +384,11 @@ export function NFTGrid({
   if (!nfts || nfts.length === 0) {
     return (
       <div className="flex min-h-[300px] items-center justify-center text-center">
-        <p className="text-gray-500">{emptyMessage}</p>
+        {typeof emptyMessage === 'string' ? (
+          <p className="text-gray-500">{emptyMessage}</p>
+        ) : (
+          emptyMessage
+        )}
       </div>
     );
   }

@@ -7,13 +7,14 @@
 
 'use client';
 
-import { use, useState, useEffect, useCallback } from 'react';
+import { use, useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
-import { TrendingUp, Package, Users, ExternalLink, Share2 } from 'lucide-react';
+import { TrendingUp, Package, Users, ExternalLink, Share2, Filter } from 'lucide-react';
 import { NFTGrid } from '@/components/nft/NFTCard';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingPage } from '@/components/ui/LoadingSpinner';
 import { ErrorPage } from '@/components/ui/ErrorDisplay';
+import { FilterPanel, type CollectionFilters } from '@/components/collection/FilterPanel';
 import { fetchListings, fetchAuctions } from '@/lib/graphql-client';
 import {
   formatUSDC,
@@ -23,6 +24,7 @@ import {
   getImageUrl,
   getAddressUrl,
   debounce,
+  cn,
 } from '@/lib/utils';
 import type { NFT, Listing, Auction, Collection, Address, SortOption } from '@/types';
 
@@ -55,6 +57,13 @@ export default function CollectionPage({ params }: PageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [viewMode, setViewMode] = useState<'all' | 'listings' | 'auctions'>('all');
+
+  // Filter State
+  const [isFilterOpen, setIsFilterOpen] = useState(true);
+  const [filters, setFilters] = useState<CollectionFilters>({
+    traits: {},
+    status: [],
+  });
 
   // Debounce search
   const debouncedSetSearch = useCallback(
@@ -129,49 +138,115 @@ export default function CollectionPage({ params }: PageProps) {
   };
 
   // Combine NFTs from listings and auctions
-  const allNFTs: NFT[] = [
+  const allNFTs: NFT[] = useMemo(() => [
     ...listings.map((listing) => listing.nft).filter(Boolean) as NFT[],
     ...auctions.map((auction) => auction.nft).filter(Boolean) as NFT[],
-  ];
-
-  // Filter based on view mode
-  const displayNFTs = (() => {
-    if (viewMode === 'listings') {
-      return listings.map((listing) => listing.nft).filter(Boolean) as NFT[];
-    }
-    if (viewMode === 'auctions') {
-      return auctions.map((auction) => auction.nft).filter(Boolean) as NFT[];
-    }
-    return allNFTs;
-  })();
-
-  // Search filter
-  const filteredNFTs = displayNFTs.filter((nft) => {
-    if (!debouncedSearch) return true;
-    const query = debouncedSearch.toLowerCase();
-    return (
-      nft.name?.toLowerCase().includes(query) ||
-      nft.tokenId?.toString().includes(query) ||
-      nft.description?.toLowerCase().includes(query)
-    );
-  });
+  ], [listings, auctions]);
 
   // Create lookup maps
-  const listingsMap: Record<string, Listing> = {};
-  listings.forEach((listing) => {
-    if (listing.nft) {
-      const key = `${listing.collection.toLowerCase()}-${listing.tokenId}`;
-      listingsMap[key] = listing;
-    }
-  });
+  const listingsMap = useMemo(() => {
+    const map: Record<string, Listing> = {};
+    listings.forEach((listing) => {
+      if (listing.nft) {
+        const key = `${listing.collection.toLowerCase()}-${listing.tokenId}`;
+        map[key] = listing;
+      }
+    });
+    return map;
+  }, [listings]);
 
-  const auctionsMap: Record<string, Auction> = {};
-  auctions.forEach((auction) => {
-    if (auction.nft) {
-      const key = `${auction.collection.toLowerCase()}-${auction.tokenId}`;
-      auctionsMap[key] = auction;
-    }
-  });
+  const auctionsMap = useMemo(() => {
+    const map: Record<string, Auction> = {};
+    auctions.forEach((auction) => {
+      if (auction.nft) {
+        const key = `${auction.collection.toLowerCase()}-${auction.tokenId}`;
+        map[key] = auction;
+      }
+    });
+    return map;
+  }, [auctions]);
+
+  // Extract Traits from all loaded NFTs
+  const availableTraits = useMemo(() => {
+    const traitMap = new Map<string, Map<string, number>>();
+    let totalCount = 0;
+
+    allNFTs.forEach((nft) => {
+      if (nft.attributes) {
+        totalCount++;
+        nft.attributes.forEach((attr) => {
+          if (!traitMap.has(attr.trait_type)) {
+            traitMap.set(attr.trait_type, new Map());
+          }
+          const values = traitMap.get(attr.trait_type)!;
+          const val = String(attr.value);
+          values.set(val, (values.get(val) || 0) + 1);
+        });
+      }
+    });
+
+    return Array.from(traitMap.entries()).map(([name, values]) => ({
+      name,
+      values: Array.from(values.entries()).map(([value, count]) => ({
+        value,
+        count,
+        percentage: (count / totalCount) * 100,
+      })).sort((a, b) => b.count - a.count),
+    })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [allNFTs]);
+
+  // Filter Logic
+  const filteredNFTs = useMemo(() => {
+    return allNFTs.filter((nft) => {
+      // 1. Search Filter
+      if (debouncedSearch) {
+        const query = debouncedSearch.toLowerCase();
+        const matchesSearch =
+          nft.name?.toLowerCase().includes(query) ||
+          nft.tokenId?.toString().includes(query) ||
+          nft.description?.toLowerCase().includes(query);
+        if (!matchesSearch) return false;
+      }
+
+      // 2. View Mode Filter (Listings vs Auctions)
+      const key = `${nft.collection.id.toLowerCase()}-${nft.tokenId}`;
+      const isListed = !!listingsMap[key];
+      const isAuctioned = !!auctionsMap[key];
+
+      if (viewMode === 'listings' && !isListed) return false;
+      if (viewMode === 'auctions' && !isAuctioned) return false;
+
+      // 3. Status Filter
+      if (filters.status.length > 0) {
+        const matchesStatus = filters.status.some(status => {
+          if (status === 'Buy Now') return isListed;
+          if (status === 'On Auction') return isAuctioned;
+          // 'Has Offers' would need offer data
+          return false;
+        });
+        if (!matchesStatus) return false;
+      }
+
+      // 4. Price Filter
+      const price = isListed ? parseFloat(listingsMap[key].price) :
+        isAuctioned ? parseFloat(auctionsMap[key].minBid) : 0; // Use minBid for auctions
+
+      if (filters.priceMin !== undefined && price < filters.priceMin) return false;
+      if (filters.priceMax !== undefined && price > filters.priceMax) return false;
+
+      // 5. Trait Filter
+      if (Object.keys(filters.traits).length > 0) {
+        const matchesTraits = Object.entries(filters.traits).every(([traitName, selectedValues]) => {
+          if (!selectedValues || selectedValues.length === 0) return true;
+          const nftTrait = nft.attributes?.find(a => a.trait_type === traitName);
+          return nftTrait && selectedValues.includes(String(nftTrait.value));
+        });
+        if (!matchesTraits) return false;
+      }
+
+      return true;
+    });
+  }, [allNFTs, debouncedSearch, viewMode, filters, listingsMap, auctionsMap]);
 
   const totalPages = Math.ceil((filteredNFTs.length || ITEMS_PER_PAGE) / ITEMS_PER_PAGE);
 
@@ -187,7 +262,7 @@ export default function CollectionPage({ params }: PageProps) {
   const logoUrl = collection?.image ? getImageUrl(collection.image) : undefined;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-neutral-900">
       {/* Collection Banner */}
       <div className="relative h-64 bg-gradient-to-br from-blue-500 to-purple-600">
         {bannerUrl && (
@@ -203,11 +278,11 @@ export default function CollectionPage({ params }: PageProps) {
       </div>
 
       {/* Collection Header */}
-      <div className="container mx-auto px-4">
+      <div className="container-custom mx-auto px-4">
         <div className="-mt-16 mb-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-end">
             {/* Collection Logo */}
-            <div className="relative h-32 w-32 overflow-hidden rounded-lg border-4 border-white bg-white shadow-xl">
+            <div className="relative h-32 w-32 overflow-hidden rounded-xl border-4 border-white dark:border-neutral-800 bg-white dark:bg-neutral-800 shadow-xl">
               {logoUrl ? (
                 <Image
                   src={logoUrl}
@@ -225,27 +300,27 @@ export default function CollectionPage({ params }: PageProps) {
 
             {/* Collection Info */}
             <div className="flex-1">
-              <div className="rounded-lg bg-white p-6 shadow-lg">
+              <div className="rounded-xl bg-white dark:bg-neutral-800 p-6 shadow-lg border border-neutral-200 dark:border-neutral-700">
                 <div className="mb-4 flex items-start justify-between">
                   <div>
-                    <h1 className="text-3xl font-bold text-gray-900">
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                       {collection?.name || 'Unknown Collection'}
                     </h1>
                     {collection?.description && (
-                      <p className="mt-2 text-gray-600">{collection.description}</p>
+                      <p className="mt-2 text-gray-600 dark:text-gray-400 max-w-2xl">{collection.description}</p>
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <button className="rounded-lg border border-gray-300 p-2 hover:bg-gray-50">
-                      <Share2 className="h-5 w-5 text-gray-600" />
+                    <button className="rounded-lg border border-gray-300 dark:border-neutral-600 p-2 hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors">
+                      <Share2 className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                     </button>
                     <a
                       href={getAddressUrl(address as Address)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="rounded-lg border border-gray-300 p-2 hover:bg-gray-50"
+                      className="rounded-lg border border-gray-300 dark:border-neutral-600 p-2 hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors"
                     >
-                      <ExternalLink className="h-5 w-5 text-gray-600" />
+                      <ExternalLink className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                     </a>
                   </div>
                 </div>
@@ -254,146 +329,161 @@ export default function CollectionPage({ params }: PageProps) {
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                   {collection?.floorPrice && (
                     <div>
-                      <p className="text-sm text-gray-600">Floor Price</p>
-                      <p className="text-xl font-bold text-gray-900">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Floor Price</p>
+                      <p className="text-xl font-bold text-gray-900 dark:text-white">
                         {formatUSDC(collection.floorPrice)}
                       </p>
                     </div>
                   )}
                   {collection?.volumeTraded && (
                     <div>
-                      <p className="text-sm text-gray-600">Total Volume</p>
-                      <p className="text-xl font-bold text-gray-900">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Total Volume</p>
+                      <p className="text-xl font-bold text-gray-900 dark:text-white">
                         {formatCompactUSDC(collection.volumeTraded)}
                       </p>
                     </div>
                   )}
                   {collection?.totalSupply && (
                     <div>
-                      <p className="text-sm text-gray-600">Total Supply</p>
-                      <p className="text-xl font-bold text-gray-900">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Total Supply</p>
+                      <p className="text-xl font-bold text-gray-900 dark:text-white">
                         {formatNumber(collection.totalSupply)}
                       </p>
                     </div>
                   )}
                   <div>
-                    <p className="text-sm text-gray-600">Items Listed</p>
-                    <p className="text-xl font-bold text-gray-900">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Items Listed</p>
+                    <p className="text-xl font-bold text-gray-900 dark:text-white">
                       {formatNumber(listings.length + auctions.length)}
                     </p>
                   </div>
-                </div>
-
-                {/* Contract Address */}
-                <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
-                  <span>Contract:</span>
-                  <a
-                    href={getAddressUrl(address as Address)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium text-blue-600 hover:text-blue-700"
-                  >
-                    {truncateAddress(address as Address)}
-                  </a>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="mb-6 rounded-lg bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            {/* Search */}
-            <input
-              type="text"
-              placeholder="Search by name or token ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-
-            {/* Sort */}
-            <select
-              value={sortBy.value}
-              onChange={(e) => {
-                const option = SORT_OPTIONS.find((opt) => opt.value === e.target.value);
-                if (option) setSortBy(option);
-              }}
-              className="rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {SORT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* View Mode Tabs */}
-          <div className="mt-4 flex gap-4 border-t border-gray-200 pt-4">
-            <button
-              onClick={() => {
-                setViewMode('all');
-                setCurrentPage(1);
-              }}
-              className={`px-4 py-2 font-medium transition-colors ${
-                viewMode === 'all'
-                  ? 'border-b-2 border-blue-600 text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              All ({allNFTs.length})
-            </button>
-            <button
-              onClick={() => {
-                setViewMode('listings');
-                setCurrentPage(1);
-              }}
-              className={`px-4 py-2 font-medium transition-colors ${
-                viewMode === 'listings'
-                  ? 'border-b-2 border-blue-600 text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Listings ({listings.length})
-            </button>
-            <button
-              onClick={() => {
-                setViewMode('auctions');
-                setCurrentPage(1);
-              }}
-              className={`px-4 py-2 font-medium transition-colors ${
-                viewMode === 'auctions'
-                  ? 'border-b-2 border-blue-600 text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Auctions ({auctions.length})
-            </button>
-          </div>
-        </div>
-
-        {/* NFT Grid */}
-        <div className="mb-8">
-          <NFTGrid
-            nfts={filteredNFTs}
-            listings={listingsMap}
-            auctions={auctionsMap}
-            isLoading={isLoading}
-            emptyMessage="No items in this collection"
-          />
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-8">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
+        {/* Controls & Layout */}
+        <div className="flex gap-6">
+          {/* Filter Sidebar (Desktop) */}
+          <div
+            className={cn(
+              "hidden lg:block transition-all duration-300 ease-in-out overflow-hidden",
+              isFilterOpen ? "w-80 opacity-100" : "w-0 opacity-0"
+            )}
+          >
+            <div className="sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-2">
+              <FilterPanel
+                traits={availableTraits}
+                onFilterChange={setFilters}
               />
             </div>
-          )}
+          </div>
+
+          {/* Main Grid */}
+          <div className="flex-1 min-w-0">
+            {/* Toolbar */}
+            <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-white dark:bg-neutral-800 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 sticky top-20 z-10 shadow-sm">
+              <div className="flex items-center gap-4 flex-1">
+                <button
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                  className={cn(
+                    "p-2 rounded-lg border transition-colors hidden lg:flex items-center gap-2",
+                    isFilterOpen
+                      ? "bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400"
+                      : "border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700"
+                  )}
+                >
+                  <Filter className="h-5 w-5" />
+                  <span className="text-sm font-medium">Filters</span>
+                </button>
+
+                {/* Search */}
+                <input
+                  type="text"
+                  placeholder="Search items..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full md:w-64 rounded-lg border border-gray-300 dark:border-neutral-600 bg-transparent px-4 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-white"
+                />
+              </div>
+
+              <div className="flex items-center gap-4">
+                {/* View Mode Tabs */}
+                <div className="flex rounded-lg bg-gray-100 dark:bg-neutral-900 p-1">
+                  {(['all', 'listings', 'auctions'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => {
+                        setViewMode(mode);
+                        setCurrentPage(1);
+                      }}
+                      className={cn(
+                        "px-3 py-1.5 text-sm font-medium rounded-md capitalize transition-all",
+                        viewMode === mode
+                          ? "bg-white dark:bg-neutral-800 text-gray-900 dark:text-white shadow-sm"
+                          : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                      )}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Sort */}
+                <select
+                  value={sortBy.value}
+                  onChange={(e) => {
+                    const option = SORT_OPTIONS.find((opt) => opt.value === e.target.value);
+                    if (option) setSortBy(option);
+                  }}
+                  className="rounded-lg border border-gray-300 dark:border-neutral-600 bg-transparent px-4 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-white"
+                >
+                  {SORT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Results */}
+            <div className="mb-8">
+              <NFTGrid
+                nfts={filteredNFTs}
+                listings={listingsMap}
+                auctions={auctionsMap}
+                isLoading={isLoading}
+                emptyMessage={
+                  <div className="text-center py-12">
+                    <p className="text-lg font-medium text-gray-900 dark:text-white">No items found</p>
+                    <p className="text-gray-500 dark:text-gray-400">Try adjusting your filters or search query</p>
+                    <button
+                      onClick={() => {
+                        setFilters({ traits: {}, status: [] });
+                        setSearchQuery('');
+                      }}
+                      className="mt-4 text-primary-600 hover:underline"
+                    >
+                      Clear all filters
+                    </button>
+                  </div>
+                }
+              />
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-8">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
