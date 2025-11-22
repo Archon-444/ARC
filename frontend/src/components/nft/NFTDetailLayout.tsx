@@ -7,10 +7,11 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useQuery, gql } from 'urql';
 import {
   ExternalLink,
   RefreshCw,
@@ -28,19 +29,54 @@ import { Tabs } from '@/components/ui/Tabs';
 import { PropertyGrid } from '@/components/nft/PropertyBadge';
 import type { NFT, Listing, Auction } from '@/types';
 
+const NFT_QUERY = gql`
+  query GetNFTDetails($tokenId: String!) {
+    token(id: $tokenId) {
+      id
+      tokenId
+      uri
+      owner {
+        id
+      }
+      activeListing {
+        id
+        price
+        seller {
+          id
+        }
+      }
+      activeAuction {
+        id
+        startingPrice
+        highestBid
+        endTime
+        highestBidder {
+          id
+        }
+      }
+      collection {
+        id
+        name
+        symbol
+        floorPrice
+      }
+    }
+  }
+`;
+
 export interface NFTDetailProps {
-  nft: NFT;
-  listing?: Listing;
-  auction?: Auction;
+  nft: NFT; // Fallback/Initial data
+  contractAddress: string;
+  tokenId: string;
   onBuy?: () => void;
   onMakeOffer?: () => void;
   className?: string;
 }
 
 export function NFTDetailLayout({
-  nft,
-  listing,
-  auction,
+  nft: initialNft,
+  contractAddress,
+  tokenId,
   onBuy,
   onMakeOffer,
   className,
@@ -50,9 +86,31 @@ export function NFTDetailLayout({
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [isImageFullscreen, setIsImageFullscreen] = useState(false);
 
-  const price = listing?.price || auction?.highestBid || auction?.minBid;
-  const priceLabel = auction
-    ? auction.highestBid && auction.highestBid !== '0'
+  // Fetch real-time data from Subgraph
+  const [result] = useQuery({
+    query: NFT_QUERY,
+    variables: { tokenId: `${contractAddress}-${tokenId}` },
+    pause: !contractAddress || !tokenId,
+  });
+
+  const { data, fetching, error } = result;
+
+  // Merge initial data with real-time data
+  const nftDisplay = {
+    ...initialNft,
+    owner: data?.token?.owner?.id || initialNft.owner,
+    collection: {
+      ...initialNft.collection,
+      floorPrice: data?.token?.collection?.floorPrice || initialNft.collection.floorPrice,
+    }
+  };
+
+  const activeListing = data?.token?.activeListing;
+  const activeAuction = data?.token?.activeAuction;
+
+  const price = activeListing?.price || activeAuction?.highestBid || activeAuction?.startingPrice;
+  const priceLabel = activeAuction
+    ? activeAuction.highestBid && activeAuction.highestBid !== '0'
       ? 'Current Bid'
       : 'Minimum Bid'
     : 'Current Price';
@@ -61,8 +119,8 @@ export function NFTDetailLayout({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: nft.name || `NFT #${nft.tokenId}`,
-          text: nft.description,
+          title: nftDisplay.name || `NFT #${nftDisplay.tokenId}`,
+          text: nftDisplay.description,
           url: window.location.href,
         });
       } catch (err) {
@@ -88,14 +146,14 @@ export function NFTDetailLayout({
         </Link>
         <span className="text-neutral-300 dark:text-neutral-700">/</span>
         <Link
-          href={`/collection/${nft.collection.id}`}
+          href={`/collection/${nftDisplay.collection.id}`}
           className="text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200"
         >
-          {nft.collection.name}
+          {nftDisplay.collection.name}
         </Link>
         <span className="text-neutral-300 dark:text-neutral-700">/</span>
         <span className="font-medium text-neutral-900 dark:text-white">
-          {nft.name || `#${nft.tokenId}`}
+          {nftDisplay.name || `#${nftDisplay.tokenId}`}
         </span>
       </nav>
 
@@ -108,8 +166,8 @@ export function NFTDetailLayout({
             <div className="group relative aspect-square overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900">
               {!imageError ? (
                 <Image
-                  src={nft.image}
-                  alt={nft.name || `NFT #${nft.tokenId}`}
+                  src={nftDisplay.image}
+                  alt={nftDisplay.name || `NFT #${nftDisplay.tokenId}`}
                   fill
                   className="object-cover"
                   onError={() => setImageError(true)}
@@ -118,7 +176,7 @@ export function NFTDetailLayout({
                 />
               ) : (
                 <div className="flex h-full items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900">
-                  <span className="text-6xl font-bold text-neutral-400">#{nft.tokenId}</span>
+                  <span className="text-6xl font-bold text-neutral-400">#{nftDisplay.tokenId}</span>
                 </div>
               )}
 
@@ -152,10 +210,10 @@ export function NFTDetailLayout({
             {/* Collection Info Below Image */}
             <div className="mt-4 flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
               <div className="h-12 w-12 overflow-hidden rounded-lg">
-                {nft.collection.image ? (
+                {nftDisplay.collection.image ? (
                   <Image
-                    src={nft.collection.image}
-                    alt={nft.collection.name}
+                    src={nftDisplay.collection.image}
+                    alt={nftDisplay.collection.name}
                     width={48}
                     height={48}
                     className="h-full w-full object-cover"
@@ -166,14 +224,14 @@ export function NFTDetailLayout({
               </div>
               <div className="flex-1 min-w-0">
                 <Link
-                  href={`/collection/${nft.collection.id}`}
+                  href={`/collection/${nftDisplay.collection.id}`}
                   className="block text-sm font-semibold text-neutral-900 hover:text-primary-600 dark:text-white dark:hover:text-primary-400"
                 >
-                  {nft.collection.name}
+                  {nftDisplay.collection.name}
                 </Link>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">View collection</p>
               </div>
-              {nft.collection.verified && (
+              {nftDisplay.collection.verified && (
                 <Badge variant="success" className="gap-1">
                   Verified
                 </Badge>
@@ -188,7 +246,7 @@ export function NFTDetailLayout({
           <div>
             <div className="mb-2 flex items-start justify-between gap-4">
               <h1 className="text-3xl font-bold text-neutral-900 dark:text-white md:text-4xl">
-                {nft.name || `#${nft.tokenId}`}
+                {nftDisplay.name || `#${nftDisplay.tokenId}`}
               </h1>
               <div className="flex gap-2">
                 <Button
@@ -212,48 +270,60 @@ export function NFTDetailLayout({
             <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
               <span>Owned by</span>
               <Link
-                href={`/profile/${nft.owner}`}
+                href={`/profile/${nftDisplay.owner}`}
                 className="font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400"
               >
-                {truncateAddress(nft.owner)}
+                {truncateAddress(nftDisplay.owner)}
               </Link>
             </div>
           </div>
 
           {/* Pricing Section */}
-          {price && (
-            <div className="rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
-              <div className="mb-4">
-                <p className="mb-1 text-sm text-neutral-500 dark:text-neutral-400">{priceLabel}</p>
-                <div className="flex items-baseline gap-3">
-                  <span className="text-4xl font-bold text-neutral-900 dark:text-white">
-                    {formatUSDC(price)}
-                  </span>
-                  <span className="text-lg text-neutral-500">USDC</span>
+          <div className="rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
+            {fetching ? (
+              <div className="h-24 animate-pulse rounded-lg bg-neutral-100 dark:bg-neutral-800" />
+            ) : price ? (
+              <>
+                <div className="mb-4">
+                  <p className="mb-1 text-sm text-neutral-500 dark:text-neutral-400">{priceLabel}</p>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-4xl font-bold text-neutral-900 dark:text-white">
+                      {formatUSDC(BigInt(price))}
+                    </span>
+                    <span className="text-lg text-neutral-500">USDC</span>
+                  </div>
                 </div>
-                {/* TODO: Add USD conversion and price change */}
-              </div>
 
-              <div className="flex gap-3">
-                {listing && onBuy && (
-                  <Button size="lg" fullWidth onClick={onBuy} className="flex-1">
-                    Buy Now
-                  </Button>
-                )}
+                <div className="flex gap-3">
+                  {activeListing && onBuy && (
+                    <Button size="lg" fullWidth onClick={onBuy} className="flex-1">
+                      Buy Now
+                    </Button>
+                  )}
+                  {onMakeOffer && (
+                    <Button
+                      variant={activeListing ? 'outline' : 'primary'}
+                      size="lg"
+                      fullWidth
+                      onClick={onMakeOffer}
+                      className="flex-1"
+                    >
+                      Make Offer
+                    </Button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="text-center">
+                <p className="mb-4 text-neutral-500">Not listed for sale</p>
                 {onMakeOffer && (
-                  <Button
-                    variant={listing ? 'outline' : 'primary'}
-                    size="lg"
-                    fullWidth
-                    onClick={onMakeOffer}
-                    className="flex-1"
-                  >
+                  <Button size="lg" fullWidth onClick={onMakeOffer}>
                     Make Offer
                   </Button>
                 )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Tabs Section */}
           <Tabs defaultValue="details" className="space-y-6">
@@ -267,18 +337,18 @@ export function NFTDetailLayout({
             {/* Details Tab */}
             <Tabs.Content value="details" className="space-y-6">
               {/* Description */}
-              {nft.description && (
+              {nftDisplay.description && (
                 <div>
                   <h3 className="mb-3 text-lg font-semibold text-neutral-900 dark:text-white">
                     Description
                   </h3>
                   <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
                     <p className="text-sm text-neutral-700 dark:text-neutral-300">
-                      {showFullDescription || nft.description.length <= 200
-                        ? nft.description
-                        : `${nft.description.slice(0, 200)}...`}
+                      {showFullDescription || nftDisplay.description.length <= 200
+                        ? nftDisplay.description
+                        : `${nftDisplay.description.slice(0, 200)}...`}
                     </p>
-                    {nft.description.length > 200 && (
+                    {nftDisplay.description.length > 200 && (
                       <button
                         onClick={() => setShowFullDescription(!showFullDescription)}
                         className="mt-2 text-sm font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400"
@@ -291,19 +361,19 @@ export function NFTDetailLayout({
               )}
 
               {/* Properties */}
-              {nft.attributes && nft.attributes.length > 0 && (
+              {nftDisplay.attributes && nftDisplay.attributes.length > 0 && (
                 <div>
                   <h3 className="mb-3 text-lg font-semibold text-neutral-900 dark:text-white">
                     Properties
                   </h3>
                   <PropertyGrid
-                    properties={nft.attributes.map((attr) => ({
+                    properties={nftDisplay.attributes.map((attr) => ({
                       traitType: attr.trait_type,
                       value: attr.value,
                       rarity: attr.rarity,
                       count: attr.count,
                     }))}
-                    total={nft.collection.totalSupply}
+                    total={nftDisplay.collection.totalSupply}
                   />
                 </div>
               )}
@@ -314,9 +384,9 @@ export function NFTDetailLayout({
                   Details
                 </h3>
                 <div className="space-y-3 rounded-xl border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900/50">
-                  <DetailRow label="Contract Address" value={truncateAddress(nft.collection.id)}>
+                  <DetailRow label="Contract Address" value={truncateAddress(nftDisplay.collection.id)}>
                     <a
-                      href={`https://arcscan.com/address/${nft.collection.id}`}
+                      href={`https://arcscan.com/address/${nftDisplay.collection.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary-600 hover:text-primary-700 dark:text-primary-400"
@@ -324,12 +394,12 @@ export function NFTDetailLayout({
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </DetailRow>
-                  <DetailRow label="Token ID" value={nft.tokenId} />
+                  <DetailRow label="Token ID" value={nftDisplay.tokenId} />
                   <DetailRow label="Token Standard" value="ERC-721" />
                   <DetailRow label="Chain" value="Arc Testnet" />
                   <DetailRow
                     label="Metadata"
-                    value={nft.tokenURI ? 'Centralized' : 'Frozen'}
+                    value={nftDisplay.tokenURI ? 'Centralized' : 'Frozen'}
                   />
                 </div>
               </div>

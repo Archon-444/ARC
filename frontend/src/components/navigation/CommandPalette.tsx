@@ -6,6 +6,7 @@ import { useMemo, useState, useEffect, useRef, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCommandPalette } from '@/hooks/useCommandPalette';
 import { formatUSDC } from '@/lib/utils';
+import { typesenseClient } from '@/lib/typesense';
 
 type CommandPaletteItem = {
   title: string;
@@ -16,61 +17,100 @@ type CommandPaletteItem = {
   category: 'collections' | 'items' | 'users' | 'chains';
 };
 
-const MOCK_DATA: CommandPaletteItem[] = [
-  {
-    title: 'Arc Originals',
-    subtitle: 'Premium generative art drops',
-    href: '/collection/arc-originals',
-    icon: <Folder className="h-4 w-4" />,
-    metric: 'Floor 2.1k USDC',
-    category: 'collections',
-  },
-  {
-    title: 'AI Navigator #421',
-    subtitle: 'Arc Originals',
-    href: '/nft/0x1234/421',
-    icon: <Sparkles className="h-4 w-4" />,
-    metric: formatUSDC(BigInt(3200000)),
-    category: 'items',
-  },
-  {
-    title: 'Synth Labs',
-    subtitle: 'Studio team • Verified',
-    href: '/profile/synthlabs',
-    icon: <Users className="h-4 w-4" />,
-    metric: '24.5M USDC volume',
-    category: 'users',
-  },
-  {
-    title: 'Arc Gaming Icons',
-    subtitle: 'Esports collections',
-    href: '/collection/arc-gaming',
-    icon: <Folder className="h-4 w-4" />,
-    metric: 'Floor 820 USDC',
-    category: 'collections',
-  },
-  {
-    title: 'Creative Commons',
-    subtitle: 'Explore photography',
-    href: '/explore?category=photography',
-    icon: <Flame className="h-4 w-4" />,
-    metric: 'Trending',
-    category: 'items',
-  },
-];
-
 export default function CommandPalette() {
   const { isOpen, query, setQuery, close, recentSearches, trendingSearches, addRecentSearch } = useCommandPalette();
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [results, setResults] = useState<CommandPaletteItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  const filteredItems = useMemo(() => {
-    if (!query) {
-      return MOCK_DATA;
-    }
+  // Search Typesense
+  useEffect(() => {
+    const search = async () => {
+      if (!query) {
+        setResults([]);
+        return;
+      }
 
-    return MOCK_DATA.filter((item) => item.title.toLowerCase().includes(query.toLowerCase()));
+      setIsLoading(true);
+      try {
+        const searchResults = await typesenseClient.multiSearch.perform({
+          searches: [
+            {
+              collection: 'collections',
+              q: query,
+              query_by: 'name,symbol',
+              per_page: 3,
+            },
+            {
+              collection: 'nfts',
+              q: query,
+              query_by: 'name,token_id',
+              per_page: 3,
+            },
+            {
+              collection: 'users',
+              q: query,
+              query_by: 'username,address',
+              per_page: 2,
+            },
+          ],
+        });
+
+        const items: CommandPaletteItem[] = [];
+
+        // Process Collections
+        if (searchResults.results[0]?.hits) {
+          searchResults.results[0].hits.forEach((hit: any) => {
+            items.push({
+              title: hit.document.name,
+              subtitle: hit.document.symbol,
+              href: `/collection/${hit.document.id}`,
+              icon: <Folder className="h-4 w-4" />,
+              metric: hit.document.floor_price ? `Floor ${hit.document.floor_price} USDC` : undefined,
+              category: 'collections',
+            });
+          });
+        }
+
+        // Process NFTs
+        if (searchResults.results[1]?.hits) {
+          searchResults.results[1].hits.forEach((hit: any) => {
+            items.push({
+              title: hit.document.name,
+              subtitle: hit.document.collection_name,
+              href: `/nft/${hit.document.collection_address}/${hit.document.token_id}`,
+              icon: <Sparkles className="h-4 w-4" />,
+              metric: hit.document.price ? `${hit.document.price} USDC` : undefined,
+              category: 'items',
+            });
+          });
+        }
+
+        // Process Users
+        if (searchResults.results[2]?.hits) {
+          searchResults.results[2].hits.forEach((hit: any) => {
+            items.push({
+              title: hit.document.username || hit.document.address,
+              subtitle: hit.document.bio,
+              href: `/profile/${hit.document.address}`,
+              icon: <Users className="h-4 w-4" />,
+              category: 'users',
+            });
+          });
+        }
+
+        setResults(items);
+      } catch (error) {
+        console.error('Search failed:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const debounce = setTimeout(search, 200);
+    return () => clearTimeout(debounce);
   }, [query]);
 
   const handleSelect = (value: string) => {
@@ -98,18 +138,17 @@ export default function CommandPalette() {
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setSelectedIndex((prev) => (prev + 1) % filteredItems.length);
+          setSelectedIndex((prev) => (prev + 1) % (results.length || 1));
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setSelectedIndex((prev) => (prev - 1 + filteredItems.length) % filteredItems.length);
+          setSelectedIndex((prev) => (prev - 1 + (results.length || 1)) % (results.length || 1));
           break;
         case 'Enter':
           e.preventDefault();
-          if (filteredItems[selectedIndex]) {
-            handleSelect(filteredItems[selectedIndex].title);
-            // Navigate to the selected item
-            window.location.href = filteredItems[selectedIndex].href;
+          if (results[selectedIndex]) {
+            handleSelect(results[selectedIndex].title);
+            window.location.href = results[selectedIndex].href;
           }
           break;
       }
@@ -117,7 +156,7 @@ export default function CommandPalette() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, filteredItems, selectedIndex]);
+  }, [isOpen, results, selectedIndex]);
 
   // Scroll selected item into view
   useEffect(() => {
@@ -168,50 +207,54 @@ export default function CommandPalette() {
                   role="combobox"
                   aria-expanded="true"
                   aria-controls="command-palette-results"
-                  aria-activedescendant={filteredItems[selectedIndex] ? `result-${selectedIndex}` : undefined}
+                  aria-activedescendant={results[selectedIndex] ? `result-${selectedIndex}` : undefined}
                 />
                 <kbd className="hidden sm:inline-flex items-center gap-1 rounded border border-neutral-300 bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
                   ESC
                 </kbd>
               </div>
 
-          {recentSearches.length > 0 && !query && (
-            <div className="border-b border-neutral-100/60 px-4 py-3 text-xs uppercase tracking-wide text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
-              Recent Searches
-              <div className="mt-2 flex flex-wrap gap-2 text-sm normal-case">
-                {recentSearches.map((search) => (
-                  <button
-                    key={search}
-                    onClick={() => handleSelect(search)}
-                    className="rounded-full border border-neutral-200/70 px-3 py-1 text-neutral-700 transition hover:border-primary-500 hover:text-primary-600 dark:border-neutral-700 dark:text-neutral-300"
-                  >
-                    {search}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+              {recentSearches.length > 0 && !query && (
+                <div className="border-b border-neutral-100/60 px-4 py-3 text-xs uppercase tracking-wide text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
+                  Recent Searches
+                  <div className="mt-2 flex flex-wrap gap-2 text-sm normal-case">
+                    {recentSearches.map((search) => (
+                      <button
+                        key={search}
+                        onClick={() => handleSelect(search)}
+                        className="rounded-full border border-neutral-200/70 px-3 py-1 text-neutral-700 transition hover:border-primary-500 hover:text-primary-600 dark:border-neutral-700 dark:text-neutral-300"
+                      >
+                        {search}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {!query && (
-            <div className="border-b border-neutral-100/60 px-4 py-3 text-xs uppercase tracking-wide text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
-              Trending Searches
-              <div className="mt-2 flex flex-wrap gap-2 text-sm normal-case">
-                {trendingSearches.map((trend) => (
-                  <button
-                    key={trend}
-                    onClick={() => handleSelect(trend)}
-                    className="rounded-full bg-primary-50/80 px-3 py-1 text-primary-700 transition hover:bg-primary-100 dark:bg-primary-500/10 dark:text-primary-200"
-                  >
-                    <Flame className="mr-1 h-3.5 w-3.5" />
-                    {trend}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+              {!query && (
+                <div className="border-b border-neutral-100/60 px-4 py-3 text-xs uppercase tracking-wide text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
+                  Trending Searches
+                  <div className="mt-2 flex flex-wrap gap-2 text-sm normal-case">
+                    {trendingSearches.map((trend) => (
+                      <button
+                        key={trend}
+                        onClick={() => handleSelect(trend)}
+                        className="rounded-full bg-primary-50/80 px-3 py-1 text-primary-700 transition hover:bg-primary-100 dark:bg-primary-500/10 dark:text-primary-200"
+                      >
+                        <Flame className="mr-1 h-3.5 w-3.5" />
+                        {trend}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              <div className="max-h-[420px] overflow-y-auto">
-                {filteredItems.length === 0 && (
+              <div className="max-h-[420px] overflow-y-auto min-h-[100px]">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
+                  </div>
+                ) : query && results.length === 0 ? (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -221,45 +264,40 @@ export default function CommandPalette() {
                     <p className="text-base font-medium">No matches</p>
                     <p className="text-sm">Try a different query or explore trending searches.</p>
                   </motion.div>
-                )}
-
-                {filteredItems.length > 0 && (
+                ) : (
                   <div
                     ref={resultsRef}
                     id="command-palette-results"
                     role="listbox"
                     className="divide-y divide-neutral-100/70 dark:divide-neutral-800"
                   >
-                    {filteredItems.map((item, index) => (
+                    {results.map((item, index) => (
                       <Link
-                        key={item.title}
+                        key={item.title + index}
                         id={`result-${index}`}
                         href={item.href}
                         onClick={() => handleSelect(item.title)}
                         role="option"
                         aria-selected={index === selectedIndex}
-                        className={`group flex items-center gap-4 px-5 py-4 transition ${
-                          index === selectedIndex
+                        className={`group flex items-center gap-4 px-5 py-4 transition ${index === selectedIndex
                             ? 'bg-primary-50/80 dark:bg-primary-500/20'
                             : 'hover:bg-primary-50/60 dark:hover:bg-primary-500/10'
-                        }`}
+                          }`}
                       >
                         <div
-                          className={`flex h-10 w-10 items-center justify-center rounded-xl transition ${
-                            index === selectedIndex
+                          className={`flex h-10 w-10 items-center justify-center rounded-xl transition ${index === selectedIndex
                               ? 'bg-primary-600 text-white'
                               : 'bg-neutral-100 text-neutral-700 group-hover:bg-primary-600 group-hover:text-white dark:bg-neutral-800 dark:text-neutral-200'
-                          }`}
+                            }`}
                         >
                           {item.icon}
                         </div>
                         <div className="flex-1">
                           <p
-                            className={`text-sm font-semibold transition ${
-                              index === selectedIndex
+                            className={`text-sm font-semibold transition ${index === selectedIndex
                                 ? 'text-primary-600 dark:text-primary-400'
                                 : 'text-neutral-900 group-hover:text-primary-600 dark:text-white'
-                            }`}
+                              }`}
                           >
                             {item.title}
                           </p>
