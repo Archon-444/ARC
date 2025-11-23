@@ -114,7 +114,7 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
             )}
           </div>
           <button
-            onClick={handleDismiss}
+            onClick={() => onDismiss(toast.id)}
             className={cn('flex-shrink-0 rounded-md p-1 hover:bg-black/5', descriptionClasses)}
             aria-label="Dismiss"
           >

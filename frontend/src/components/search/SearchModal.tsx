@@ -16,7 +16,7 @@ import { Search, Clock, TrendingUp, X } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
-import { getSearchSuggestions } from '@/lib/algolia';
+import { searchAll } from '@/lib/algolia';
 
 interface SearchResult {
   id: string;
@@ -71,31 +71,32 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     setIsLoading(true);
     const timeoutId = setTimeout(async () => {
       try {
-        const suggestions = await getSearchSuggestions(query, { limit: 8 });
+        const suggestions = await searchAll(query, { hitsPerPage: 8 });
+
 
         // Map Algolia results to SearchResult format
         const mappedResults: SearchResult[] = [
-          ...suggestions.nfts.map((nft) => ({
+          ...suggestions.nfts.hits.map((nft: any) => ({
             id: nft.objectID,
             type: 'nft' as const,
             title: nft.name,
-            subtitle: nft.collectionName,
+            subtitle: nft.collection?.name,
             image: nft.image,
-            url: `/nft/${nft.collectionAddress}/${nft.tokenId}`,
+            url: `/nft/${nft.collection?.id}/${nft.tokenId}`,
           })),
-          ...suggestions.collections.map((collection) => ({
+          ...suggestions.collections.hits.map((collection: any) => ({
             id: collection.objectID,
             type: 'collection' as const,
             title: collection.name,
-            subtitle: `${collection.totalSupply.toLocaleString()} items`,
+            subtitle: `${collection.totalSupply?.toLocaleString() || 0} items`,
             image: collection.image,
             url: `/collection/${collection.address}`,
           })),
-          ...suggestions.users.map((user) => ({
+          ...suggestions.users.hits.map((user: any) => ({
             id: user.objectID,
             type: 'user' as const,
             title: user.username || user.address.slice(0, 8),
-            subtitle: `${user.nftCount} NFTs owned`,
+            subtitle: `${user.nftCount || 0} NFTs owned`,
             image: user.avatar,
             url: `/profile/${user.address}`,
           })),

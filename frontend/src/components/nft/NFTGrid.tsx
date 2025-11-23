@@ -12,32 +12,13 @@ import { motion } from 'framer-motion';
 import { staggerContainer, fadeInUpVariants } from '@/lib/animations';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Package } from 'lucide-react';
-import type { Address } from '@/types';
+import type { NFT, Listing, Auction } from '@/types';
 
-export interface NFT {
-  id: string;
-  tokenId: string;
-  contractAddress: Address;
-  name: string;
-  image: string;
-  collection: {
-    name: string;
-    address: Address;
-    verified?: boolean;
-  };
-  price?: string;
-  lastSale?: string;
-  rarity?: number;
-  isListed?: boolean;
-  auction?: {
-    endTime: number;
-    highestBid: string;
-  };
-  owner: Address;
-}
 
 interface NFTGridProps {
   nfts: NFT[];
+  listings?: Record<string, Listing>;
+  auctions?: Record<string, Auction>;
   isLoading?: boolean;
   emptyMessage?: string;
   emptyAction?: {
@@ -82,7 +63,7 @@ export function NFTGrid({
     >
       {nfts.map((nft, index) => (
         <motion.div
-          key={`${nft.contractAddress}-${nft.tokenId}`}
+          key={`${nft.collection.id}-${nft.tokenId}`}
           variants={fadeInUpVariants}
           custom={index}
         >
@@ -120,7 +101,7 @@ export function CompactNFTGrid({ nfts, isLoading, emptyMessage }: NFTGridProps) 
   return (
     <div className="grid grid-cols-2 gap-4">
       {nfts.map((nft) => (
-        <NFTCard key={`${nft.contractAddress}-${nft.tokenId}`} nft={nft} compact />
+        <NFTCard key={`${nft.collection.id}-${nft.tokenId}`} nft={nft} />
       ))}
     </div>
   );
