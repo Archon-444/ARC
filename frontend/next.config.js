@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  turbopack: {}, // Silence Turbopack/webpack warning in Next.js 16
   reactStrictMode: true,
 
   webpack: (config, { dev, isServer, webpack }) => {
