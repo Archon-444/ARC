@@ -109,8 +109,8 @@ export const GET_COLLECTION = gql`
 `;
 
 export const GET_NFT_DETAILS = gql`
-  query GetNFTDetails($collection: String!, $tokenId: String!) {
-    nft(id: "${collection}-${tokenId}") {
+  query GetNFTDetails($id: String!) {
+    nft(id: $id) {
       id
       tokenId
       name

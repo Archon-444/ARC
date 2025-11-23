@@ -124,9 +124,9 @@ export async function searchAll(
     ]);
 
     return {
-      nfts: results.results[0] as SearchResponse<NFTSearchResult>,
-      collections: results.results[1] as SearchResponse<CollectionSearchResult>,
-      users: results.results[2] as SearchResponse<UserSearchResult>,
+      nfts: results.results[0] as any as SearchResponse<NFTSearchResult>,
+      collections: results.results[1] as any as SearchResponse<CollectionSearchResult>,
+      users: results.results[2] as any as SearchResponse<UserSearchResult>,
     };
   } catch (error) {
     console.error('Search error:', error);
@@ -160,7 +160,7 @@ export async function searchIndex<T = SearchResult>(
       facetFilters,
     });
 
-    return results as SearchResponse<T>;
+    return results as any as SearchResponse<T>;
   } catch (error) {
     console.error(`Search error in ${indexName}:`, error);
     return {

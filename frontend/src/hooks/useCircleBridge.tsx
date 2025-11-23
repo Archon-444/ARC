@@ -120,14 +120,14 @@ export function useCircleBridge(): UseBridgeReturn {
           },
           to: params.recipientAddress
             ? {
-                adapter,
-                chain: params.toChain,
-                recipientAddress: params.recipientAddress,
-              }
+              adapter,
+              chain: params.toChain,
+              recipientAddress: params.recipientAddress,
+            }
             : {
-                adapter,
-                chain: params.toChain,
-              },
+              adapter,
+              chain: params.toChain,
+            },
           amount: params.amount,
           token: 'USDC',
         };
@@ -281,7 +281,7 @@ export function useCircleBridge(): UseBridgeReturn {
       }
 
       try {
-        return await kit.supportsRoute(fromChain, toChain, 'USDC');
+        return await (kit as any).supportsRoute(fromChain, toChain, 'USDC');
       } catch (err) {
         console.error('Route check error:', err);
         return false;

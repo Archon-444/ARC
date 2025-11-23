@@ -19,7 +19,6 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 export const graphQLClient = new GraphQLClient(GRAPHQL_ENDPOINT, {
-  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
