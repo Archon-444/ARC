@@ -191,6 +191,7 @@ interface ConfirmModalProps {
   cancelLabel?: string;
   confirmVariant?: 'primary' | 'danger';
   isLoading?: boolean;
+  children?: React.ReactNode;
 }
 
 export function ConfirmModal({
@@ -203,6 +204,7 @@ export function ConfirmModal({
   cancelLabel = 'Cancel',
   confirmVariant = 'primary',
   isLoading = false,
+  children,
 }: ConfirmModalProps) {
   const confirmClasses =
     confirmVariant === 'danger'
@@ -211,6 +213,7 @@ export function ConfirmModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} description={description} size="sm">
+      {children}
       <ModalFooter>
         <button
           onClick={onClose}

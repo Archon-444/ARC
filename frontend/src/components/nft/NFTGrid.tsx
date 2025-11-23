@@ -33,6 +33,7 @@ export interface NFT {
     endTime: number;
     highestBid: string;
   };
+  owner: Address;
 }
 
 interface NFTGridProps {

@@ -61,6 +61,7 @@
     "wagmi": "^2.19.4"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.17",
     "@types/node": "^24.10.1",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
@@ -73,6 +74,9 @@
     "postcss": "^8.5.6",
     "prettier": "^3.2.0",
     "prettier-plugin-tailwindcss": "^0.5.11",
-    "tailwindcss": "^4.1.17"
+    "tailwindcss": "^4.1.17",
+    "tap": "^21.1.6",
+    "tape": "^5.9.0",
+    "why-is-node-running": "^3.2.2"
   }
 }

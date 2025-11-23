@@ -2,10 +2,33 @@
 const nextConfig = {
   reactStrictMode: true,
 
-  webpack: (config, { dev, isServer }) => {
+  webpack: (config, { dev, isServer, webpack }) => {
     // Existing fallbacks and externals
     config.resolve.fallback = { fs: false, net: false, tls: false };
     config.externals.push('pino-pretty', 'lokijs', 'encoding');
+
+    // Ignore test modules that might be accidentally required
+    config.plugins.push(
+      new webpack.IgnorePlugin({
+        resourceRegExp: /^(tap|tape|why-is-node-running)$/,
+      })
+    );
+
+    // Global aliases to ignore test modules
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      tap: false,
+      tape: false,
+      'why-is-node-running': false,
+    };
+
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'thread-stream': false,
+        pino: false,
+      };
+    }
 
     // Production optimizations
     if (!dev && !isServer) {
@@ -61,10 +84,6 @@ const nextConfig = {
 
     return config;
   },
-  // Add empty turbopack config for Next.js 16+ compatibility
-  turbopack: {},
-  // Enable SWC minification for better performance
-  swcMinify: true,
   images: {
     // Enhanced image optimization with all common NFT storage providers
     remotePatterns: [
@@ -115,11 +134,9 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // Production browser source maps (disable for production)
-  productionBrowserSourceMaps: false,
-
-  // Optimize fonts
-  optimizeFonts: true,
+  experimental: {
+    optimizeCss: false,
+  },
   // Performance optimizations
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',

@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initiateSmartContractPlatformClient } from '@circle-fin/smart-contract-platform';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth-options';
 import { getCircleApiKey, getCircleEntitySecret } from '@/lib/circle-config';
 
 // Initialize Circle Smart Contract Platform client
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Deploy contract via Circle Smart Contract Platform
-    const response = await scpClient.deployContract({
+    const response = await (scpClient as any).deployContract({
       name,
       description: description || `Contract deployed by ${session.user?.name || 'user'}`,
       walletId,
@@ -76,16 +76,18 @@ export async function POST(request: NextRequest) {
       throw new Error('Failed to deploy contract');
     }
 
+    const responseData = response.data as any;
+
     console.log(`✅ Contract deployment initiated: ${name}`);
-    console.log(`   Contract ID: ${response.data.id}`);
-    console.log(`   Status: ${response.data.deployStatus}`);
+    console.log(`   Contract ID: ${responseData.id}`);
+    console.log(`   Status: ${responseData.deployStatus}`);
 
     return NextResponse.json({
       success: true,
-      contractId: response.data.id,
-      deploymentStatus: response.data.deployStatus,
-      transactionHash: response.data.transactionHash,
-      contractAddress: response.data.contractAddress,
+      contractId: responseData.id,
+      deploymentStatus: responseData.deployStatus,
+      transactionHash: responseData.transactionHash,
+      contractAddress: responseData.contractAddress,
     });
   } catch (error: any) {
     console.error('Circle contract deployment error:', error);

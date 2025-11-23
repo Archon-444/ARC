@@ -56,7 +56,7 @@ export default function CommandPalette() {
               per_page: 2,
             },
           ],
-        });
+        }) as any;
 
         const items: CommandPaletteItem[] = [];
 
@@ -280,14 +280,14 @@ export default function CommandPalette() {
                         role="option"
                         aria-selected={index === selectedIndex}
                         className={`group flex items-center gap-4 px-5 py-4 transition ${index === selectedIndex
-                            ? 'bg-primary-50/80 dark:bg-primary-500/20'
-                            : 'hover:bg-primary-50/60 dark:hover:bg-primary-500/10'
+                          ? 'bg-primary-50/80 dark:bg-primary-500/20'
+                          : 'hover:bg-primary-50/60 dark:hover:bg-primary-500/10'
                           }`}
                       >
                         <div
                           className={`flex h-10 w-10 items-center justify-center rounded-xl transition ${index === selectedIndex
-                              ? 'bg-primary-600 text-white'
-                              : 'bg-neutral-100 text-neutral-700 group-hover:bg-primary-600 group-hover:text-white dark:bg-neutral-800 dark:text-neutral-200'
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-neutral-100 text-neutral-700 group-hover:bg-primary-600 group-hover:text-white dark:bg-neutral-800 dark:text-neutral-200'
                             }`}
                         >
                           {item.icon}
@@ -295,8 +295,8 @@ export default function CommandPalette() {
                         <div className="flex-1">
                           <p
                             className={`text-sm font-semibold transition ${index === selectedIndex
-                                ? 'text-primary-600 dark:text-primary-400'
-                                : 'text-neutral-900 group-hover:text-primary-600 dark:text-white'
+                              ? 'text-primary-600 dark:text-primary-400'
+                              : 'text-neutral-900 group-hover:text-primary-600 dark:text-white'
                               }`}
                           >
                             {item.title}

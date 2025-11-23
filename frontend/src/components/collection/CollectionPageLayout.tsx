@@ -124,7 +124,7 @@ export function CollectionPageLayout({
           if (!values || values.length === 0) continue;
 
           const nftTrait = nft.attributes?.find((attr) => attr.trait_type === traitType);
-          if (!nftTrait || !values.includes(nftTrait.value)) {
+          if (!nftTrait || !values.includes(String(nftTrait.value))) {
             return false;
           }
         }

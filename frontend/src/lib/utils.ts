@@ -150,16 +150,26 @@ export function isAddress(address: string): address is Address {
 /**
  * Format Unix timestamp to relative time (e.g., "2 hours ago")
  */
-export function formatRelativeTime(timestamp: string | number): string {
-  const date = typeof timestamp === 'string' ? parseInt(timestamp) * 1000 : timestamp * 1000;
+export function formatRelativeTime(timestamp: string | number | Date): string {
+  let date: number | Date;
+  if (timestamp instanceof Date) {
+    date = timestamp;
+  } else {
+    date = typeof timestamp === 'string' ? parseInt(timestamp) * 1000 : timestamp * 1000;
+  }
   return formatDistanceToNow(date, { addSuffix: true });
 }
 
 /**
  * Format Unix timestamp to readable date
  */
-export function formatDate(timestamp: string | number): string {
-  const date = typeof timestamp === 'string' ? parseInt(timestamp) * 1000 : timestamp * 1000;
+export function formatDate(timestamp: string | number | Date): string {
+  let date: number | Date;
+  if (timestamp instanceof Date) {
+    date = timestamp;
+  } else {
+    date = typeof timestamp === 'string' ? parseInt(timestamp) * 1000 : timestamp * 1000;
+  }
   return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -170,8 +180,13 @@ export function formatDate(timestamp: string | number): string {
 /**
  * Format Unix timestamp to readable date and time
  */
-export function formatDateTime(timestamp: string | number): string {
-  const date = typeof timestamp === 'string' ? parseInt(timestamp) * 1000 : timestamp * 1000;
+export function formatDateTime(timestamp: string | number | Date): string {
+  let date: number | Date;
+  if (timestamp instanceof Date) {
+    date = timestamp;
+  } else {
+    date = typeof timestamp === 'string' ? parseInt(timestamp) * 1000 : timestamp * 1000;
+  }
   return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',

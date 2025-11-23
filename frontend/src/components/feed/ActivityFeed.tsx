@@ -37,7 +37,6 @@ export function ActivityFeed() {
     const [result] = useQuery({
         query: ACTIVITY_QUERY,
         requestPolicy: 'cache-and-network',
-        pollInterval: 5000, // Poll every 5 seconds for "live" feel
     });
 
     const { data, fetching, error } = result;

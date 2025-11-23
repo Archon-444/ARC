@@ -231,7 +231,7 @@ export function NFTDetailLayout({
                 </Link>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">View collection</p>
               </div>
-              {nftDisplay.collection.verified && (
+              {(nftDisplay.collection as any).verified && (
                 <Badge variant="success" className="gap-1">
                   Verified
                 </Badge>
@@ -367,13 +367,16 @@ export function NFTDetailLayout({
                     Properties
                   </h3>
                   <PropertyGrid
-                    properties={nftDisplay.attributes.map((attr) => ({
-                      traitType: attr.trait_type,
-                      value: attr.value,
-                      rarity: attr.rarity,
-                      count: attr.count,
-                    }))}
-                    total={nftDisplay.collection.totalSupply}
+                    properties={nftDisplay.attributes.map((attr) => {
+                      const attribute = attr as any;
+                      return {
+                        traitType: attribute.trait_type,
+                        value: String(attribute.value),
+                        rarity: Number(attribute.rarity),
+                        count: Number(attribute.count),
+                      };
+                    })}
+                    total={Number(nftDisplay.collection.totalSupply)}
                   />
                 </div>
               )}
@@ -399,7 +402,7 @@ export function NFTDetailLayout({
                   <DetailRow label="Chain" value="Arc Testnet" />
                   <DetailRow
                     label="Metadata"
-                    value={nftDisplay.tokenURI ? 'Centralized' : 'Frozen'}
+                    value={(nftDisplay as any).uri ? 'Centralized' : 'Frozen'}
                   />
                 </div>
               </div>

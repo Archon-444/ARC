@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initiateUserControlledWalletsClient } from '@circle-fin/user-controlled-wallets';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth-options';
 import { getCircleApiKey } from '@/lib/circle-config';
 
 const ETH_ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
@@ -77,18 +77,19 @@ export async function POST(request: NextRequest) {
       data?: unknown;
       gasLimit?: unknown;
       blockchain?: unknown;
+      userToken?: unknown;
     }>(request);
 
     if (!parsedBody.ok) {
       return parsedBody.error;
     }
 
-    const { walletId, to, value, data, gasLimit, blockchain } = parsedBody.value;
+    const { walletId, to, value, data, gasLimit, blockchain, userToken } = parsedBody.value;
 
     // Validate required fields
-    if (typeof walletId !== 'string' || typeof to !== 'string') {
+    if (typeof walletId !== 'string' || typeof to !== 'string' || typeof userToken !== 'string') {
       return NextResponse.json(
-        { error: 'walletId and to address are required' },
+        { error: 'walletId, to address, and userToken are required' },
         { status: 400 }
       );
     }
@@ -140,7 +141,10 @@ export async function POST(request: NextRequest) {
 
     // Verify wallet ownership (optional, recommended)
     try {
-      const walletResponse = await circleClient.getWallet({ id: walletId });
+      const walletResponse = await circleClient.getWallet({
+        id: walletId,
+        userToken,
+      } as any);
       if (!walletResponse.data?.wallet) {
         return NextResponse.json(
           { error: 'Wallet not found' },
@@ -164,7 +168,8 @@ export async function POST(request: NextRequest) {
         : undefined;
 
     // Create contract execution transaction
-    const txResponse = await circleClient.createContractExecutionTransaction({
+    const txResponse = await (circleClient as any).createContractExecutionTransaction({
+      userToken,
       walletId,
       contractAddress: to,
       abiFunctionSignature: normalizedData, // Use provided data or empty for simple transfer

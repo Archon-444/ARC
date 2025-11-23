@@ -11,7 +11,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, Check, X, ExternalLink } from 'lucide-react';
-import { cn, formatUSDC, truncateAddress, formatDistanceToNow } from '@/lib/utils';
+import { cn, formatUSDC, truncateAddress, formatRelativeTime } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 
@@ -109,7 +109,7 @@ export function OfferTable({
             </p>
           </div>
         </div>
-        <Badge variant="info">{activeOffers.length} Active</Badge>
+        <Badge variant="neutral">{activeOffers.length} Active</Badge>
       </div>
 
       {/* Table */}
@@ -222,7 +222,7 @@ function OfferRow({ offer, isHighest, isOwner, isProcessing, onAccept, onDecline
         <div className="flex items-center gap-1.5">
           <Clock className={cn('h-3.5 w-3.5', isExpiringSoon ? 'text-orange-500' : 'text-neutral-400')} />
           <span className={cn('text-sm', isExpiringSoon ? 'font-medium text-orange-600 dark:text-orange-400' : 'text-neutral-600 dark:text-neutral-400')}>
-            {formatDistanceToNow(offer.expiresAt)}
+            {formatRelativeTime(offer.createdAt)}
           </span>
         </div>
       </td>

@@ -20,7 +20,7 @@ import {
   Filter,
   ExternalLink,
 } from 'lucide-react';
-import { cn, formatUSDC, truncateAddress, formatDistanceToNow } from '@/lib/utils';
+import { cn, formatUSDC, truncateAddress, formatRelativeTime } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 
@@ -327,7 +327,7 @@ function ActivityRow({ activity, showNFT }: ActivityRowProps) {
       <td className="px-4 py-4">
         <div className="flex items-center gap-2">
           <span className="text-sm text-neutral-500 dark:text-neutral-400">
-            {formatDistanceToNow(activity.timestamp)}
+            {formatRelativeTime(activity.timestamp)}
           </span>
           {activity.transactionHash && (
             <a

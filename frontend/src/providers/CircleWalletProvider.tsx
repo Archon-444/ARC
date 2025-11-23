@@ -13,18 +13,9 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 import { W3SSdk } from '@circle-fin/w3s-pw-web-sdk';
-import { CIRCLE_APP_ID, CircleWalletError } from '@/lib/circle';
+import { CIRCLE_APP_ID, CircleWalletError, CircleWallet } from '@/lib/circle';
 
-interface CircleWallet {
-  address: string;
-  id: string;
-  blockchain: string;
-  state: string;
-  createDate: string;
-  updateDate?: string;
-  name?: string;
-  refId?: string;
-}
+
 
 interface CircleWalletContextType {
   // Web SDK
@@ -36,6 +27,7 @@ interface CircleWalletContextType {
   activeWallet: CircleWallet | null;
   isConnected: boolean;
   loading: boolean;
+  isCreatingWallet: boolean;
   error: Error | null;
 
   // Authentication
@@ -81,6 +73,7 @@ export function CircleWalletProvider({ children }: CircleWalletProviderProps) {
   const [wallets, setWallets] = useState<CircleWallet[]>([]);
   const [activeWallet, setActiveWalletState] = useState<CircleWallet | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isCreatingWallet, setIsCreatingWallet] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [userToken, setUserToken] = useState<string | null>(null);
   const [encryptionKey, setEncryptionKey] = useState<string | null>(null);
@@ -216,6 +209,7 @@ export function CircleWalletProvider({ children }: CircleWalletProviderProps) {
       }
 
       setLoading(true);
+      setIsCreatingWallet(true);
       setError(null);
 
       try {
@@ -271,6 +265,7 @@ export function CircleWalletProvider({ children }: CircleWalletProviderProps) {
         throw err;
       } finally {
         setLoading(false);
+        setIsCreatingWallet(false);
       }
     },
     [session, userToken, encryptionKey, getAuthTokens, loadWallets]
@@ -361,6 +356,7 @@ export function CircleWalletProvider({ children }: CircleWalletProviderProps) {
     activeWallet,
     isConnected,
     loading,
+    isCreatingWallet,
     error,
     userToken,
     encryptionKey,

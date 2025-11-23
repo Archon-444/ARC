@@ -180,10 +180,19 @@ export default function NFTDetailPage({ params }: PageProps) {
       value: Number(sale.price) / 1e6,
       label: formatRelativeTime(sale.timestamp),
     })),
-  [sales]);
+    [sales]);
 
   const activityEvents = useMemo(() => {
-    const baseEvents = sales.map((sale) => ({
+    const baseEvents: {
+      id: string;
+      type: 'sales' | 'listing';
+      label: string;
+      price: string;
+      from: string;
+      to: string;
+      date: string;
+      timestamp: number;
+    }[] = sales.map((sale) => ({
       id: sale.id,
       type: 'sales' as const,
       label: 'Sale',

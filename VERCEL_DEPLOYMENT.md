@@ -28,7 +28,7 @@ vercel
 - Link to existing project? **N** (first time)
 - Project name? **arc-nft-marketplace** (or your choice)
 - In which directory is your code located? **frontend**
-- Want to override settings? **N**
+- Want to override settings? **N** (The `vercel.json` in `frontend` will be used)
 
 ### 5. Production Deployment
 ```bash

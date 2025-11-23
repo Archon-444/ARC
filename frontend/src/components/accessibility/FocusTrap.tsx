@@ -8,7 +8,7 @@
 
 'use client';
 
-import { useEffect, useRef, ReactNode } from 'react';
+import { useEffect, useRef, useState, ReactNode } from 'react';
 
 export interface FocusTrapProps {
   children: ReactNode;
@@ -220,7 +220,7 @@ export function useFocusVisible() {
  * Announces messages to screen readers dynamically
  */
 export function useAriaAnnouncement() {
-  const [message, setMessage] = useRef('');
+  const [message, setMessage] = useState('');
   const timeoutRef = useRef<NodeJS.Timeout>();
 
   const announce = (text: string, priority: 'polite' | 'assertive' = 'polite') => {
@@ -228,9 +228,9 @@ export function useAriaAnnouncement() {
       clearTimeout(timeoutRef.current);
     }
 
-    setMessage.current = '';
+    setMessage('');
     timeoutRef.current = setTimeout(() => {
-      setMessage.current = text;
+      setMessage(text);
     }, 100);
   };
 
@@ -242,5 +242,5 @@ export function useAriaAnnouncement() {
     };
   }, []);
 
-  return { announce, message: message.current };
+  return { announce, message };
 }
