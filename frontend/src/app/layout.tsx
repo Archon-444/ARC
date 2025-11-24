@@ -15,6 +15,7 @@ import { CommandPaletteProvider } from '@/hooks/useCommandPalette';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { SkipLink } from '@/components/ui/SkipLink';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+import { ThemeProvider } from '@/providers/ThemeProvider';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,31 +44,33 @@ export default function RootLayout({
         <title>ArcMarket - NFT Marketplace</title>
       </head>
       <body className="antialiased">
-        <ErrorBoundary>
-          <SessionProvider>
-            <WagmiProvider config={config}>
-              <QueryClientProvider client={queryClient}>
-                <RainbowKitProvider>
-                  <CircleWalletProvider>
-                    <ToastProvider>
-                      <CommandPaletteProvider>
-                        <SkipLink />
-                        <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
-                          <Navbar />
-                          <CommandPalette />
-                          <main id="main-content" className="pb-24">
-                            {children}
-                          </main>
-                          <InstallPrompt />
-                        </div>
-                      </CommandPaletteProvider>
-                    </ToastProvider>
-                  </CircleWalletProvider>
-                </RainbowKitProvider>
-              </QueryClientProvider>
-            </WagmiProvider>
-          </SessionProvider>
-        </ErrorBoundary>
+        <ThemeProvider>
+          <ErrorBoundary>
+            <SessionProvider>
+              <WagmiProvider config={config}>
+                <QueryClientProvider client={queryClient}>
+                  <RainbowKitProvider>
+                    <CircleWalletProvider>
+                      <ToastProvider>
+                        <CommandPaletteProvider>
+                          <SkipLink />
+                          <div className="min-h-screen bg-neutral-50 text-neutral-900 transition-colors dark:bg-neutral-900 dark:text-neutral-100">
+                            <Navbar />
+                            <CommandPalette />
+                            <main id="main-content" className="pb-24">
+                              {children}
+                            </main>
+                            <InstallPrompt />
+                          </div>
+                        </CommandPaletteProvider>
+                      </ToastProvider>
+                    </CircleWalletProvider>
+                  </RainbowKitProvider>
+                </QueryClientProvider>
+              </WagmiProvider>
+            </SessionProvider>
+          </ErrorBoundary>
+        </ThemeProvider>
       </body>
     </html>
   );

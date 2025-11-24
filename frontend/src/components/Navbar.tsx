@@ -13,6 +13,7 @@ import { WalletManagementModal } from '@/components/circle/WalletManagementModal
 import { CreateWalletModal } from '@/components/circle/CreateWalletModal';
 import { truncateAddress } from '@/lib/utils';
 import { useCommandPalette } from '@/hooks/useCommandPalette';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const primaryNav = [
   { label: 'Explore', href: '/explore' },
@@ -169,6 +170,8 @@ export default function Navbar() {
             <ShoppingCart className="h-5 w-5" />
             <span className="absolute -right-1 -top-1 rounded-full bg-primary-500 px-1.5 text-[10px] font-bold text-white">2</span>
           </button>
+
+          <ThemeToggle />
 
           <button className="rounded-full border border-neutral-200/80 bg-white p-2 text-neutral-500 hover:text-neutral-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
             <Bell className="h-5 w-5" />
