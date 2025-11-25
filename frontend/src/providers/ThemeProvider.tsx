@@ -59,11 +59,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setTheme(newTheme);
     };
 
-    // Prevent flash of unstyled content
-    if (!mounted) {
-        return <>{children}</>;
-    }
-
+    // Always provide context, even during SSR (prevents "useTheme must be used within ThemeProvider" errors)
     return (
         <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
             {children}
