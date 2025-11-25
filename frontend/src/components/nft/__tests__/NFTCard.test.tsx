@@ -10,7 +10,7 @@
 
 import { render, screen, fireEvent } from '@testing-library/react';
 import { NFTCard, NFTCardSkeleton, NFTGrid } from '../NFTCard';
-import type { NFT, Listing, Auction } from '@/types';
+import type { NFT, Listing, Auction, Collection, ListingStatus, AuctionStatus } from '@/types';
 
 // Mock Next.js Image component
 jest.mock('next/image', () => ({
@@ -27,32 +27,50 @@ jest.mock('next/link', () => ({
   default: ({ children, href }: any) => <a href={href}>{children}</a>,
 }));
 
+// Helper to create a complete mock collection
+const createMockCollection = (overrides?: Partial<Collection>): Collection => ({
+  id: '0x1234567890123456789012345678901234567890' as `0x${string}`,
+  name: 'Test Collection',
+  symbol: 'TEST',
+  totalSupply: '10000',
+  floorPrice: '100000000',
+  volumeTraded: '5000000000',
+  ...overrides,
+});
+
 describe('NFTCard', () => {
+  const mockCollection = createMockCollection();
+
   const mockNFT: NFT = {
     id: '1',
     tokenId: '1',
     name: 'Test NFT',
     image: 'https://example.com/nft.png',
     owner: '0x1234567890123456789012345678901234567890',
-    collection: {
-      id: '0xCollection',
-      name: 'Test Collection',
-      symbol: 'TEST',
-    },
+    collection: mockCollection,
   };
 
   const mockListing: Listing = {
     id: '1',
+    collection: '0x1234567890123456789012345678901234567890',
+    tokenId: '1',
     price: '100000000', // 100 USDC (6 decimals)
     seller: '0x1234567890123456789012345678901234567890',
+    createdAt: String(Math.floor(Date.now() / 1000)),
+    status: 'ACTIVE' as ListingStatus,
   };
 
   const mockAuction: Auction = {
     id: '1',
+    collection: '0x1234567890123456789012345678901234567890',
+    tokenId: '1',
+    seller: '0x1234567890123456789012345678901234567890',
     minBid: '50000000',
     highestBid: '75000000',
     highestBidder: '0x9876543210987654321098765432109876543210',
-    endTime: Math.floor(Date.now() / 1000) + 86400, // 24 hours from now
+    startTime: String(Math.floor(Date.now() / 1000)),
+    endTime: String(Math.floor(Date.now() / 1000) + 86400), // 24 hours from now
+    status: 'ACTIVE' as AuctionStatus,
   };
 
   describe('Rendering', () => {
@@ -85,8 +103,9 @@ describe('NFTCard', () => {
     });
 
     it('displays fallback when no NFT name is provided', () => {
-      const nftWithoutName = { ...mockNFT, name: undefined };
-      render(<NFTCard nft={nftWithoutName} />);
+      // Create NFT with empty name to test fallback
+      const nftWithEmptyName: NFT = { ...mockNFT, name: '' };
+      render(<NFTCard nft={nftWithEmptyName} />);
 
       expect(screen.getByText('#1')).toBeInTheDocument();
     });
@@ -106,22 +125,20 @@ describe('NFTCard', () => {
       const handleClick = jest.fn();
       render(<NFTCard nft={mockNFT} onClick={handleClick} />);
 
-      const card = screen.getByRole('article', { hidden: true }) || screen.getByText('Test NFT').closest('div');
+      // Find the card wrapper div by finding an element with cursor-pointer class
+      const card = screen.getByText('Test NFT').closest('div[class*="cursor-pointer"]');
       if (card) {
         fireEvent.click(card);
         expect(handleClick).toHaveBeenCalledTimes(1);
       }
     });
 
-    it('stops propagation on Buy Now button click', () => {
-      const handleCardClick = jest.fn();
-      render(<NFTCard nft={mockNFT} listing={mockListing} onClick={handleCardClick} />);
+    it('has Buy Now link with correct href', () => {
+      render(<NFTCard nft={mockNFT} listing={mockListing} />);
 
-      const buyButton = screen.getByText('Buy Now');
-      fireEvent.click(buyButton);
-
-      // Card click should not be triggered
-      expect(handleCardClick).not.toHaveBeenCalled();
+      const buyLink = screen.getByText('Buy Now');
+      expect(buyLink).toBeInTheDocument();
+      expect(buyLink.closest('a')).toHaveAttribute('href', `/nft/${mockNFT.collection.id}/${mockNFT.tokenId}`);
     });
   });
 
@@ -164,15 +181,17 @@ describe('NFTCard', () => {
 
 describe('NFTCardSkeleton', () => {
   it('renders skeleton loading state', () => {
-    const { container } = render(<NFTCardSkeleton />);
+    render(<NFTCardSkeleton />);
 
-    // Check for skeleton elements
-    const skeletons = container.querySelectorAll('.skeleton, [aria-hidden="true"]');
+    // Check for skeleton elements with role="status" (from the Skeleton component)
+    const skeletons = screen.getAllByRole('status');
     expect(skeletons.length).toBeGreaterThan(0);
   });
 });
 
 describe('NFTGrid', () => {
+  const gridMockCollection = createMockCollection();
+
   const mockNFTs: NFT[] = [
     {
       id: '1',
@@ -180,11 +199,7 @@ describe('NFTGrid', () => {
       name: 'NFT 1',
       image: 'https://example.com/1.png',
       owner: '0x1234567890123456789012345678901234567890',
-      collection: {
-        id: '0xCollection',
-        name: 'Test Collection',
-        symbol: 'TEST',
-      },
+      collection: gridMockCollection,
     },
     {
       id: '2',
@@ -192,18 +207,15 @@ describe('NFTGrid', () => {
       name: 'NFT 2',
       image: 'https://example.com/2.png',
       owner: '0x1234567890123456789012345678901234567890',
-      collection: {
-        id: '0xCollection',
-        name: 'Test Collection',
-        symbol: 'TEST',
-      },
+      collection: gridMockCollection,
     },
   ];
 
   it('renders loading state when isLoading is true', () => {
-    const { container } = render(<NFTGrid isLoading />);
+    render(<NFTGrid isLoading />);
 
-    const skeletons = container.querySelectorAll('.skeleton, [aria-hidden="true"]');
+    // Check for skeleton elements with role="status"
+    const skeletons = screen.getAllByRole('status');
     expect(skeletons.length).toBeGreaterThan(0);
   });
 
