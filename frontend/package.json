@@ -62,11 +62,13 @@
     "typesense": "^2.1.0",
     "urql": "^5.0.1",
     "viem": "^2.39.2",
-    "wagmi": "^2.19.4"
+    "wagmi": "^2.19.4",
+    "web-vitals": "^5.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.39.1",
+    "@next/bundle-analyzer": "^16.0.4",
     "@next/eslint-plugin-next": "^16.0.4",
     "@tailwindcss/postcss": "^4.1.17",
     "@testing-library/jest-dom": "^6.6.3",
