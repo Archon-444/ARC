@@ -56,29 +56,18 @@ export async function POST(request: NextRequest) {
 
     const { challengeId } = walletResponse.data;
 
-    console.log(`✅ Circle wallet creation initiated for user ${userId}, challengeId: ${challengeId}`);
-
     return NextResponse.json({
       success: true,
       challengeId,
       message: 'Wallet creation challenge created. User must complete PIN setup.',
     });
   } catch (error: any) {
-    console.error('Circle wallet creation error:', error);
-
-    if (error.response?.data) {
-      return NextResponse.json(
-        {
-          error: 'Wallet creation failed',
-          details: error.response.data
-        },
-        { status: error.response.status || 500 }
-      );
-    }
+    // Log error server-side only, don't expose details to client
+    console.error('Circle wallet creation error:', error.message);
 
     return NextResponse.json(
-      { error: 'Wallet creation failed' },
-      { status: 500 }
+      { error: 'Wallet creation failed', code: 'WALLET_CREATE_ERROR' },
+      { status: error.response?.status || 500 }
     );
   }
 }

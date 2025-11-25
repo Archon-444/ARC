@@ -45,13 +45,12 @@ export async function POST(request: NextRequest) {
     // Create or ensure user exists in Circle
     try {
       await circleClient.createUser({ userId });
-      console.log(`✅ Circle user created/verified: ${userId}`);
     } catch (error: any) {
       // User might already exist, check if it's a duplicate error
       if (error.response?.status !== 409) {
         throw error;
       }
-      console.log(`ℹ️  Circle user already exists: ${userId}`);
+      // User already exists - continue with token generation
     }
 
     // Generate user token
@@ -70,22 +69,12 @@ export async function POST(request: NextRequest) {
       expiresIn: 3600, // 1 hour (Circle's default)
     });
   } catch (error: any) {
-    console.error('Circle auth error:', error);
-
-    // Handle specific Circle API errors
-    if (error.response?.data) {
-      return NextResponse.json(
-        {
-          error: 'Circle authentication failed',
-          details: error.response.data
-        },
-        { status: error.response.status || 500 }
-      );
-    }
+    // Log error server-side only, don't expose details to client
+    console.error('Circle auth error:', error.message);
 
     return NextResponse.json(
-      { error: 'Authentication failed' },
-      { status: 500 }
+      { error: 'Authentication failed', code: 'AUTH_ERROR' },
+      { status: error.response?.status || 500 }
     );
   }
 }
@@ -99,6 +88,15 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    // Security: Verify the user is authenticated
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Please sign in' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const refreshToken = searchParams.get('refreshToken');
     const deviceId = searchParams.get('deviceId');
@@ -108,6 +106,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: 'refreshToken, deviceId, and userId are required' },
         { status: 400 }
+      );
+    }
+
+    // Security: Verify the session user matches the userId being refreshed (IDOR protection)
+    const sessionUserId = (session.user as any)?.userId;
+    if (sessionUserId && sessionUserId !== userId) {
+      console.warn(`[Security] Token refresh attempt for different user: session=${sessionUserId}, requested=${userId}`);
+      return NextResponse.json(
+        { error: 'Access denied' },
+        { status: 403 }
       );
     }
 
@@ -131,21 +139,12 @@ export async function GET(request: NextRequest) {
       expiresIn: 3600,
     });
   } catch (error: any) {
-    console.error('Token refresh error:', error);
-
-    if (error.response?.data) {
-      return NextResponse.json(
-        {
-          error: 'Token refresh failed',
-          details: error.response.data
-        },
-        { status: error.response.status || 500 }
-      );
-    }
+    // Log error server-side only, don't expose details to client
+    console.error('Token refresh error:', error.message);
 
     return NextResponse.json(
-      { error: 'Token refresh failed' },
-      { status: 500 }
+      { error: 'Token refresh failed', code: 'TOKEN_REFRESH_ERROR' },
+      { status: error.response?.status || 500 }
     );
   }
 }
