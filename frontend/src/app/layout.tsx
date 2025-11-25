@@ -16,6 +16,8 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { SkipLink } from '@/components/ui/SkipLink';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { ThemeProvider } from '@/providers/ThemeProvider';
+import { WebVitalsReporter } from '@/components/analytics/WebVitalsReporter';
+import { OrganizationSchema, WebsiteSchema } from '@/components/seo/StructuredData';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,6 +63,9 @@ export default function RootLayout({
                               {children}
                             </main>
                             <InstallPrompt />
+                            <WebVitalsReporter />
+                            <OrganizationSchema />
+                            <WebsiteSchema />
                           </div>
                         </CommandPaletteProvider>
                       </ToastProvider>

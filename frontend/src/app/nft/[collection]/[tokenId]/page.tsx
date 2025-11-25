@@ -124,6 +124,60 @@ export default function NFTDetailPage({ params }: PageProps) {
   // Countdown for auctions
   const [timeRemaining, setTimeRemaining] = useState<ReturnType<typeof getTimeRemaining> | null>(null);
 
+  // Memoized values - must be before any early returns to follow Rules of Hooks
+  const priceHistoryPoints = useMemo(() =>
+    sales.map((sale) => ({
+      value: Number(sale.price) / 1e6,
+      label: formatRelativeTime(sale.timestamp),
+    })),
+    [sales]);
+
+  const activityEvents = useMemo(() => {
+    const baseEvents: {
+      id: string;
+      type: 'sales' | 'listing';
+      label: string;
+      price: string;
+      from: string;
+      to: string;
+      date: string;
+      timestamp: number;
+    }[] = sales.map((sale) => ({
+      id: sale.id,
+      type: 'sales' as const,
+      label: 'Sale',
+      price: formatUSDC(sale.price),
+      from: truncateAddress(sale.seller),
+      to: truncateAddress(sale.buyer),
+      date: formatDate(sale.timestamp),
+      timestamp: Number(sale.timestamp),
+    }));
+
+    if (listing) {
+      baseEvents.push({
+        id: `${listing.id}-listing`,
+        type: 'listing' as const,
+        label: 'Listing',
+        price: formatUSDC(listing.price),
+        from: truncateAddress(listing.seller),
+        to: 'Marketplace',
+        date: formatDate(listing.createdAt),
+        timestamp: Number(listing.createdAt || 0),
+      });
+    }
+
+    return baseEvents.sort((a, b) => b.timestamp - a.timestamp);
+  }, [sales, listing]);
+
+  const moreFromCollection = useMemo(() => {
+    if (!nft) return [];
+    const baseId = parseInt(nft.tokenId, 10) || 0;
+    return Array.from({ length: 4 }).map((_, index) => ({
+      tokenId: (baseId + index + 1).toString(),
+      href: `/nft/${nft.collection.id}/${baseId + index + 1}`,
+    }));
+  }, [nft]);
+
   useEffect(() => {
     loadNFT();
   }, [collection, tokenId]);
@@ -175,59 +229,7 @@ export default function NFTDetailPage({ params }: PageProps) {
 
   const imageUrl = getImageUrl(nft.image);
   const isAuctionActive = auction && timeRemaining && !timeRemaining.isExpired;
-  const priceHistoryPoints = useMemo(() =>
-    sales.map((sale) => ({
-      value: Number(sale.price) / 1e6,
-      label: formatRelativeTime(sale.timestamp),
-    })),
-    [sales]);
-
-  const activityEvents = useMemo(() => {
-    const baseEvents: {
-      id: string;
-      type: 'sales' | 'listing';
-      label: string;
-      price: string;
-      from: string;
-      to: string;
-      date: string;
-      timestamp: number;
-    }[] = sales.map((sale) => ({
-      id: sale.id,
-      type: 'sales' as const,
-      label: 'Sale',
-      price: formatUSDC(sale.price),
-      from: truncateAddress(sale.seller),
-      to: truncateAddress(sale.buyer),
-      date: formatDate(sale.timestamp),
-      timestamp: Number(sale.timestamp),
-    }));
-
-    if (listing) {
-      baseEvents.push({
-        id: `${listing.id}-listing`,
-        type: 'listing' as const,
-        label: 'Listing',
-        price: formatUSDC(listing.price),
-        from: truncateAddress(listing.seller),
-        to: 'Marketplace',
-        date: formatDate(listing.createdAt),
-        timestamp: Number(listing.createdAt || 0),
-      });
-    }
-
-    return baseEvents.sort((a, b) => b.timestamp - a.timestamp);
-  }, [sales, listing]);
-
   const filteredActivity = activityEvents.filter((event) => activityFilter === 'all' || event.type === activityFilter);
-
-  const moreFromCollection = useMemo(() => {
-    const baseId = parseInt(nft.tokenId, 10) || 0;
-    return Array.from({ length: 4 }).map((_, index) => ({
-      tokenId: (baseId + index + 1).toString(),
-      href: `/nft/${nft.collection.id}/${baseId + index + 1}`,
-    }));
-  }, [nft.collection.id, nft.tokenId]);
 
   return (
     <div className="container mx-auto px-4 py-8">

@@ -1,4 +1,10 @@
 /** @type {import('next').NextConfig} */
+
+// Bundle analyzer setup - run with ANALYZE=true npm run build
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 const nextConfig = {
   turbopack: {}, // Silence Turbopack/webpack warning in Next.js 16
   reactStrictMode: true,
@@ -210,4 +216,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);
