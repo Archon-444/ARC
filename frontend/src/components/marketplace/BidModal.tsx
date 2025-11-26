@@ -162,32 +162,32 @@ export function BidModal({ isOpen, onClose, nft, auction, onSuccess }: BidModalP
       <div className="space-y-6">
         {/* NFT Preview */}
         <ModalSection title="Item">
-          <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-neutral-700 dark:bg-neutral-800">
             <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg">
               <Image src={imageUrl} alt={nft.name || `NFT #${nft.tokenId}`} fill className="object-cover" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-gray-500 truncate">{nft.collection.name}</p>
-              <p className="font-semibold text-gray-900 truncate">{nft.name || `#${nft.tokenId}`}</p>
-              <p className="text-sm text-gray-600">Owner: {truncateAddress(nft.owner)}</p>
+              <p className="text-xs text-gray-500 dark:text-neutral-400 truncate">{nft.collection.name}</p>
+              <p className="font-semibold text-gray-900 dark:text-white truncate">{nft.name || `#${nft.tokenId}`}</p>
+              <p className="text-sm text-gray-600 dark:text-neutral-400">Owner: {truncateAddress(nft.owner)}</p>
             </div>
           </div>
         </ModalSection>
 
         {/* Auction Info */}
         <ModalSection title="Auction Details">
-          <div className="space-y-3 rounded-lg border border-purple-200 bg-purple-50 p-4">
+          <div className="space-y-3 rounded-lg border border-purple-200 bg-purple-50 p-4 dark:border-purple-800 dark:bg-purple-900/20">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-600 dark:text-neutral-400">
                 {auction.highestBid && auction.highestBid !== '0' ? 'Current Bid' : 'Minimum Bid'}
               </span>
-              <span className="text-lg font-bold text-gray-900">{formatUSDC(currentBid)}</span>
+              <span className="text-lg font-bold text-gray-900 dark:text-white">{formatUSDC(currentBid)}</span>
             </div>
 
             {auction.highestBidder && auction.highestBidder !== '0x0000000000000000000000000000000000000000' && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Highest bidder</span>
-                <span className="font-medium text-gray-900">
+                <span className="text-gray-600 dark:text-neutral-400">Highest bidder</span>
+                <span className="font-medium text-gray-900 dark:text-white">
                   {truncateAddress(auction.highestBidder as Address)}
                 </span>
               </div>
@@ -236,14 +236,14 @@ export function BidModal({ isOpen, onClose, nft, auction, onSuccess }: BidModalP
               </div>
 
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Minimum bid</span>
-                <span className="font-medium text-gray-900">{formatUSDC(minNextBid)}</span>
+                <span className="text-gray-600 dark:text-neutral-400">Minimum bid</span>
+                <span className="font-medium text-gray-900 dark:text-white">{formatUSDC(minNextBid)}</span>
               </div>
 
               {address && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Your balance</span>
-                  <span className={cn('font-medium', hasInsufficientBalance ? 'text-red-600' : 'text-gray-900')}>
+                  <span className="text-gray-600 dark:text-neutral-400">Your balance</span>
+                  <span className={cn('font-medium', hasInsufficientBalance ? 'text-red-600' : 'text-gray-900 dark:text-white')}>
                     {formatUSDC(userBalance)}
                   </span>
                 </div>
@@ -363,7 +363,7 @@ export function BidModal({ isOpen, onClose, nft, auction, onSuccess }: BidModalP
         <button
           onClick={handleClose}
           disabled={step === BidStep.BIDDING || step === BidStep.CONFIRMING}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
         >
           {step === BidStep.SUCCESS ? 'Close' : 'Cancel'}
         </button>

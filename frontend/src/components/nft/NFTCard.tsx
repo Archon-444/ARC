@@ -123,14 +123,14 @@ export function NFTCard({
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       className={cn(
-        'group relative overflow-hidden rounded-xl border border-gray-200/60 bg-white',
+        'group relative overflow-hidden rounded-xl border border-gray-200/60 bg-white dark:border-neutral-700 dark:bg-neutral-900',
         onClick && 'cursor-pointer',
         className
       )}
       onClick={handleClick}
     >
       {/* Image Container */}
-      <Link href={nftUrl} className="block aspect-square relative overflow-hidden bg-gray-100">
+      <Link href={nftUrl} className="block aspect-square relative overflow-hidden bg-gray-100 dark:bg-neutral-800">
         <motion.div variants={imageVariants} className="h-full w-full">
           {!imageError ? (
             <Image
@@ -142,8 +142,8 @@ export function NFTCard({
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             />
           ) : (
-            <div className="flex h-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-              <span className="text-4xl font-bold text-gray-400">#{nft.tokenId}</span>
+            <div className="flex h-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-neutral-800 dark:to-neutral-700">
+              <span className="text-4xl font-bold text-gray-400 dark:text-neutral-500">#{nft.tokenId}</span>
             </div>
           )}
         </motion.div>
@@ -173,11 +173,11 @@ export function NFTCard({
               e.stopPropagation();
               setIsLiked(!isLiked);
             }}
-            className="rounded-full bg-white/90 p-2 backdrop-blur-sm shadow-sm transition-colors hover:bg-white"
+            className="rounded-full bg-white/90 p-2 backdrop-blur-sm shadow-sm transition-colors hover:bg-white dark:bg-neutral-900/90 dark:hover:bg-neutral-900"
             aria-label={isLiked ? 'Unlike' : 'Like'}
           >
             <Heart
-              className={cn('h-4 w-4 transition-colors', isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600')}
+              className={cn('h-4 w-4 transition-colors', isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600 dark:text-neutral-400')}
             />
           </motion.button>
 
@@ -193,10 +193,10 @@ export function NFTCard({
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleShare}
-              className="rounded-full bg-white/90 p-2 backdrop-blur-sm shadow-sm transition-colors hover:bg-white"
+              className="rounded-full bg-white/90 p-2 backdrop-blur-sm shadow-sm transition-colors hover:bg-white dark:bg-neutral-900/90 dark:hover:bg-neutral-900"
               aria-label="Share"
             >
-              <Share2 className="h-4 w-4 text-gray-600" />
+              <Share2 className="h-4 w-4 text-gray-600 dark:text-neutral-400" />
             </motion.button>
 
             <motion.button
@@ -208,10 +208,10 @@ export function NFTCard({
                 e.stopPropagation();
                 // More actions menu
               }}
-              className="rounded-full bg-white/90 p-2 backdrop-blur-sm shadow-sm transition-colors hover:bg-white"
+              className="rounded-full bg-white/90 p-2 backdrop-blur-sm shadow-sm transition-colors hover:bg-white dark:bg-neutral-900/90 dark:hover:bg-neutral-900"
               aria-label="More options"
             >
-              <MoreVertical className="h-4 w-4 text-gray-600" />
+              <MoreVertical className="h-4 w-4 text-gray-600 dark:text-neutral-400" />
             </motion.button>
           </motion.div>
         </div>
@@ -231,31 +231,31 @@ export function NFTCard({
       <div className="p-4">
         {/* Collection Name */}
         {showCollection && nft.collection?.name && (
-          <p className="mb-1 text-xs font-medium text-gray-500 truncate">
+          <p className="mb-1 text-xs font-medium text-gray-500 dark:text-neutral-400 truncate">
             {nft.collection.name}
           </p>
         )}
 
         {/* NFT Name */}
         <Link href={nftUrl}>
-          <h3 className="mb-2 text-lg font-semibold text-gray-900 truncate hover:text-blue-600">
+          <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white truncate hover:text-blue-600 dark:hover:text-blue-400">
             {nft.name || `#${nft.tokenId}`}
           </h3>
         </Link>
 
         {/* Owner */}
         {showOwner && (
-          <p className="mb-3 text-sm text-gray-600">
+          <p className="mb-3 text-sm text-gray-600 dark:text-neutral-400">
             Owner: <span className="font-medium">{truncateAddress(nft.owner)}</span>
           </p>
         )}
 
         {/* Price Section */}
         {price && (
-          <div className="flex items-center justify-between border-t border-gray-100 pt-3">
+          <div className="flex items-center justify-between border-t border-gray-100 dark:border-neutral-700 pt-3">
             <div>
-              <p className="text-xs text-gray-500">{priceLabel}</p>
-              <p className="text-lg font-bold text-gray-900">{formatUSDC(price)}</p>
+              <p className="text-xs text-gray-500 dark:text-neutral-400">{priceLabel}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">{formatUSDC(price)}</p>
             </div>
             {listing && (
               <Link
@@ -280,8 +280,8 @@ export function NFTCard({
 
         {/* No Listing State */}
         {!price && (
-          <div className="border-t border-gray-100 pt-3">
-            <p className="text-sm text-gray-500">Not listed</p>
+          <div className="border-t border-gray-100 dark:border-neutral-700 pt-3">
+            <p className="text-sm text-gray-500 dark:text-neutral-400">Not listed</p>
           </div>
         )}
       </div>
@@ -300,10 +300,10 @@ export function NFTCardCompact({ nft, listing, auction }: NFTCardProps) {
   return (
     <Link
       href={nftUrl}
-      className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 transition-all hover:shadow-md"
+      className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 transition-all hover:shadow-md dark:border-neutral-700 dark:bg-neutral-900"
     >
       {/* Image */}
-      <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-gray-100">
+      <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-neutral-800">
         <Image
           src={imageUrl}
           alt={nft.name || `NFT #${nft.tokenId}`}
@@ -315,9 +315,9 @@ export function NFTCardCompact({ nft, listing, auction }: NFTCardProps) {
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-gray-500 truncate">{nft.collection.name}</p>
-        <p className="font-semibold text-gray-900 truncate">{nft.name || `#${nft.tokenId}`}</p>
-        {price && <p className="text-sm text-gray-600">{formatUSDC(price)}</p>}
+        <p className="text-xs text-gray-500 dark:text-neutral-400 truncate">{nft.collection.name}</p>
+        <p className="font-semibold text-gray-900 dark:text-white truncate">{nft.name || `#${nft.tokenId}`}</p>
+        {price && <p className="text-sm text-gray-600 dark:text-neutral-400">{formatUSDC(price)}</p>}
       </div>
 
       {/* Badge */}
@@ -338,13 +338,13 @@ export function NFTCardCompact({ nft, listing, auction }: NFTCardProps) {
  */
 export function NFTCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
       <Skeleton className="aspect-square w-full" />
       <div className="p-4 space-y-3">
         <Skeleton className="h-3 w-1/2" />
         <Skeleton className="h-5 w-3/4" />
         <Skeleton className="h-4 w-1/2" />
-        <div className="border-t border-gray-100 pt-3">
+        <div className="border-t border-gray-100 dark:border-neutral-700 pt-3">
           <Skeleton className="h-3 w-1/3 mb-1" />
           <Skeleton className="h-6 w-1/2" />
         </div>
@@ -385,7 +385,7 @@ export function NFTGrid({
     return (
       <div className="flex min-h-[300px] items-center justify-center text-center">
         {typeof emptyMessage === 'string' ? (
-          <p className="text-gray-500">{emptyMessage}</p>
+          <p className="text-gray-500 dark:text-neutral-400">{emptyMessage}</p>
         ) : (
           emptyMessage
         )}
