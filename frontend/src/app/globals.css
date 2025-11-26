@@ -123,27 +123,27 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /* Override primitive tokens */
-    --color-neutral-0: #0B1120;
-    --color-neutral-50: #0F172A;
-    --color-neutral-100: #1E293B;
-    --color-neutral-200: #334155;
-    --color-neutral-400: #94A3B8;
-    --color-neutral-600: #CBD5F5;
-    --color-neutral-800: #E2E8F0;
-    --color-neutral-900: #F8FAFC;
+    --color-neutral-0: #0a0a0a;
+    --color-neutral-50: #171717;
+    --color-neutral-100: #262626;
+    --color-neutral-200: #404040;
+    --color-neutral-400: #a3a3a3;
+    --color-neutral-600: #d4d4d4;
+    --color-neutral-800: #e5e5e5;
+    --color-neutral-900: #fafafa;
 
     /* Override semantic tokens */
-    --color-bg-primary: #0B1120;
-    --color-bg-secondary: #0F172A;
-    --color-bg-tertiary: #1E293B;
-    --color-surface: #1E293B;
-    --color-surface-elevated: #334155;
-    --color-text-primary: #F8FAFC;
-    --color-text-secondary: #CBD5F5;
-    --color-text-tertiary: #94A3B8;
+    --color-bg-primary: #0a0a0a;
+    --color-bg-secondary: #171717;
+    --color-bg-tertiary: #262626;
+    --color-surface: #171717;
+    --color-surface-elevated: #262626;
+    --color-text-primary: #fafafa;
+    --color-text-secondary: #d4d4d4;
+    --color-text-tertiary: #a3a3a3;
     --color-border: rgba(255, 255, 255, 0.1);
     --color-border-hover: rgba(32, 129, 226, 0.5);
-    --color-divider: #334155;
+    --color-divider: #404040;
 
     /* Override component tokens */
     --card-bg: var(--color-surface);
@@ -156,26 +156,26 @@
 
 [data-theme="dark"] {
   /* Same as dark mode media query, but manually triggered */
-  --color-neutral-0: #0B1120;
-  --color-neutral-50: #0F172A;
-  --color-neutral-100: #1E293B;
-  --color-neutral-200: #334155;
-  --color-neutral-400: #94A3B8;
-  --color-neutral-600: #CBD5F5;
-  --color-neutral-800: #E2E8F0;
-  --color-neutral-900: #F8FAFC;
+  --color-neutral-0: #0a0a0a;
+  --color-neutral-50: #171717;
+  --color-neutral-100: #262626;
+  --color-neutral-200: #404040;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-600: #d4d4d4;
+  --color-neutral-800: #e5e5e5;
+  --color-neutral-900: #fafafa;
 
-  --color-bg-primary: #0B1120;
-  --color-bg-secondary: #0F172A;
-  --color-bg-tertiary: #1E293B;
-  --color-surface: #1E293B;
-  --color-surface-elevated: #334155;
-  --color-text-primary: #F8FAFC;
-  --color-text-secondary: #CBD5F5;
-  --color-text-tertiary: #94A3B8;
+  --color-bg-primary: #0a0a0a;
+  --color-bg-secondary: #171717;
+  --color-bg-tertiary: #262626;
+  --color-surface: #171717;
+  --color-surface-elevated: #262626;
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #d4d4d4;
+  --color-text-tertiary: #a3a3a3;
   --color-border: rgba(255, 255, 255, 0.1);
   --color-border-hover: rgba(32, 129, 226, 0.5);
-  --color-divider: #334155;
+  --color-divider: #404040;
 
   --card-bg: var(--color-surface);
   --card-border: 1px solid var(--color-border);
