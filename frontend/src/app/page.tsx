@@ -211,7 +211,7 @@ export default function HomePage() {
 
       <div className="container-custom space-y-12 py-16">
         {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 dark:border-error-700 dark:bg-error-900/20 dark:text-error-200">
             {error}
           </div>
         )}
@@ -259,7 +259,7 @@ export default function HomePage() {
                         </p>
                         <p className="text-lg font-semibold">{listing.nft?.name ?? `Token #${listing.tokenId}`}</p>
                       </div>
-                      <span className="rounded-full bg-primary-50 px-3 py-1 text-sm font-semibold text-primary-600">
+                      <span className="rounded-full bg-primary-50 px-3 py-1 text-sm font-semibold text-primary-600 dark:bg-primary-500/20 dark:text-primary-300">
                         {formatUSDC(BigInt(listing.price))}
                       </span>
                     </div>
@@ -277,7 +277,7 @@ export default function HomePage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-lg font-semibold">{collector.name}</p>
-                        <p className="text-sm text-neutral-500">Portfolio {collector.value}</p>
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400">Portfolio {collector.value}</p>
                       </div>
                       <Badge variant="neutral" size="sm">
                         {collector.items} items
@@ -295,7 +295,7 @@ export default function HomePage() {
                   <Link key={category.label} href={category.href} className="card card-hover flex flex-col items-start gap-2 p-4">
                     <span className="text-2xl">{category.icon}</span>
                     <p className="text-sm font-semibold">{category.label}</p>
-                    <span className="text-xs text-neutral-500">Curated picks</span>
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">Curated picks</span>
                   </Link>
                 ))}
               </div>
@@ -315,7 +315,7 @@ export default function HomePage() {
                 <button
                   key={filter}
                   onClick={() => setActivityFilter(filter)}
-                  className={`chip ${activityFilter === filter ? 'border-primary-500 text-primary-600' : ''}`}
+                  className={`chip ${activityFilter === filter ? 'border-primary-500 text-primary-600 dark:text-primary-400' : ''}`}
                 >
                   {filter === 'all' ? 'All' : filter === 'sales' ? 'Sales' : 'Listings'}
                 </button>
@@ -328,7 +328,7 @@ export default function HomePage() {
                   <p className="text-sm text-neutral-500">{event.name}</p>
                   <div className="mt-2 flex items-center justify-between text-xs text-neutral-500">
                     <span>{event.timestamp}</span>
-                    <span className="font-semibold text-primary-600">{event.price}</span>
+                    <span className="font-semibold text-primary-600 dark:text-primary-400">{event.price}</span>
                   </div>
                 </div>
               ))}

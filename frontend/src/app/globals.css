@@ -154,7 +154,8 @@
   }
 }
 
-[data-theme="dark"] {
+[data-theme="dark"],
+.dark {
   /* Same as dark mode media query, but manually triggered */
   --color-neutral-0: #0a0a0a;
   --color-neutral-50: #171717;
