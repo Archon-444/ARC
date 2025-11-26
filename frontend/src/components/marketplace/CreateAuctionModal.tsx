@@ -152,15 +152,15 @@ export function CreateAuctionModal({ isOpen, onClose, nft, onSuccess }: CreateAu
       <div className="space-y-6">
         {/* NFT Preview */}
         <ModalSection title="Item">
-          <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-neutral-700 dark:bg-neutral-800">
             <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg">
               <Image src={imageUrl} alt={nft.name || `NFT #${nft.tokenId}`} fill className="object-cover" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-gray-500 truncate">{nft.collection.name}</p>
-              <p className="font-semibold text-gray-900 truncate">{nft.name || `#${nft.tokenId}`}</p>
+              <p className="text-xs text-gray-500 dark:text-neutral-400 truncate">{nft.collection.name}</p>
+              <p className="font-semibold text-gray-900 dark:text-white truncate">{nft.name || `#${nft.tokenId}`}</p>
               {nft.collection.floorPrice && (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-neutral-400">
                   Floor: {formatUSDC(parseUSDC(nft.collection.floorPrice))}
                 </p>
               )}
@@ -188,13 +188,13 @@ export function CreateAuctionModal({ isOpen, onClose, nft, onSuccess }: CreateAu
 
                 {/* Suggested Minimum Bids */}
                 <div>
-                  <p className="mb-2 text-xs text-gray-600">Suggested minimum bids</p>
+                  <p className="mb-2 text-xs text-gray-600 dark:text-neutral-400">Suggested minimum bids</p>
                   <div className="flex gap-2">
                     {suggestedBids.map((suggestedBid, index) => (
                       <button
                         key={index}
                         onClick={() => setMinBid(formatUSDC(suggestedBid, 2).replace(' USDC', ''))}
-                        className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
                       >
                         {formatUSDC(suggestedBid)}
                       </button>
@@ -213,15 +213,15 @@ export function CreateAuctionModal({ isOpen, onClose, nft, onSuccess }: CreateAu
                     className={cn(
                       'rounded-md border px-3 py-2 text-sm font-medium transition-colors',
                       duration === option.value
-                        ? 'border-purple-600 bg-purple-50 text-purple-700'
-                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                        ? 'border-purple-600 bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
                     )}
                   >
                     {option.label}
                   </button>
                 ))}
               </div>
-              <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
+              <div className="mt-3 flex items-center gap-2 text-sm text-gray-600 dark:text-neutral-400">
                 <Clock className="h-4 w-4" />
                 <span>
                   Auction will end on {endDate.toLocaleDateString()} at {endDate.toLocaleTimeString()}
@@ -231,24 +231,24 @@ export function CreateAuctionModal({ isOpen, onClose, nft, onSuccess }: CreateAu
 
             {/* Auction Summary */}
             {isMinBidValid && (
-              <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
-                <h3 className="mb-3 text-sm font-semibold text-purple-900">Auction Summary</h3>
+              <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 dark:border-purple-800 dark:bg-purple-900/20">
+                <h3 className="mb-3 text-sm font-semibold text-purple-900 dark:text-purple-300">Auction Summary</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-700">Minimum bid</span>
-                    <span className="font-medium text-gray-900">{formatUSDC(minBidInUSDC)}</span>
+                    <span className="text-gray-700 dark:text-neutral-400">Minimum bid</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{formatUSDC(minBidInUSDC)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-700">Duration</span>
-                    <span className="font-medium text-gray-900">{selectedDuration?.label}</span>
+                    <span className="text-gray-700 dark:text-neutral-400">Duration</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{selectedDuration?.label}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-700">Marketplace fee</span>
-                    <span className="font-medium text-gray-900">2.5% of final bid</span>
+                    <span className="text-gray-700 dark:text-neutral-400">Marketplace fee</span>
+                    <span className="font-medium text-gray-900 dark:text-white">2.5% of final bid</span>
                   </div>
-                  <div className="flex items-center justify-between border-t border-purple-200 pt-2">
-                    <span className="font-medium text-gray-900">Minimum you'll receive</span>
-                    <span className="font-bold text-gray-900">
+                  <div className="flex items-center justify-between border-t border-purple-200 dark:border-purple-700 pt-2">
+                    <span className="font-medium text-gray-900 dark:text-white">Minimum you'll receive</span>
+                    <span className="font-bold text-gray-900 dark:text-white">
                       {formatUSDC(minBidInUSDC * BigInt(975) / BigInt(1000))}
                     </span>
                   </div>
@@ -342,7 +342,7 @@ export function CreateAuctionModal({ isOpen, onClose, nft, onSuccess }: CreateAu
         <button
           onClick={handleClose}
           disabled={step === AuctionStep.CREATING || step === AuctionStep.CONFIRMING}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
         >
           {step === AuctionStep.SUCCESS ? 'Close' : 'Cancel'}
         </button>

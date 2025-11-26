@@ -237,7 +237,7 @@ export default function NFTDetailPage({ params }: PageProps) {
         {/* Left Column - Image */}
         <div className="space-y-4">
           {/* Main Image */}
-          <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+          <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-neutral-800">
             <Image
               src={imageUrl}
               alt={nft.name || `NFT #${nft.tokenId}`}
@@ -263,32 +263,32 @@ export default function NFTDetailPage({ params }: PageProps) {
             <div className="absolute top-4 right-4 flex gap-2">
               <button
                 onClick={() => setIsLiked(!isLiked)}
-                className="rounded-full bg-white/90 p-3 backdrop-blur-sm hover:bg-white"
+                className="rounded-full bg-white/90 p-3 backdrop-blur-sm hover:bg-white dark:bg-neutral-900/90 dark:hover:bg-neutral-900"
                 aria-label={isLiked ? 'Unlike' : 'Like'}
               >
                 <Heart
-                  className={cn('h-5 w-5', isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600')}
+                  className={cn('h-5 w-5', isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600 dark:text-neutral-400')}
                 />
               </button>
               <button
-                className="rounded-full bg-white/90 p-3 backdrop-blur-sm hover:bg-white"
+                className="rounded-full bg-white/90 p-3 backdrop-blur-sm hover:bg-white dark:bg-neutral-900/90 dark:hover:bg-neutral-900"
                 aria-label="Share"
               >
-                <Share2 className="h-5 w-5 text-gray-600" />
+                <Share2 className="h-5 w-5 text-gray-600 dark:text-neutral-400" />
               </button>
             </div>
           </div>
 
           {/* Attributes */}
           {nft.attributes && nft.attributes.length > 0 && (
-            <div className="rounded-lg border border-gray-200 bg-white p-6">
-              <h3 className="mb-4 text-lg font-semibold">Attributes</h3>
+            <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900">
+              <h3 className="mb-4 text-lg font-semibold dark:text-white">Attributes</h3>
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                 {nft.attributes.map((attr, index) => (
-                  <div key={index} className="rounded-2xl border border-gray-100 bg-gray-50 p-3 text-center">
-                    <p className="text-xs uppercase tracking-wide text-gray-500">{attr.trait_type}</p>
-                    <p className="font-semibold text-gray-900">{attr.value}</p>
-                    <p className="text-xs text-gray-500">{estimateTraitRarity(attr.trait_type, attr.value)}</p>
+                  <div key={index} className="rounded-2xl border border-gray-100 bg-gray-50 p-3 text-center dark:border-neutral-700 dark:bg-neutral-800">
+                    <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-neutral-400">{attr.trait_type}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{attr.value}</p>
+                    <p className="text-xs text-gray-500 dark:text-neutral-400">{estimateTraitRarity(attr.trait_type, attr.value)}</p>
                   </div>
                 ))}
               </div>
@@ -310,16 +310,16 @@ export default function NFTDetailPage({ params }: PageProps) {
 
           {/* Name */}
           <div>
-            <h1 className="text-4xl font-bold text-gray-900">
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
               {nft.name || `#${nft.tokenId}`}
             </h1>
             {nft.description && (
-              <p className="mt-3 text-gray-600">{nft.description}</p>
+              <p className="mt-3 text-gray-600 dark:text-neutral-300">{nft.description}</p>
             )}
           </div>
 
           {/* Owner */}
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-neutral-400">
             <span>Owned by</span>
             <Link
               href={getProfileUrl(nft.owner)}
@@ -331,15 +331,15 @@ export default function NFTDetailPage({ params }: PageProps) {
 
           {/* Price Section */}
           {listing && (
-            <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-6">
+            <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-6 dark:border-blue-800 dark:bg-blue-900/20">
               <div className="mb-4">
-                <p className="text-sm text-gray-600">Current Price</p>
-                <p className="text-4xl font-bold text-gray-900">{formatUSDC(listing.price)}</p>
+                <p className="text-sm text-gray-600 dark:text-neutral-400">Current Price</p>
+                <p className="text-4xl font-bold text-gray-900 dark:text-white">{formatUSDC(listing.price)}</p>
               </div>
               {address && address.toLowerCase() === nft.owner.toLowerCase() ? (
                 <button
                   onClick={() => setShowCancelListingModal(true)}
-                  className="w-full rounded-lg border-2 border-red-600 bg-white px-6 py-3 text-lg font-semibold text-red-600 hover:bg-red-50 flex items-center justify-center gap-2"
+                  className="w-full rounded-lg border-2 border-red-600 bg-white px-6 py-3 text-lg font-semibold text-red-600 hover:bg-red-50 flex items-center justify-center gap-2 dark:bg-neutral-900 dark:hover:bg-red-900/20"
                 >
                   <XCircle className="h-5 w-5" />
                   Cancel Listing
@@ -358,19 +358,19 @@ export default function NFTDetailPage({ params }: PageProps) {
           )}
 
           {isAuctionActive && auction && (
-            <div className="rounded-lg border-2 border-purple-200 bg-purple-50 p-6">
+            <div className="rounded-lg border-2 border-purple-200 bg-purple-50 p-6 dark:border-purple-800 dark:bg-purple-900/20">
               <div className="mb-4 space-y-3">
                 <div>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-neutral-400">
                     {auction.highestBid && auction.highestBid !== '0' ? 'Current Bid' : 'Minimum Bid'}
                   </p>
-                  <p className="text-4xl font-bold text-gray-900">
+                  <p className="text-4xl font-bold text-gray-900 dark:text-white">
                     {formatUSDC(auction.highestBid && auction.highestBid !== '0' ? auction.highestBid : auction.minBid)}
                   </p>
                 </div>
                 {auction.highestBidder && auction.highestBidder !== '0x0000000000000000000000000000000000000000' && (
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="text-gray-600">Highest bidder:</span>
+                    <span className="text-gray-600 dark:text-neutral-400">Highest bidder:</span>
                     <Link
                       href={getProfileUrl(auction.highestBidder as Address)}
                       className="font-medium text-blue-600 hover:text-blue-700"
@@ -392,7 +392,7 @@ export default function NFTDetailPage({ params }: PageProps) {
               {address && address.toLowerCase() === nft.owner.toLowerCase() ? (
                 <button
                   onClick={() => setShowCancelAuctionModal(true)}
-                  className="w-full rounded-lg border-2 border-red-600 bg-white px-6 py-3 text-lg font-semibold text-red-600 hover:bg-red-50 flex items-center justify-center gap-2"
+                  className="w-full rounded-lg border-2 border-red-600 bg-white px-6 py-3 text-lg font-semibold text-red-600 hover:bg-red-50 flex items-center justify-center gap-2 dark:bg-neutral-900 dark:hover:bg-red-900/20"
                 >
                   <XCircle className="h-5 w-5" />
                   Cancel Auction
@@ -411,21 +411,21 @@ export default function NFTDetailPage({ params }: PageProps) {
           )}
 
           {!listing && !isAuctionActive && (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-6">
-              <AlertCircle className="mx-auto mb-2 h-8 w-8 text-gray-400" />
-              <p className="mb-4 text-center text-gray-600">This NFT is not currently listed for sale</p>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 dark:border-neutral-700 dark:bg-neutral-800">
+              <AlertCircle className="mx-auto mb-2 h-8 w-8 text-gray-400 dark:text-neutral-500" />
+              <p className="mb-4 text-center text-gray-600 dark:text-neutral-400">This NFT is not currently listed for sale</p>
               {address && address.toLowerCase() === nft.owner.toLowerCase() && (
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowListModal(true)}
-                    className="flex-1 rounded-lg border border-blue-600 bg-white px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                    className="flex-1 rounded-lg border border-blue-600 bg-white px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 dark:bg-neutral-900 dark:hover:bg-blue-900/20"
                   >
                     <Tag className="mx-auto mb-1 h-4 w-4" />
                     List for Sale
                   </button>
                   <button
                     onClick={() => setShowAuctionModal(true)}
-                    className="flex-1 rounded-lg border border-purple-600 bg-white px-4 py-2 text-sm font-medium text-purple-600 hover:bg-purple-50"
+                    className="flex-1 rounded-lg border border-purple-600 bg-white px-4 py-2 text-sm font-medium text-purple-600 hover:bg-purple-50 dark:bg-neutral-900 dark:hover:bg-purple-900/20"
                   >
                     <Gavel className="mx-auto mb-1 h-4 w-4" />
                     Create Auction
@@ -437,25 +437,25 @@ export default function NFTDetailPage({ params }: PageProps) {
 
           {/* Collection Stats */}
           {nft.collection && (
-            <div className="rounded-lg border border-gray-200 bg-white p-6">
-              <h3 className="mb-4 text-lg font-semibold">Collection Stats</h3>
+            <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900">
+              <h3 className="mb-4 text-lg font-semibold dark:text-white">Collection Stats</h3>
               <div className="grid grid-cols-2 gap-4">
                 {nft.collection.floorPrice && (
                   <div>
-                    <p className="text-sm text-gray-600">Floor Price</p>
-                    <p className="font-semibold text-gray-900">{formatUSDC(nft.collection.floorPrice)}</p>
+                    <p className="text-sm text-gray-600 dark:text-neutral-400">Floor Price</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{formatUSDC(nft.collection.floorPrice)}</p>
                   </div>
                 )}
                 {nft.collection.volumeTraded && (
                   <div>
-                    <p className="text-sm text-gray-600">Volume Traded</p>
-                    <p className="font-semibold text-gray-900">{formatUSDC(nft.collection.volumeTraded)}</p>
+                    <p className="text-sm text-gray-600 dark:text-neutral-400">Volume Traded</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{formatUSDC(nft.collection.volumeTraded)}</p>
                   </div>
                 )}
                 {nft.collection.totalSupply && (
                   <div>
-                    <p className="text-sm text-gray-600">Total Supply</p>
-                    <p className="font-semibold text-gray-900">{nft.collection.totalSupply}</p>
+                    <p className="text-sm text-gray-600 dark:text-neutral-400">Total Supply</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{nft.collection.totalSupply}</p>
                   </div>
                 )}
               </div>
@@ -464,21 +464,21 @@ export default function NFTDetailPage({ params }: PageProps) {
 
           {/* Price History */}
           {sales && sales.length > 0 && (
-            <div className="rounded-lg border border-gray-200 bg-white p-6">
-              <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
+            <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900">
+              <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold dark:text-white">
                 <TrendingUp className="h-5 w-5" />
                 Price History
               </h3>
               <PriceHistoryChart points={priceHistoryPoints} />
               <div className="mt-4 space-y-3">
                 {sales.slice(0, 4).map((sale) => (
-                  <div key={sale.id} className="flex items-center justify-between border-b border-gray-100 pb-3 last:border-0">
+                  <div key={sale.id} className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-700 pb-3 last:border-0">
                     <div>
-                      <p className="font-semibold text-gray-900">{formatUSDC(sale.price)}</p>
-                      <p className="text-sm text-gray-600">{formatRelativeTime(sale.timestamp)}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{formatUSDC(sale.price)}</p>
+                      <p className="text-sm text-gray-600 dark:text-neutral-400">{formatRelativeTime(sale.timestamp)}</p>
                     </div>
                     <div className="text-right text-sm">
-                      <p className="text-gray-600">From</p>
+                      <p className="text-gray-600 dark:text-neutral-400">From</p>
                       <Link href={getProfileUrl(sale.seller)} className="font-medium text-blue-600 hover:text-blue-700">
                         {truncateAddress(sale.seller)}
                       </Link>
@@ -490,9 +490,9 @@ export default function NFTDetailPage({ params }: PageProps) {
           )}
 
           {activityEvents.length > 0 && (
-            <div className="rounded-lg border border-gray-200 bg-white p-6">
+            <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900">
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <h3 className="text-lg font-semibold">Item Activity</h3>
+                <h3 className="text-lg font-semibold dark:text-white">Item Activity</h3>
                 <div className="flex gap-2">
                   {(['all', 'sales', 'listing'] as const).map((filter) => (
                     <button
@@ -508,7 +508,7 @@ export default function NFTDetailPage({ params }: PageProps) {
               <div className="mt-4 overflow-x-auto">
                 <table className="min-w-full text-left text-sm">
                   <thead>
-                    <tr className="text-gray-500">
+                    <tr className="text-gray-500 dark:text-neutral-400">
                       <th className="pb-2">Event</th>
                       <th className="pb-2">Price</th>
                       <th className="pb-2">From</th>
@@ -518,12 +518,12 @@ export default function NFTDetailPage({ params }: PageProps) {
                   </thead>
                   <tbody>
                     {filteredActivity.slice(0, 6).map((event) => (
-                      <tr key={event.id} className="border-t border-gray-100">
-                        <td className="py-3 font-semibold text-gray-900">{event.label}</td>
-                        <td className="py-3">{event.price}</td>
+                      <tr key={event.id} className="border-t border-gray-100 dark:border-neutral-700">
+                        <td className="py-3 font-semibold text-gray-900 dark:text-white">{event.label}</td>
+                        <td className="py-3 dark:text-neutral-300">{event.price}</td>
                         <td className="py-3 text-blue-600">{event.from}</td>
                         <td className="py-3 text-blue-600">{event.to}</td>
-                        <td className="py-3 text-gray-500">{event.date}</td>
+                        <td className="py-3 text-gray-500 dark:text-neutral-400">{event.date}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -533,11 +533,11 @@ export default function NFTDetailPage({ params }: PageProps) {
           )}
 
           {/* Token Details */}
-          <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <h3 className="mb-4 text-lg font-semibold">Details</h3>
+          <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900">
+            <h3 className="mb-4 text-lg font-semibold dark:text-white">Details</h3>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Contract Address</span>
+                <span className="text-gray-600 dark:text-neutral-400">Contract Address</span>
                 <Link
                   href={`https://testnet.arcscan.app/address/${nft.collection.id}`}
                   target="_blank"
@@ -549,31 +549,31 @@ export default function NFTDetailPage({ params }: PageProps) {
                 </Link>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Token ID</span>
-                <span className="font-medium">{nft.tokenId}</span>
+                <span className="text-gray-600 dark:text-neutral-400">Token ID</span>
+                <span className="font-medium dark:text-white">{nft.tokenId}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Token Standard</span>
-                <span className="font-medium">ERC-721</span>
+                <span className="text-gray-600 dark:text-neutral-400">Token Standard</span>
+                <span className="font-medium dark:text-white">ERC-721</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Blockchain</span>
-                <span className="font-medium">Arc Testnet</span>
+                <span className="text-gray-600 dark:text-neutral-400">Blockchain</span>
+                <span className="font-medium dark:text-white">Arc Testnet</span>
               </div>
             </div>
           </div>
 
-          <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <h3 className="mb-4 text-lg font-semibold">More from this collection</h3>
+          <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900">
+            <h3 className="mb-4 text-lg font-semibold dark:text-white">More from this collection</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               {moreFromCollection.map((item) => (
                 <Link
                   key={item.tokenId}
                   href={item.href}
-                  className="rounded-2xl border border-gray-100 bg-gray-50 p-4 hover:border-blue-500"
+                  className="rounded-2xl border border-gray-100 bg-gray-50 p-4 hover:border-blue-500 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:border-blue-500"
                 >
-                  <p className="text-sm text-gray-500">Token #{item.tokenId}</p>
-                  <p className="text-lg font-semibold text-gray-900">View details →</p>
+                  <p className="text-sm text-gray-500 dark:text-neutral-400">Token #{item.tokenId}</p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white">View details →</p>
                 </Link>
               ))}
             </div>
