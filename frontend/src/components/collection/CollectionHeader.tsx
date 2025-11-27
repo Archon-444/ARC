@@ -126,7 +126,7 @@ export function CollectionHeader({
       className={`relative ${className}`}
     >
       {/* Banner */}
-      <div className="relative h-64 lg:h-80 bg-gradient-to-br from-purple-900/50 to-blue-900/50 overflow-hidden">
+      <div className="relative h-64 lg:h-80 bg-gradient-to-br from-accent-900/50 to-primary-900/50 overflow-hidden">
         {bannerImage ? (
           <Image
             src={bannerImage}
@@ -136,9 +136,9 @@ export function CollectionHeader({
             priority
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-blue-600/20 to-pink-600/20" />
+          <div className="absolute inset-0 bg-gradient-to-br from-accent-600/20 via-primary-600/20 to-pink-600/20" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/50 to-transparent" />
       </div>
 
       {/* Content Container */}
@@ -149,7 +149,7 @@ export function CollectionHeader({
             variants={scaleInVariants}
             className="flex-shrink-0"
           >
-            <div className="relative w-32 h-32 lg:w-40 lg:h-40 rounded-2xl overflow-hidden border-4 border-gray-900 bg-gray-800 shadow-xl">
+            <div className="relative w-32 h-32 lg:w-40 lg:h-40 rounded-2xl overflow-hidden border-4 border-neutral-900 bg-neutral-800 shadow-xl">
               {avatarImage ? (
                 <Image
                   src={avatarImage}
@@ -159,7 +159,7 @@ export function CollectionHeader({
                   priority
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-blue-600">
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-accent-600 to-primary-600">
                   <Package className="w-16 h-16 text-white" />
                 </div>
               )}
@@ -183,7 +183,7 @@ export function CollectionHeader({
                 </div>
 
                 {/* Contract Address */}
-                <div className="flex items-center gap-2 text-sm text-gray-400">
+                <div className="flex items-center gap-2 text-sm text-neutral-400">
                   <span className="font-mono">
                     {collectionAddress.slice(0, 6)}...{collectionAddress.slice(-4)}
                   </span>
@@ -192,7 +192,7 @@ export function CollectionHeader({
                       navigator.clipboard.writeText(collectionAddress);
                       success('Copied', 'Contract address copied to clipboard');
                     }}
-                    className="text-purple-400 hover:text-purple-300 transition-colors"
+                    className="text-accent-400 hover:text-accent-300 transition-colors"
                   >
                     Copy
                   </button>
@@ -206,8 +206,8 @@ export function CollectionHeader({
                   onClick={handleFollow}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
                     following
-                      ? 'bg-gray-700 text-white hover:bg-gray-600'
-                      : 'bg-purple-600 text-white hover:bg-purple-700'
+                      ? 'bg-neutral-700 text-white hover:bg-neutral-600'
+                      : 'bg-accent-600 text-white hover:bg-accent-700'
                   }`}
                 >
                   {following ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
@@ -217,7 +217,7 @@ export function CollectionHeader({
                 {/* Share Button */}
                 <button
                   onClick={handleShare}
-                  className="p-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600 transition-all"
+                  className="p-2 rounded-lg bg-neutral-700 text-white hover:bg-neutral-600 transition-all"
                   title="Share collection"
                 >
                   <Share2 className="w-5 h-5" />
@@ -227,7 +227,7 @@ export function CollectionHeader({
                 <div className="relative">
                   <button
                     onClick={() => setShowMenu(!showMenu)}
-                    className="p-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600 transition-all"
+                    className="p-2 rounded-lg bg-neutral-700 text-white hover:bg-neutral-600 transition-all"
                     title="More options"
                   >
                     <MoreHorizontal className="w-5 h-5" />
@@ -237,13 +237,13 @@ export function CollectionHeader({
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95, y: -10 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
-                      className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-20 p-2"
+                      className="absolute right-0 mt-2 w-48 bg-neutral-800 border border-neutral-700 rounded-lg shadow-xl z-20 p-2"
                     >
                       <a
                         href={`https://etherscan.io/address/${collectionAddress}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-700 transition-all"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-neutral-300 hover:bg-neutral-700 transition-all"
                       >
                         <ExternalLink className="w-4 h-4" />
                         <span className="text-sm">View on Etherscan</span>
@@ -256,7 +256,7 @@ export function CollectionHeader({
 
             {/* Description */}
             {description && (
-              <p className="text-gray-300 mb-6 max-w-3xl line-clamp-3">{description}</p>
+              <p className="text-neutral-300 mb-6 max-w-3xl line-clamp-3">{description}</p>
             )}
 
             {/* Social Links */}
@@ -267,7 +267,7 @@ export function CollectionHeader({
                     href={socials.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-700/50 text-gray-300 hover:bg-gray-700 hover:text-white transition-all"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-700/50 text-neutral-300 hover:bg-neutral-700 hover:text-white transition-all"
                   >
                     <Globe className="w-4 h-4" />
                     <span className="text-sm">Website</span>
@@ -278,7 +278,7 @@ export function CollectionHeader({
                     href={socials.twitter}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-700/50 text-gray-300 hover:bg-gray-700 hover:text-white transition-all"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-700/50 text-neutral-300 hover:bg-neutral-700 hover:text-white transition-all"
                   >
                     <Twitter className="w-4 h-4" />
                     <span className="text-sm">Twitter</span>
@@ -289,7 +289,7 @@ export function CollectionHeader({
                     href={socials.discord}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-700/50 text-gray-300 hover:bg-gray-700 hover:text-white transition-all"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-700/50 text-neutral-300 hover:bg-neutral-700 hover:text-white transition-all"
                   >
                     <MessageCircle className="w-4 h-4" />
                     <span className="text-sm">Discord</span>
@@ -301,10 +301,10 @@ export function CollectionHeader({
             {/* Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               {/* Floor Price */}
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-4">
+              <div className="bg-neutral-800/50 backdrop-blur-sm rounded-lg border border-neutral-700 p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <TrendingUp className="w-4 h-4 text-purple-400" />
-                  <span className="text-xs text-gray-400 uppercase">Floor Price</span>
+                  <TrendingUp className="w-4 h-4 text-accent-400" />
+                  <span className="text-xs text-neutral-400 uppercase">Floor Price</span>
                 </div>
                 <div className="text-xl font-bold text-white">
                   <AnimatedCounter value={stats.floorPrice} decimals={2} suffix=" ETH" />
@@ -312,10 +312,10 @@ export function CollectionHeader({
               </div>
 
               {/* Total Volume */}
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-4">
+              <div className="bg-neutral-800/50 backdrop-blur-sm rounded-lg border border-neutral-700 p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <Activity className="w-4 h-4 text-blue-400" />
-                  <span className="text-xs text-gray-400 uppercase">Total Volume</span>
+                  <Activity className="w-4 h-4 text-primary-400" />
+                  <span className="text-xs text-neutral-400 uppercase">Total Volume</span>
                 </div>
                 <div className="text-xl font-bold text-white">
                   {formatNumber(stats.totalVolume)} ETH
@@ -323,10 +323,10 @@ export function CollectionHeader({
               </div>
 
               {/* Items */}
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-4">
+              <div className="bg-neutral-800/50 backdrop-blur-sm rounded-lg border border-neutral-700 p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <Package className="w-4 h-4 text-green-400" />
-                  <span className="text-xs text-gray-400 uppercase">Items</span>
+                  <Package className="w-4 h-4 text-success-500" />
+                  <span className="text-xs text-neutral-400 uppercase">Items</span>
                 </div>
                 <div className="text-xl font-bold text-white">
                   <AnimatedCounter value={stats.items} decimals={0} />
@@ -334,10 +334,10 @@ export function CollectionHeader({
               </div>
 
               {/* Owners */}
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-4">
+              <div className="bg-neutral-800/50 backdrop-blur-sm rounded-lg border border-neutral-700 p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <Users className="w-4 h-4 text-orange-400" />
-                  <span className="text-xs text-gray-400 uppercase">Owners</span>
+                  <Users className="w-4 h-4 text-warning-500" />
+                  <span className="text-xs text-neutral-400 uppercase">Owners</span>
                 </div>
                 <div className="text-xl font-bold text-white">
                   <AnimatedCounter value={stats.owners} decimals={0} />
@@ -345,10 +345,10 @@ export function CollectionHeader({
               </div>
 
               {/* Listed */}
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-4">
+              <div className="bg-neutral-800/50 backdrop-blur-sm rounded-lg border border-neutral-700 p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <Award className="w-4 h-4 text-yellow-400" />
-                  <span className="text-xs text-gray-400 uppercase">Listed</span>
+                  <Award className="w-4 h-4 text-warning-400" />
+                  <span className="text-xs text-neutral-400 uppercase">Listed</span>
                 </div>
                 <div className="text-xl font-bold text-white">
                   <AnimatedCounter value={stats.listedPercent} decimals={1} suffix="%" />
@@ -358,7 +358,7 @@ export function CollectionHeader({
 
             {/* Royalty Info */}
             {stats.royalty !== undefined && (
-              <div className="mt-4 flex items-center gap-2 text-sm text-gray-400">
+              <div className="mt-4 flex items-center gap-2 text-sm text-neutral-400">
                 <Award className="w-4 h-4" />
                 <span>Creator royalty: {stats.royalty}%</span>
               </div>

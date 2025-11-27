@@ -32,15 +32,15 @@ const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
         'border-error-100 bg-error-50 text-error-700 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-200',
       neutral:
         'border-neutral-200 bg-neutral-100 text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200',
-      // Rarity variants
+      // Rarity variants - more distinct colors
       common:
-        'border-neutral-300 bg-neutral-100 text-neutral-700 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
+        'border-neutral-300 bg-neutral-100 text-neutral-600 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-400',
       rare:
-        'border-blue-300 bg-blue-100 text-blue-700 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300',
+        'border-primary-300 bg-primary-50 text-primary-700 dark:border-primary-500/50 dark:bg-primary-900/40 dark:text-primary-300',
       epic:
-        'border-purple-300 bg-purple-100 text-purple-700 dark:border-purple-600 dark:bg-purple-900/30 dark:text-purple-300',
+        'border-accent-300 bg-accent-50 text-accent-700 dark:border-accent-500/50 dark:bg-accent-900/40 dark:text-accent-300',
       legendary:
-        'border-orange-300 bg-gradient-to-r from-yellow-100 to-orange-100 text-orange-700 dark:border-orange-600 dark:from-yellow-900/30 dark:to-orange-900/30 dark:text-orange-300',
+        'border-amber-400 bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 text-amber-700 dark:border-amber-500/60 dark:from-amber-900/50 dark:via-yellow-900/40 dark:to-orange-900/50 dark:text-amber-300 shadow-sm dark:shadow-amber-500/20',
     } satisfies Record<NonNullable<BadgeProps['variant']>, string>;
 
     const sizeStyles = {
