@@ -231,7 +231,7 @@ export function NFTCard({
       <div className="p-4">
         {/* Collection Name */}
         {showCollection && nft.collection?.name && (
-          <p className="mb-1 text-xs font-medium text-gray-500 dark:text-neutral-400 truncate">
+          <p className="mb-1 text-xs font-medium text-neutral-500 dark:text-neutral-400 truncate">
             {nft.collection.name}
           </p>
         )}
