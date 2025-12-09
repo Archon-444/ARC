@@ -21,12 +21,14 @@ const nextConfig = {
       })
     );
 
-    // Global aliases to ignore test modules
+    // Global aliases to ignore test modules and stub React Native modules
     config.resolve.alias = {
       ...config.resolve.alias,
       tap: false,
       tape: false,
       'why-is-node-running': false,
+      // Stub React Native modules required by MetaMask SDK
+      '@react-native-async-storage/async-storage': false,
     };
 
     if (!isServer) {
