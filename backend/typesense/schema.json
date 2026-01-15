@@ -1,0 +1,38 @@
+{
+  "collections": [
+    {
+      "name": "nfts",
+      "fields": [
+        { "name": "name", "type": "string" },
+        { "name": "description", "type": "string" },
+        { "name": "collection_name", "type": "string", "facet": true },
+        { "name": "owner_address", "type": "string", "facet": true },
+        { "name": "token_id", "type": "string" },
+        { "name": "price", "type": "float", "facet": true },
+        { "name": "traits", "type": "string[]", "facet": true },
+        { "name": "status", "type": "string", "facet": true }
+      ],
+      "default_sorting_field": "price"
+    },
+    {
+      "name": "collections",
+      "fields": [
+        { "name": "name", "type": "string" },
+        { "name": "symbol", "type": "string" },
+        { "name": "description", "type": "string" },
+        { "name": "verified", "type": "bool", "facet": true },
+        { "name": "volume_total", "type": "float" },
+        { "name": "floor_price", "type": "float" }
+      ],
+      "default_sorting_field": "volume_total"
+    },
+    {
+      "name": "users",
+      "fields": [
+        { "name": "username", "type": "string" },
+        { "name": "address", "type": "string" },
+        { "name": "bio", "type": "string" }
+      ]
+    }
+  ]
+}

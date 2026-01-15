@@ -20,7 +20,7 @@ interface WalletManagementModalProps {
 }
 
 export function WalletManagementModal({ isOpen, onClose }: WalletManagementModalProps) {
-  const { wallets, currentWallet, selectWallet, logout } = useCircleWallet();
+  const { wallets, activeWallet, setActiveWallet, disconnectWallet } = useCircleWallet();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
 
@@ -35,12 +35,15 @@ export function WalletManagementModal({ isOpen, onClose }: WalletManagementModal
   };
 
   const handleSelectWallet = (walletId: string) => {
-    selectWallet(walletId);
-    onClose();
+    const wallet = wallets.find((w) => w.id === walletId);
+    if (wallet) {
+      setActiveWallet(wallet);
+      onClose();
+    }
   };
 
   const handleLogout = () => {
-    logout();
+    disconnectWallet();
     onClose();
   };
 
@@ -62,7 +65,7 @@ export function WalletManagementModal({ isOpen, onClose }: WalletManagementModal
                   <WalletCard
                     key={wallet.id}
                     wallet={wallet}
-                    isSelected={currentWallet?.id === wallet.id}
+                    isSelected={activeWallet?.id === wallet.id}
                     onSelect={() => handleSelectWallet(wallet.id)}
                     onCopyAddress={handleCopyAddress}
                     isCopied={copiedAddress === wallet.address}
@@ -136,11 +139,10 @@ function WalletCard({
   return (
     <button
       onClick={onSelect}
-      className={`w-full rounded-lg border-2 p-4 text-left transition-all ${
-        isSelected
-          ? 'border-blue-600 bg-blue-50'
-          : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-gray-50'
-      }`}
+      className={`w-full rounded-lg border-2 p-4 text-left transition-all ${isSelected
+        ? 'border-blue-600 bg-blue-50'
+        : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-gray-50'
+        }`}
     >
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -183,9 +185,8 @@ function WalletCard({
             <div className="mt-2 flex items-center gap-3 text-xs">
               <span className="text-gray-500">Status:</span>
               <span
-                className={`font-medium ${
-                  wallet.state === 'LIVE' ? 'text-green-600' : 'text-red-600'
-                }`}
+                className={`font-medium ${wallet.state === 'LIVE' ? 'text-green-600' : 'text-red-600'
+                  }`}
               >
                 {wallet.state}
               </span>

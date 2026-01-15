@@ -1,4 +1,4 @@
-import { useContractRead, useContractWrite, usePrepareContractWrite, useWaitForTransaction } from 'wagmi';
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
 import { useState, useCallback } from 'react';
 import NFTMarketplaceABI from './abis/NFTMarketplace.json';
@@ -36,42 +36,32 @@ export interface Auction {
  * Hook for listing NFTs on the marketplace
  */
 export function useListItem() {
-  const [collectionAddress, setCollectionAddress] = useState<string>('');
-  const [tokenId, setTokenId] = useState<string>('');
-  const [price, setPrice] = useState<string>('');
-
-  const { config } = usePrepareContractWrite({
-    address: MARKETPLACE_ADDRESS,
-    abi: NFTMarketplaceABI,
-    functionName: 'listItem',
-    args: collectionAddress && tokenId && price ? [
-      collectionAddress as `0x${string}`,
-      BigInt(tokenId),
-      parseUnits(price, 6), // USDC has 6 decimals
-    ] : undefined,
-    enabled: !!collectionAddress && !!tokenId && !!price,
-  });
-
-  const { data, write, isLoading: isWriting } = useContractWrite(config);
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransaction({
-    hash: data?.hash,
+  const { writeContract, data: hash, isPending: isWriting } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
   });
 
   const listItem = useCallback(
     (collection: string, token: string, priceInUSDC: string) => {
-      setCollectionAddress(collection);
-      setTokenId(token);
-      setPrice(priceInUSDC);
-      write?.();
+      writeContract({
+        address: MARKETPLACE_ADDRESS,
+        abi: NFTMarketplaceABI,
+        functionName: 'listItem',
+        args: [
+          collection as `0x${string}`,
+          BigInt(token),
+          parseUnits(priceInUSDC, 6), // USDC has 6 decimals
+        ],
+      });
     },
-    [write]
+    [writeContract]
   );
 
   return {
     listItem,
     isLoading: isWriting || isConfirming,
     isSuccess,
-    txHash: data?.hash,
+    txHash: hash,
   };
 }
 
@@ -79,39 +69,31 @@ export function useListItem() {
  * Hook for buying NFTs
  */
 export function useBuyItem() {
-  const [collectionAddress, setCollectionAddress] = useState<string>('');
-  const [tokenId, setTokenId] = useState<string>('');
-
-  const { config } = usePrepareContractWrite({
-    address: MARKETPLACE_ADDRESS,
-    abi: NFTMarketplaceABI,
-    functionName: 'buyItem',
-    args: collectionAddress && tokenId ? [
-      collectionAddress as `0x${string}`,
-      BigInt(tokenId),
-    ] : undefined,
-    enabled: !!collectionAddress && !!tokenId,
-  });
-
-  const { data, write, isLoading: isWriting } = useContractWrite(config);
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransaction({
-    hash: data?.hash,
+  const { writeContract, data: hash, isPending: isWriting } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
   });
 
   const buyItem = useCallback(
     (collection: string, token: string) => {
-      setCollectionAddress(collection);
-      setTokenId(token);
-      write?.();
+      writeContract({
+        address: MARKETPLACE_ADDRESS,
+        abi: NFTMarketplaceABI,
+        functionName: 'buyItem',
+        args: [
+          collection as `0x${string}`,
+          BigInt(token),
+        ],
+      });
     },
-    [write]
+    [writeContract]
   );
 
   return {
     buyItem,
     isLoading: isWriting || isConfirming,
     isSuccess,
-    txHash: data?.hash,
+    txHash: hash,
   };
 }
 
@@ -119,39 +101,31 @@ export function useBuyItem() {
  * Hook for canceling listings
  */
 export function useCancelListing() {
-  const [collectionAddress, setCollectionAddress] = useState<string>('');
-  const [tokenId, setTokenId] = useState<string>('');
-
-  const { config } = usePrepareContractWrite({
-    address: MARKETPLACE_ADDRESS,
-    abi: NFTMarketplaceABI,
-    functionName: 'cancelListing',
-    args: collectionAddress && tokenId ? [
-      collectionAddress as `0x${string}`,
-      BigInt(tokenId),
-    ] : undefined,
-    enabled: !!collectionAddress && !!tokenId,
-  });
-
-  const { data, write, isLoading: isWriting } = useContractWrite(config);
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransaction({
-    hash: data?.hash,
+  const { writeContract, data: hash, isPending: isWriting } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
   });
 
   const cancelListing = useCallback(
     (collection: string, token: string) => {
-      setCollectionAddress(collection);
-      setTokenId(token);
-      write?.();
+      writeContract({
+        address: MARKETPLACE_ADDRESS,
+        abi: NFTMarketplaceABI,
+        functionName: 'cancelListing',
+        args: [
+          collection as `0x${string}`,
+          BigInt(token),
+        ],
+      });
     },
-    [write]
+    [writeContract]
   );
 
   return {
     cancelListing,
     isLoading: isWriting || isConfirming,
     isSuccess,
-    txHash: data?.hash,
+    txHash: hash,
   };
 }
 
@@ -159,31 +133,9 @@ export function useCancelListing() {
  * Hook for creating auctions
  */
 export function useCreateAuction() {
-  const [params, setParams] = useState<{
-    collection: string;
-    tokenId: string;
-    reservePrice: string;
-    startTime: number;
-    endTime: number;
-  } | null>(null);
-
-  const { config } = usePrepareContractWrite({
-    address: MARKETPLACE_ADDRESS,
-    abi: NFTMarketplaceABI,
-    functionName: 'createAuction',
-    args: params ? [
-      params.collection as `0x${string}`,
-      BigInt(params.tokenId),
-      parseUnits(params.reservePrice, 6),
-      params.startTime,
-      params.endTime,
-    ] : undefined,
-    enabled: !!params,
-  });
-
-  const { data, write, isLoading: isWriting } = useContractWrite(config);
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransaction({
-    hash: data?.hash,
+  const { writeContract, data: hash, isPending: isWriting } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
   });
 
   const createAuction = useCallback(
@@ -194,17 +146,27 @@ export function useCreateAuction() {
       startTime: number,
       endTime: number
     ) => {
-      setParams({ collection, tokenId, reservePrice, startTime, endTime });
-      write?.();
+      writeContract({
+        address: MARKETPLACE_ADDRESS,
+        abi: NFTMarketplaceABI,
+        functionName: 'createAuction',
+        args: [
+          collection as `0x${string}`,
+          BigInt(tokenId),
+          parseUnits(reservePrice, 6),
+          BigInt(startTime),
+          BigInt(endTime),
+        ],
+      });
     },
-    [write]
+    [writeContract]
   );
 
   return {
     createAuction,
     isLoading: isWriting || isConfirming,
     isSuccess,
-    txHash: data?.hash,
+    txHash: hash,
   };
 }
 
@@ -212,42 +174,32 @@ export function useCreateAuction() {
  * Hook for placing bids on auctions
  */
 export function usePlaceBid() {
-  const [params, setParams] = useState<{
-    collection: string;
-    tokenId: string;
-    bidAmount: string;
-  } | null>(null);
-
-  const { config } = usePrepareContractWrite({
-    address: MARKETPLACE_ADDRESS,
-    abi: NFTMarketplaceABI,
-    functionName: 'placeBid',
-    args: params ? [
-      params.collection as `0x${string}`,
-      BigInt(params.tokenId),
-      parseUnits(params.bidAmount, 6),
-    ] : undefined,
-    enabled: !!params,
-  });
-
-  const { data, write, isLoading: isWriting } = useContractWrite(config);
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransaction({
-    hash: data?.hash,
+  const { writeContract, data: hash, isPending: isWriting } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
   });
 
   const placeBid = useCallback(
     (collection: string, tokenId: string, bidAmount: string) => {
-      setParams({ collection, tokenId, bidAmount });
-      write?.();
+      writeContract({
+        address: MARKETPLACE_ADDRESS,
+        abi: NFTMarketplaceABI,
+        functionName: 'placeBid',
+        args: [
+          collection as `0x${string}`,
+          BigInt(tokenId),
+          parseUnits(bidAmount, 6),
+        ],
+      });
     },
-    [write]
+    [writeContract]
   );
 
   return {
     placeBid,
     isLoading: isWriting || isConfirming,
     isSuccess,
-    txHash: data?.hash,
+    txHash: hash,
   };
 }
 
@@ -255,39 +207,31 @@ export function usePlaceBid() {
  * Hook for settling auctions
  */
 export function useSettleAuction() {
-  const [collectionAddress, setCollectionAddress] = useState<string>('');
-  const [tokenId, setTokenId] = useState<string>('');
-
-  const { config } = usePrepareContractWrite({
-    address: MARKETPLACE_ADDRESS,
-    abi: NFTMarketplaceABI,
-    functionName: 'settleAuction',
-    args: collectionAddress && tokenId ? [
-      collectionAddress as `0x${string}`,
-      BigInt(tokenId),
-    ] : undefined,
-    enabled: !!collectionAddress && !!tokenId,
-  });
-
-  const { data, write, isLoading: isWriting } = useContractWrite(config);
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransaction({
-    hash: data?.hash,
+  const { writeContract, data: hash, isPending: isWriting } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
   });
 
   const settleAuction = useCallback(
     (collection: string, token: string) => {
-      setCollectionAddress(collection);
-      setTokenId(token);
-      write?.();
+      writeContract({
+        address: MARKETPLACE_ADDRESS,
+        abi: NFTMarketplaceABI,
+        functionName: 'settleAuction',
+        args: [
+          collection as `0x${string}`,
+          BigInt(token),
+        ],
+      });
     },
-    [write]
+    [writeContract]
   );
 
   return {
     settleAuction,
     isLoading: isWriting || isConfirming,
     isSuccess,
-    txHash: data?.hash,
+    txHash: hash,
   };
 }
 
@@ -295,34 +239,28 @@ export function useSettleAuction() {
  * Hook for approving USDC spending
  */
 export function useApproveUSDC() {
-  const [amount, setAmount] = useState<string>('');
-
-  const { config } = usePrepareContractWrite({
-    address: USDC_ADDRESS,
-    abi: ERC20ABI,
-    functionName: 'approve',
-    args: amount ? [MARKETPLACE_ADDRESS, parseUnits(amount, 6)] : undefined,
-    enabled: !!amount,
-  });
-
-  const { data, write, isLoading: isWriting } = useContractWrite(config);
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransaction({
-    hash: data?.hash,
+  const { writeContract, data: hash, isPending: isWriting } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
   });
 
   const approve = useCallback(
     (amountInUSDC: string) => {
-      setAmount(amountInUSDC);
-      write?.();
+      writeContract({
+        address: USDC_ADDRESS,
+        abi: ERC20ABI,
+        functionName: 'approve',
+        args: [MARKETPLACE_ADDRESS, parseUnits(amountInUSDC, 6)],
+      });
     },
-    [write]
+    [writeContract]
   );
 
   return {
     approve,
     isLoading: isWriting || isConfirming,
     isSuccess,
-    txHash: data?.hash,
+    txHash: hash,
   };
 }
 
@@ -330,24 +268,26 @@ export function useApproveUSDC() {
  * Hook for approving NFT transfer
  */
 export function useApproveNFT(collectionAddress: string) {
-  const { config } = usePrepareContractWrite({
-    address: collectionAddress as `0x${string}`,
-    abi: ERC721ABI,
-    functionName: 'setApprovalForAll',
-    args: [MARKETPLACE_ADDRESS, true],
-    enabled: !!collectionAddress,
+  const { writeContract, data: hash, isPending: isWriting } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
   });
 
-  const { data, write, isLoading: isWriting } = useContractWrite(config);
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransaction({
-    hash: data?.hash,
-  });
+  const approve = useCallback(() => {
+    if (!collectionAddress) return;
+    writeContract({
+      address: collectionAddress as `0x${string}`,
+      abi: ERC721ABI,
+      functionName: 'setApprovalForAll',
+      args: [MARKETPLACE_ADDRESS, true],
+    });
+  }, [collectionAddress, writeContract]);
 
   return {
-    approve: write,
+    approve,
     isLoading: isWriting || isConfirming,
     isSuccess,
-    txHash: data?.hash,
+    txHash: hash,
   };
 }
 
@@ -355,12 +295,14 @@ export function useApproveNFT(collectionAddress: string) {
  * Hook for reading listing data
  */
 export function useListing(collectionAddress: string, tokenId: string) {
-  const { data, isError, isLoading, refetch } = useContractRead({
+  const { data, isError, isLoading, refetch } = useReadContract({
     address: MARKETPLACE_ADDRESS,
     abi: NFTMarketplaceABI,
     functionName: 'listings',
-    args: [collectionAddress as `0x${string}`, BigInt(tokenId)],
-    enabled: !!collectionAddress && !!tokenId,
+    args: collectionAddress && tokenId ? [collectionAddress as `0x${string}`, BigInt(tokenId)] : undefined,
+    query: {
+      enabled: !!collectionAddress && !!tokenId,
+    }
   });
 
   return {
@@ -375,12 +317,14 @@ export function useListing(collectionAddress: string, tokenId: string) {
  * Hook for reading auction data
  */
 export function useAuction(collectionAddress: string, tokenId: string) {
-  const { data, isError, isLoading, refetch } = useContractRead({
+  const { data, isError, isLoading, refetch } = useReadContract({
     address: MARKETPLACE_ADDRESS,
     abi: NFTMarketplaceABI,
     functionName: 'auctions',
-    args: [collectionAddress as `0x${string}`, BigInt(tokenId)],
-    enabled: !!collectionAddress && !!tokenId,
+    args: collectionAddress && tokenId ? [collectionAddress as `0x${string}`, BigInt(tokenId)] : undefined,
+    query: {
+      enabled: !!collectionAddress && !!tokenId,
+    }
   });
 
   return {
@@ -395,7 +339,7 @@ export function useAuction(collectionAddress: string, tokenId: string) {
  * Hook for reading protocol fee
  */
 export function useProtocolFee() {
-  const { data, isError, isLoading } = useContractRead({
+  const { data, isError, isLoading } = useReadContract({
     address: MARKETPLACE_ADDRESS,
     abi: NFTMarketplaceABI,
     functionName: 'protocolFeeBps',
@@ -413,12 +357,14 @@ export function useProtocolFee() {
  * Hook for checking USDC balance
  */
 export function useUSDCBalance(address: string) {
-  const { data, isError, isLoading, refetch } = useContractRead({
+  const { data, isError, isLoading, refetch } = useReadContract({
     address: USDC_ADDRESS,
     abi: ERC20ABI,
     functionName: 'balanceOf',
-    args: [address as `0x${string}`],
-    enabled: !!address,
+    args: address ? [address as `0x${string}`] : undefined,
+    query: {
+      enabled: !!address,
+    }
   });
 
   return {
@@ -434,12 +380,14 @@ export function useUSDCBalance(address: string) {
  * Hook for checking USDC allowance
  */
 export function useUSDCAllowance(ownerAddress: string) {
-  const { data, isError, isLoading, refetch } = useContractRead({
+  const { data, isError, isLoading, refetch } = useReadContract({
     address: USDC_ADDRESS,
     abi: ERC20ABI,
     functionName: 'allowance',
-    args: [ownerAddress as `0x${string}`, MARKETPLACE_ADDRESS],
-    enabled: !!ownerAddress,
+    args: ownerAddress ? [ownerAddress as `0x${string}`, MARKETPLACE_ADDRESS] : undefined,
+    query: {
+      enabled: !!ownerAddress,
+    }
   });
 
   return {
@@ -455,34 +403,28 @@ export function useUSDCAllowance(ownerAddress: string) {
  * Hook for setting user profile
  */
 export function useSetProfile() {
-  const [metadataURI, setMetadataURI] = useState<string>('');
-
-  const { config } = usePrepareContractWrite({
-    address: PROFILE_REGISTRY_ADDRESS,
-    abi: ProfileRegistryABI,
-    functionName: 'setProfile',
-    args: metadataURI ? [metadataURI] : undefined,
-    enabled: !!metadataURI,
-  });
-
-  const { data, write, isLoading: isWriting } = useContractWrite(config);
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransaction({
-    hash: data?.hash,
+  const { writeContract, data: hash, isPending: isWriting } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
   });
 
   const setProfile = useCallback(
     (uri: string) => {
-      setMetadataURI(uri);
-      write?.();
+      writeContract({
+        address: PROFILE_REGISTRY_ADDRESS,
+        abi: ProfileRegistryABI,
+        functionName: 'setProfile',
+        args: [uri],
+      });
     },
-    [write]
+    [writeContract]
   );
 
   return {
     setProfile,
     isLoading: isWriting || isConfirming,
     isSuccess,
-    txHash: data?.hash,
+    txHash: hash,
   };
 }
 
@@ -490,12 +432,14 @@ export function useSetProfile() {
  * Hook for reading user profile
  */
 export function useProfile(address: string) {
-  const { data, isError, isLoading, refetch } = useContractRead({
+  const { data, isError, isLoading, refetch } = useReadContract({
     address: PROFILE_REGISTRY_ADDRESS,
     abi: ProfileRegistryABI,
     functionName: 'getProfile',
-    args: [address as `0x${string}`],
-    enabled: !!address,
+    args: address ? [address as `0x${string}`] : undefined,
+    query: {
+      enabled: !!address,
+    }
   });
 
   return {

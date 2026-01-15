@@ -42,17 +42,17 @@ interface SocialLoginProps {
  */
 export function SocialLogin({ onSuccess, onError, className = '' }: SocialLoginProps) {
   const { data: session, status } = useSession();
-  const { createUser, createWallet, currentWallet, isSDKReady } = useCircleWallet();
+  const { createWallet, activeWallet, isSDKReady } = useCircleWallet();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [provider, setProvider] = useState<string | null>(null);
 
   // When OAuth session is established, create Circle wallet
   useEffect(() => {
-    if (session && provider && !currentWallet) {
+    if (session && provider && !activeWallet) {
       handleCreateWallet();
     }
-  }, [session, provider, currentWallet]);
+  }, [session, provider, activeWallet]);
 
   /**
    * Create Circle wallet after successful OAuth
@@ -65,15 +65,13 @@ export function SocialLogin({ onSuccess, onError, className = '' }: SocialLoginP
 
     setLoading(true);
     try {
-      // Create Circle user first (if not exists)
-      await createUser();
+      // Create Circle wallet (user creation is handled automatically)
+      const challengeId = await createWallet();
 
-      // Create Circle wallet
-      const wallet = await createWallet();
-
-      if (wallet) {
-        onSuccess?.(wallet.address);
-        console.log('✅ OAuth + Circle wallet created:', wallet.address);
+      if (challengeId) {
+        // Wallet creation initiated successfully
+        console.log('✅ OAuth + Circle wallet creation initiated');
+        onSuccess?.(''); // Wallet address will be available after challenge completion
       }
     } catch (err) {
       const error = err as Error;
@@ -184,13 +182,13 @@ export function SocialLogin({ onSuccess, onError, className = '' }: SocialLoginP
       )}
 
       {/* Success Message */}
-      {session && currentWallet && (
+      {session && activeWallet && (
         <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
           <p className="text-sm text-green-800 dark:text-green-200">
             ✅ Signed in as {session.user?.email}
           </p>
           <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-            Wallet: {currentWallet.address.slice(0, 6)}...{currentWallet.address.slice(-4)}
+            Wallet: {activeWallet.address.slice(0, 6)}...{activeWallet.address.slice(-4)}
           </p>
         </div>
       )}
@@ -330,21 +328,19 @@ export function WalletSelector({
       <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
         <button
           onClick={() => setShowSocial(true)}
-          className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
-            showSocial
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-          }`}
+          className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${showSocial
+            ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
         >
           Social Login
         </button>
         <button
           onClick={() => setShowSocial(false)}
-          className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
-            !showSocial
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-          }`}
+          className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${!showSocial
+            ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
         >
           Wallet
         </button>

@@ -10,8 +10,23 @@ import { config } from '@/lib/wagmi';
 import Navbar from '@/components/Navbar';
 import { ToastProvider } from '@/hooks/useToast';
 import { CircleWalletProvider } from '@/hooks/useCircleWallet';
+import CommandPalette from '@/components/navigation/CommandPalette';
+import { CommandPaletteProvider } from '@/hooks/useCommandPalette';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { SkipLink } from '@/components/ui/SkipLink';
+import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+import { ThemeProvider } from '@/providers/ThemeProvider';
+import { WebVitalsReporter } from '@/components/analytics/WebVitalsReporter';
+import { OrganizationSchema, WebsiteSchema } from '@/components/seo/StructuredData';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 export default function RootLayout({
   children,
@@ -20,25 +35,47 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <SessionProvider>
-          <WagmiProvider config={config}>
-            <QueryClientProvider client={queryClient}>
-              <RainbowKitProvider>
-                <CircleWalletProvider>
-                  <ToastProvider>
-                    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
-                      <Navbar />
-                      <main className="container mx-auto px-4 py-8">
-                        {children}
-                      </main>
-                    </div>
-                  </ToastProvider>
-                </CircleWalletProvider>
-              </RainbowKitProvider>
-            </QueryClientProvider>
-          </WagmiProvider>
-        </SessionProvider>
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#2081E2" />
+        <meta name="description" content="Premier NFT marketplace on Circle Arc blockchain with instant USDC settlements" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <title>ArcMarket - NFT Marketplace</title>
+      </head>
+      <body className="antialiased">
+        <ThemeProvider>
+          <ErrorBoundary>
+            <SessionProvider>
+              <WagmiProvider config={config}>
+                <QueryClientProvider client={queryClient}>
+                  <RainbowKitProvider>
+                    <CircleWalletProvider>
+                      <ToastProvider>
+                        <CommandPaletteProvider>
+                          <SkipLink />
+                          <div className="min-h-screen bg-neutral-50 text-neutral-900 transition-colors dark:bg-neutral-900 dark:text-neutral-100">
+                            <Navbar />
+                            <CommandPalette />
+                            <main id="main-content" className="pb-24">
+                              {children}
+                            </main>
+                            <InstallPrompt />
+                            <WebVitalsReporter />
+                            <OrganizationSchema />
+                            <WebsiteSchema />
+                          </div>
+                        </CommandPaletteProvider>
+                      </ToastProvider>
+                    </CircleWalletProvider>
+                  </RainbowKitProvider>
+                </QueryClientProvider>
+              </WagmiProvider>
+            </SessionProvider>
+          </ErrorBoundary>
+        </ThemeProvider>
       </body>
     </html>
   );

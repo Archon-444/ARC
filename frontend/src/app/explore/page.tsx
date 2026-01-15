@@ -181,8 +181,8 @@ export default function ExplorePage() {
       <div className="space-y-6">
         {/* Header Section */}
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Explore NFTs</h1>
-          <p className="text-lg text-gray-600">
+          <h1 className="text-4xl font-bold text-neutral-900 dark:text-white mb-2">Explore NFTs</h1>
+          <p className="text-lg text-neutral-600 dark:text-neutral-400">
             Discover unique digital assets on Circle Arc blockchain
           </p>
         </div>
@@ -215,13 +215,13 @@ export default function ExplorePage() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           {/* Search Bar */}
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400" />
             <input
               type="text"
               placeholder="Search by name, collection, or token ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-neutral-300 bg-white py-2 pl-10 pr-4 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white dark:placeholder-neutral-500"
             />
           </div>
 
@@ -233,7 +233,7 @@ export default function ExplorePage() {
                 const option = SORT_OPTIONS.find((opt) => opt.value === e.target.value);
                 if (option) setSortBy(option);
               }}
-              className="rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="rounded-lg border border-neutral-300 bg-white px-4 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white"
             >
               {SORT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -244,7 +244,7 @@ export default function ExplorePage() {
 
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-2 text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"
             >
               <SlidersHorizontal className="h-4 w-4" />
               Filters
@@ -253,7 +253,7 @@ export default function ExplorePage() {
         </div>
 
         {/* View Mode Tabs */}
-        <div className="flex gap-4 border-b border-gray-200">
+        <div className="flex gap-4 border-b border-neutral-200 dark:border-neutral-700">
           <TabButton
             active={viewMode === 'all'}
             onClick={() => {
@@ -331,14 +331,14 @@ function StatsCard({
   icon?: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
       {Icon && (
         <div className="mb-2">
-          <Icon className="h-5 w-5 text-blue-600" />
+          <Icon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
         </div>
       )}
-      <p className="text-sm text-gray-600 mb-1">{label}</p>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
+      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-1">{label}</p>
+      <p className="text-2xl font-bold text-neutral-900 dark:text-white">{value}</p>
     </div>
   );
 }
@@ -359,13 +359,13 @@ function TabButton({
       onClick={onClick}
       className={`relative px-4 py-3 font-medium transition-colors ${
         active
-          ? 'text-blue-600 border-b-2 border-blue-600'
-          : 'text-gray-600 hover:text-gray-900'
+          ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+          : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
       }`}
     >
       {label}
       {count !== undefined && (
-        <span className="ml-2 text-sm text-gray-500">({count})</span>
+        <span className="ml-2 text-sm text-neutral-500 dark:text-neutral-400">({count})</span>
       )}
     </button>
   );

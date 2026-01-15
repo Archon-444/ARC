@@ -1,0 +1,10 @@
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Disallow admin/auth pages
+Disallow: /api/
+Disallow: /studio/settings
+
+# Sitemap
+Sitemap: https://arc-marketplace.com/sitemap.xml

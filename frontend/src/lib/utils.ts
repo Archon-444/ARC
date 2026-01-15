@@ -12,6 +12,10 @@ import { Address, USDC_DECIMALS } from '@/types';
 // CSS Class Utilities
 // ============================================
 
+/**
+ * Combine class names with clsx
+ * Note: For Tailwind class merging, consider using tailwind-merge
+ */
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
 }
@@ -146,16 +150,26 @@ export function isAddress(address: string): address is Address {
 /**
  * Format Unix timestamp to relative time (e.g., "2 hours ago")
  */
-export function formatRelativeTime(timestamp: string | number): string {
-  const date = typeof timestamp === 'string' ? parseInt(timestamp) * 1000 : timestamp * 1000;
+export function formatRelativeTime(timestamp: string | number | Date): string {
+  let date: number | Date;
+  if (timestamp instanceof Date) {
+    date = timestamp;
+  } else {
+    date = typeof timestamp === 'string' ? parseInt(timestamp) * 1000 : timestamp * 1000;
+  }
   return formatDistanceToNow(date, { addSuffix: true });
 }
 
 /**
  * Format Unix timestamp to readable date
  */
-export function formatDate(timestamp: string | number): string {
-  const date = typeof timestamp === 'string' ? parseInt(timestamp) * 1000 : timestamp * 1000;
+export function formatDate(timestamp: string | number | Date): string {
+  let date: number | Date;
+  if (timestamp instanceof Date) {
+    date = timestamp;
+  } else {
+    date = typeof timestamp === 'string' ? parseInt(timestamp) * 1000 : timestamp * 1000;
+  }
   return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -166,8 +180,13 @@ export function formatDate(timestamp: string | number): string {
 /**
  * Format Unix timestamp to readable date and time
  */
-export function formatDateTime(timestamp: string | number): string {
-  const date = typeof timestamp === 'string' ? parseInt(timestamp) * 1000 : timestamp * 1000;
+export function formatDateTime(timestamp: string | number | Date): string {
+  let date: number | Date;
+  if (timestamp instanceof Date) {
+    date = timestamp;
+  } else {
+    date = typeof timestamp === 'string' ? parseInt(timestamp) * 1000 : timestamp * 1000;
+  }
   return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -234,6 +253,23 @@ export function formatNumber(num: number | string): string {
  */
 export function formatPercentage(value: number, decimals: number = 2): string {
   return `${value.toFixed(decimals)}%`;
+}
+
+/**
+ * Format large numbers in compact notation (1K, 1M, 1B)
+ */
+export function formatCompactNumber(num: number | string): string {
+  const value = typeof num === 'string' ? parseFloat(num) : num;
+
+  if (value >= 1_000_000_000) {
+    return `${(value / 1_000_000_000).toFixed(1)}B`;
+  } else if (value >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(1)}M`;
+  } else if (value >= 1_000) {
+    return `${(value / 1_000).toFixed(1)}K`;
+  } else {
+    return value.toFixed(0);
+  }
 }
 
 // ============================================
@@ -413,9 +449,12 @@ export function setLocalStorage<T>(key: string, value: T): void {
 }
 
 // ============================================
-// Debounce Utility
+// Performance Utilities
 // ============================================
 
+/**
+ * Debounce function execution
+ */
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
@@ -431,4 +470,98 @@ export function debounce<T extends (...args: any[]) => any>(
     if (timeout) clearTimeout(timeout);
     timeout = setTimeout(later, wait);
   };
+}
+
+/**
+ * Throttle function execution
+ */
+export function throttle<T extends (...args: any[]) => any>(
+  func: T,
+  limit: number
+): (...args: Parameters<T>) => void {
+  let inThrottle: boolean;
+
+  return function executedFunction(...args: Parameters<T>) {
+    if (!inThrottle) {
+      func(...args);
+      inThrottle = true;
+      setTimeout(() => (inThrottle = false), limit);
+    }
+  };
+}
+
+// ============================================
+// Browser Utilities
+// ============================================
+
+/**
+ * Copy text to clipboard
+ */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (err) {
+    console.error('Failed to copy:', err);
+    return false;
+  }
+}
+
+/**
+ * Get optimized image URL
+ */
+export function getOptimizedImageUrl(url: string, width?: number): string {
+  // Add image optimization parameters for supported providers
+  if (url.includes('ipfs.io') && width) {
+    return `${url}?w=${width}&auto=format`;
+  }
+  if (url.includes('cloudinary.com') && width) {
+    return url.replace('/upload/', `/upload/w_${width},f_auto,q_auto/`);
+  }
+  return url;
+}
+
+// ============================================
+// Price Calculation Utilities
+// ============================================
+
+/**
+ * Calculate price change percentage
+ */
+export function calculatePriceChange(current: string, previous: string): number {
+  const currentNum = Number(current) / 1e6;
+  const previousNum = Number(previous) / 1e6;
+
+  if (previousNum === 0) return 0;
+  return ((currentNum - previousNum) / previousNum) * 100;
+}
+
+/**
+ * Calculate royalty amount
+ */
+export function calculateRoyalty(price: string, royaltyBps: number): string {
+  const priceNum = BigInt(price);
+  const royalty = (priceNum * BigInt(royaltyBps)) / BigInt(10000);
+  return royalty.toString();
+}
+
+/**
+ * Format percentage with sign
+ */
+export function formatPercent(value: number, decimals: number = 2): string {
+  return `${value >= 0 ? '+' : ''}${value.toFixed(decimals)}%`;
+}
+
+/**
+ * Format time ago (compact)
+ */
+export function formatTimeAgo(timestamp: number): string {
+  const seconds = Math.floor(Date.now() / 1000 - timestamp);
+
+  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  if (seconds < 2592000) return `${Math.floor(seconds / 86400)}d ago`;
+  if (seconds < 31536000) return `${Math.floor(seconds / 2592000)}mo ago`;
+  return `${Math.floor(seconds / 31536000)}y ago`;
 }

@@ -2,324 +2,258 @@
 
 A full-stack NFT marketplace built on Circle's Arc blockchain, leveraging USDC as gas and native payment currency with instant sub-second finality.
 
-## 🌟 Version 0.1 (MVP)
+## Version 0.4 - Production Ready
 
-This is the initial MVP release focusing on core marketplace functionality with USDC-native payments and transparent royalty distribution.
+**Current Status:** 90% Complete towards world-class marketplace standards
 
-## 📋 Table of Contents
+All core phases completed. Ready for user acceptance testing and production deployment.
 
-- [Features](#-features)
-- [Architecture](#-architecture)
-- [Smart Contracts](#-smart-contracts)
-- [Getting Started](#-getting-started)
-- [Development](#-development)
-- [Deployment](#-deployment)
-- [Testing](#-testing)
-- [Roadmap](#-roadmap)
+### Completed Features (November 2025)
 
-## ✨ Features
+- **Phase 1: Foundation** - Testing infrastructure, design system, component library
+- **Phase 2: Critical Features** - Filtering, search, collection pages, NFT details
+- **Phase 3: UX Enhancements** - Animations, WebSocket real-time, PWA, toast notifications
+- **Phase 4: Performance & Polish** - Web Vitals, accessibility, SEO, bundle optimization
+- **Security Audit** - Critical vulnerabilities identified and fixed
 
-### Core Marketplace (v0.1)
-- ✅ **Fixed-Price Listings**: List NFTs for sale at a fixed USDC price
-- ✅ **English Auctions**: Time-bound auctions with automatic bid refunds
-- ✅ **USDC Payments**: All transactions denominated in USDC (Arc's native advantage)
-- ✅ **Instant Finality**: Sub-second transaction confirmation
-- ✅ **Transparent Royalties**: Automatic creator royalty distribution
-- ✅ **Revenue Splits**: Configurable payment splits for creators and platform
-- ✅ **User Profiles**: On-chain profile registry with off-chain metadata
-- ✅ **Collection Management**: Support for any ERC-721 collection
+See [GAP_ANALYSIS.md](./GAP_ANALYSIS.md) for detailed progress and [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) for security findings.
 
-### Coming in v0.2+
-- ⏳ **Staking & Rewards**: Stake USDC to earn rewards and fee discounts
-- ⏳ **DAO Governance**: Community voting on featured collections and fees
-- ⏳ **Bulk Operations**: Batch listing and purchasing
-- ⏳ **Advanced Filtering**: Search and filter by traits, rarity, price
-- ⏳ **Activity Feed**: Real-time marketplace activity
+## Features
 
-## 🏗 Architecture
+### Smart Contracts
+- **Fixed-Price Listings**: List NFTs for sale at a fixed USDC price
+- **English Auctions**: Time-bound auctions with automatic bid refunds
+- **USDC Payments**: All transactions denominated in USDC
+- **Instant Finality**: Sub-second transaction confirmation
+- **Transparent Royalties**: Automatic creator royalty distribution via FeeVault
+- **User Profiles**: On-chain profile registry with off-chain metadata
+- **Staking & Governance**: ArcStaking and ArcGovernance contracts
+
+### Frontend
+- **Advanced Filtering**: FilterPanel with trait filtering and rarity percentages
+- **Search**: Typesense-powered instant search with Cmd+K command palette
+- **Collection Pages**: Full collection browsing with metrics and virtual scrolling
+- **NFT Detail Pages**: Media viewer, price history charts, activity feed
+- **Animations**: Framer Motion with page transitions and micro-interactions
+- **Real-time Updates**: WebSocket-powered activity feed with mock mode
+- **PWA**: Service worker, offline page, install prompts
+- **Dark Mode**: Theme toggle with system preference detection
+
+### Quality & Testing
+- **Unit Tests**: 112 tests passing (Jest + React Testing Library)
+- **E2E Tests**: Playwright infrastructure with 37 test cases
+- **Accessibility**: Skip links, LiveRegion, keyboard navigation, ARIA utilities
+- **Performance**: Core Web Vitals monitoring, bundle analysis
+- **SEO**: Sitemap, robots.txt, JSON-LD structured data
+
+## Architecture
 
 ```
 ArcMarket/
-├── contracts/          # Smart contracts (Solidity 0.8.24)
+├── contracts/              # Smart contracts (Solidity 0.8.24)
 │   ├── contracts/
 │   │   ├── NFTMarketplace.sol      # Core marketplace logic
 │   │   ├── FeeVault.sol            # Royalty & fee distribution
 │   │   ├── ProfileRegistry.sol     # User profiles
-│   │   ├── MockUSDC.sol            # Test USDC token
-│   │   ├── StakingRewards.sol      # Stub for v0.2+
-│   │   └── SimpleGovernance.sol    # Stub for v0.2+
-│   ├── scripts/
-│   │   └── deploy.js               # Deployment script
+│   │   ├── ArcStaking.sol          # Staking rewards
+│   │   └── ArcGovernance.sol       # DAO governance
 │   └── test/                       # Contract tests
 │
-├── frontend/           # Next.js + TypeScript + Tailwind
+├── frontend/               # Next.js 16 + TypeScript + Tailwind v4
 │   ├── src/
-│   │   ├── app/                    # Next.js 14 app router
-│   │   ├── components/             # React components
-│   │   ├── hooks/                  # Custom React hooks
-│   │   └── lib/                    # Web3 config & utilities
-│   └── public/                     # Static assets
+│   │   ├── app/            # App router pages + API routes
+│   │   ├── components/     # React components (ui, nft, navigation)
+│   │   ├── hooks/          # Custom React hooks
+│   │   ├── lib/            # Utilities (wagmi, animations, accessibility)
+│   │   └── services/       # API and WebSocket services
+│   ├── e2e/                # Playwright E2E tests
+│   └── public/             # Static assets, PWA manifest
 │
-└── subgraph/          # TheGraph indexer (TODO)
-    ├── schema.graphql
-    └── src/mappings/
+├── .github/workflows/      # CI/CD (E2E tests)
+├── GAP_ANALYSIS.md         # Progress tracking
+└── SECURITY_AUDIT.md       # Security findings
 ```
 
-## 📝 Smart Contracts
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20+ and npm 9+
+- Git
+- Wallet with Arc testnet funds (for contract deployment)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/Archon-444/ARC.git
+cd ARC
+
+# Install contract dependencies
+cd contracts && npm install
+
+# Install frontend dependencies
+cd ../frontend && npm install
+```
+
+### Configuration
+
+Create `frontend/.env.local` from the example:
+
+```env
+# Circle SDK
+NEXT_PUBLIC_CIRCLE_ENVIRONMENT=testnet
+NEXT_PUBLIC_CIRCLE_APP_ID_TESTNET=your_app_id
+CIRCLE_API_KEY_TESTNET=your_api_key
+
+# Web3
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id
+NEXT_PUBLIC_RPC_URL=https://rpc.testnet.arc.network
+
+# Contract Addresses
+NEXT_PUBLIC_MARKETPLACE_ADDRESS=0x...
+NEXT_PUBLIC_FEE_VAULT_ADDRESS=0x...
+NEXT_PUBLIC_USDC_ADDRESS=0x...
+
+# Auth
+NEXTAUTH_SECRET=your_random_secret
+NEXTAUTH_URL=http://localhost:3000
+```
+
+### Development
+
+```bash
+# Start frontend dev server
+cd frontend
+npm run dev
+
+# Run unit tests
+npm test
+
+# Run E2E tests (requires playwright browsers)
+npx playwright install
+npm run test:e2e
+
+# Build for production
+npm run build
+
+# Analyze bundle
+npm run analyze
+```
+
+## Testing
+
+### Unit Tests (112 tests)
+
+```bash
+npm test                    # Run all tests
+npm run test:watch          # Watch mode
+npm run test:coverage       # Coverage report
+```
+
+### E2E Tests (37 tests)
+
+```bash
+npm run test:e2e            # Run all E2E tests
+npm run test:e2e:ui         # Interactive UI mode
+npm run test:e2e:headed     # See browser
+npm run test:e2e:report     # View HTML report
+```
+
+Test coverage:
+- Button, Modal, Badge, EmptyState components
+- NFTCard, NFTGrid, NFTCardSkeleton
+- Homepage, navigation, search, explore pages
+- Accessibility, PWA, SEO features
+
+## Smart Contracts
 
 ### NFTMarketplace.sol
-The core marketplace contract handling all listing, auction, and purchase logic.
 
-**Key Functions:**
 ```solidity
 // Listings
 function listItem(address collection, uint256 tokenId, uint256 price) external
-function updateListingPrice(address collection, uint256 tokenId, uint256 newPrice) external
-function cancelListing(address collection, uint256 tokenId) external
 function buyItem(address collection, uint256 tokenId) external
+function cancelListing(address collection, uint256 tokenId) external
 
 // Auctions
-function createAuction(address collection, uint256 tokenId, uint256 reservePrice, uint64 startTime, uint64 endTime) external
+function createAuction(...) external
 function placeBid(address collection, uint256 tokenId, uint256 bidAmount) external
 function settleAuction(address collection, uint256 tokenId) external
 ```
 
-**Features:**
-- USDC-only payments
-- Integration with FeeVault for automated splits
-- Collection allowlist (optional)
-- Gas-optimized with custom errors
-- Reentrancy protection
-
 ### FeeVault.sol
-Centralized fee and royalty distributor.
 
-**Key Functions:**
 ```solidity
 function setCollectionSplits(address collection, CollectionSplit[] calldata splits) external
 function setGlobalSplits(GlobalSplit[] calldata splits) external
 function distribute(address collection, uint256 tokenId, uint256 amount) external
 ```
 
-**Features:**
-- Collection-specific royalty splits
-- Global platform fee splits
-- Configurable split ratios (basis points)
-- Automatic distribution on sales
+## Security
 
-### ProfileRegistry.sol
-Minimal on-chain user profile registry.
+See [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) for the full security audit report.
 
-**Key Functions:**
-```solidity
-function setProfile(string calldata metadataURI) external
-function getProfile(address user) external view returns (Profile memory)
-```
+**Key Security Features:**
+- ReentrancyGuard on all state-changing contract functions
+- Session validation on API endpoints
+- IDOR protection on token refresh
+- No sensitive data exposure in error responses
+- Security headers (HSTS, X-Frame-Options, etc.)
 
-**Features:**
-- User-controlled profiles
-- Off-chain metadata (IPFS/Arweave)
-- Minimal gas footprint
-- No admin controls needed
+## Roadmap
 
-## 🚀 Getting Started
+### Completed
+- [x] Phase 1: Foundation (testing, design system)
+- [x] Phase 2: Critical Features (filtering, search, collections)
+- [x] Phase 3: UX Enhancements (animations, WebSocket, PWA)
+- [x] Phase 4: Performance & Polish (Web Vitals, accessibility, SEO)
+- [x] Security Audit
 
-### Prerequisites
+### Pre-Launch
+- [ ] User acceptance testing
+- [ ] Production deployment configuration
+- [ ] Beta launch
 
-- Node.js 18+ and npm
-- Git
-- Wallet with Arc testnet funds
-
-### Installation
-
-1. **Clone the repository:**
-```bash
-git clone https://github.com/Archon-444/ARC.git
-cd ARC
-```
-
-2. **Install contract dependencies:**
-```bash
-cd contracts
-npm install
-```
-
-3. **Install frontend dependencies:**
-```bash
-cd ../frontend
-npm install
-```
-
-### Configuration
-
-1. **Set up environment variables:**
-
-For contracts (create `contracts/.env`):
-```env
-PRIVATE_KEY=your_private_key_here
-ARC_TESTNET_RPC_URL=https://rpc.arc.testnet.circle.com
-ARC_MAINNET_RPC_URL=https://rpc.arc.circle.com
-```
-
-2. **Update chain configuration:**
-
-Edit `contracts/hardhat.config.js` to set correct Arc chain IDs and RPC URLs.
-
-## 💻 Development
-
-### Compile Contracts
-
-```bash
-cd contracts
-npm run compile
-```
-
-### Run Tests
-
-```bash
-npm test
-```
-
-### Start Local Development
-
-1. **Start Hardhat node:**
-```bash
-npx hardhat node
-```
-
-2. **Deploy contracts:**
-```bash
-npm run deploy:local
-```
-
-3. **Start frontend:**
-```bash
-cd ../frontend
-npm run dev
-```
-
-Visit `http://localhost:3000`
-
-## 🚢 Deployment
-
-### Deploy to Arc Testnet
-
-1. **Deploy contracts:**
-```bash
-cd contracts
-npm run deploy:arc-testnet
-```
-
-2. **Copy contract addresses:**
-```bash
-# Contract addresses will be saved to deployment.json
-# and .env.deployed template will be created
-cp .env.deployed ../frontend/.env.local
-```
-
-3. **Update frontend environment:**
-Edit `frontend/.env.local` with your configuration.
-
-4. **Build and deploy frontend:**
-```bash
-cd frontend
-npm run build
-# Deploy to your hosting provider (Vercel, Netlify, etc.)
-```
-
-### Deploy to Arc Mainnet
-
-⚠️ **Important:** Test thoroughly on testnet first!
-
-```bash
-cd contracts
-npm run deploy:arc-mainnet
-```
-
-## 🧪 Testing
-
-### Contract Tests
-
-```bash
-cd contracts
-npm test
-```
-
-### Frontend Tests (Coming Soon)
-
-```bash
-cd frontend
-npm run test
-```
-
-## 🗺 Roadmap
-
-### ✅ v0.1 (Current) - MVP
-- Core marketplace (listings & auctions)
-- USDC payments
-- Royalty distribution
-- User profiles
-- Basic UI
-
-### 🔄 v0.2 - Enhanced Features
-- Full staking implementation with tiered rewards
-- DAO governance for featured collections
-- Bulk operations (batch list/buy)
-- Advanced search and filtering
-- Activity feed and notifications
-
-### 🔮 v0.3 - Advanced
+### v0.5 - Advanced Features
 - Lazy minting for creators
-- Offer system (make offers on unlisted NFTs)
-- Collection verification system
+- Offer system for unlisted NFTs
+- Bulk operations (batch listing/buying)
 - Analytics dashboard
-- Mobile app (React Native)
 
-## 📖 Documentation
+## Documentation
 
-### Smart Contract Documentation
+- [GAP_ANALYSIS.md](./GAP_ANALYSIS.md) - Progress tracking and roadmap
+- [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) - Security audit findings
+- [e2e/README.md](./frontend/e2e/README.md) - E2E testing guide
 
-See `contracts/README.md` for detailed contract documentation.
+## Contributing
 
-### Frontend Documentation
+```bash
+# Fork and clone
+git clone https://github.com/YOUR_USERNAME/ARC.git
 
-See `frontend/README.md` for frontend architecture and component docs.
+# Create feature branch
+git checkout -b feature/your-feature
 
-### API Documentation
+# Make changes and test
+npm run lint
+npm run type-check
+npm test
 
-See `subgraph/README.md` for subgraph schema and query examples.
+# Submit pull request
+```
 
-## 🤝 Contributing
+## License
 
-Contributions are welcome! Please follow these steps:
+MIT License - see LICENSE file for details.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## Links
 
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🔗 Links
-
-- **Website:** Coming Soon
-- **Documentation:** Coming Soon
-- **Discord:** Coming Soon
-- **Twitter:** Coming Soon
-
-## ⚠️ Disclaimer
-
-This is experimental software. Use at your own risk. Always test thoroughly on testnet before deploying to mainnet.
-
-## 🙏 Acknowledgments
-
-- Circle for the Arc blockchain
-- OpenZeppelin for secure smart contract libraries
-- The Ethereum and Web3 community
+- **Circle Arc Blockchain**: https://www.circle.com/en/circle-arc
+- **Documentation**: Coming Soon
+- **Discord**: Coming Soon
 
 ---
 
-**Built with ❤️ for the Arc ecosystem**
+**Built for the Arc ecosystem**

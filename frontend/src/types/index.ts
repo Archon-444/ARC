@@ -391,6 +391,121 @@ export type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
   }[Keys];
 
 // ============================================
+// Activity & Events
+// ============================================
+
+export type ActivityType = 'sale' | 'transfer' | 'listing' | 'offer' | 'mint' | 'cancel';
+
+export interface Activity {
+  id: string;
+  type: ActivityType;
+  nft: {
+    id: string;
+    name: string;
+    image: string;
+    collection: string;
+  };
+  price?: string;
+  from: Address;
+  to: Address;
+  timestamp: number;
+  txHash: TransactionHash;
+}
+
+// ============================================
+// Offers
+// ============================================
+
+export interface Offer {
+  id: string;
+  nftId: string;
+  offerer: Address;
+  price: string;
+  expiresAt: number;
+  status: 'active' | 'accepted' | 'rejected' | 'cancelled' | 'expired';
+  createdAt: number;
+}
+
+// ============================================
+// Wallet State
+// ============================================
+
+export interface WalletState {
+  address?: Address;
+  chainId?: ChainId;
+  isConnected: boolean;
+  isConnecting: boolean;
+  balance?: string;
+}
+
+// ============================================
+// Collection Extended Types
+// ============================================
+
+export interface CollectionSocials {
+  website?: string;
+  twitter?: string;
+  discord?: string;
+  instagram?: string;
+}
+
+export interface CollectionStats {
+  floor: string;
+  volume24h: string;
+  volumeTotal: string;
+  items: number;
+  owners: number;
+  listed: number;
+  sales24h?: number;
+  floorChange24h?: number;
+}
+
+// ============================================
+// User Extended Types
+// ============================================
+
+export interface UserSocials {
+  twitter?: string;
+  instagram?: string;
+  website?: string;
+}
+
+// ============================================
+// NFT Filters
+// ============================================
+
+export interface NFTFilters {
+  priceMin?: string;
+  priceMax?: string;
+  traits: Record<string, string[]>;
+  status: ('buy_now' | 'on_auction' | 'new' | 'has_offers')[];
+  sortBy?: 'price_asc' | 'price_desc' | 'recently_listed' | 'recently_sold' | 'rarity';
+}
+
+// ============================================
+// Pagination Response
+// ============================================
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+// ============================================
+// API Response
+// ============================================
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+// ============================================
 // Constants
 // ============================================
 

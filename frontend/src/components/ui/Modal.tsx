@@ -106,19 +106,19 @@ export function Modal({
       <div
         ref={modalRef}
         className={cn(
-          'relative w-full bg-white rounded-lg shadow-xl animate-in zoom-in-95 duration-200',
+          'relative w-full bg-white dark:bg-neutral-900 rounded-lg shadow-xl animate-in zoom-in-95 duration-200',
           sizeClasses[size],
           className
         )}
       >
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-gray-200 p-6 pb-4">
+        <div className="flex items-start justify-between border-b border-neutral-200 dark:border-neutral-700 p-6 pb-4">
           <div className="flex-1">
-            <h2 id="modal-title" className="text-xl font-semibold text-gray-900">
+            <h2 id="modal-title" className="text-xl font-semibold text-neutral-900 dark:text-white">
               {title}
             </h2>
             {description && (
-              <p id="modal-description" className="mt-1 text-sm text-gray-600">
+              <p id="modal-description" className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
                 {description}
               </p>
             )}
@@ -126,7 +126,7 @@ export function Modal({
           {showClose && (
             <button
               onClick={onClose}
-              className="ml-4 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="ml-4 rounded-md p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
               aria-label="Close modal"
             >
               <X className="h-5 w-5" />
@@ -152,7 +152,7 @@ export function ModalFooter({
   className?: string;
 }) {
   return (
-    <div className={cn('flex items-center justify-end gap-3 border-t border-gray-200 pt-4 mt-6', className)}>
+    <div className={cn('flex items-center justify-end gap-3 border-t border-neutral-200 dark:border-neutral-700 pt-4 mt-6', className)}>
       {children}
     </div>
   );
@@ -172,7 +172,7 @@ export function ModalSection({
 }) {
   return (
     <div className={cn('space-y-3', className)}>
-      {title && <h3 className="text-sm font-medium text-gray-900">{title}</h3>}
+      {title && <h3 className="text-sm font-medium text-neutral-900 dark:text-white">{title}</h3>}
       {children}
     </div>
   );
@@ -191,6 +191,7 @@ interface ConfirmModalProps {
   cancelLabel?: string;
   confirmVariant?: 'primary' | 'danger';
   isLoading?: boolean;
+  children?: React.ReactNode;
 }
 
 export function ConfirmModal({
@@ -203,19 +204,21 @@ export function ConfirmModal({
   cancelLabel = 'Cancel',
   confirmVariant = 'primary',
   isLoading = false,
+  children,
 }: ConfirmModalProps) {
   const confirmClasses =
     confirmVariant === 'danger'
-      ? 'bg-red-600 hover:bg-red-700 text-white'
-      : 'bg-blue-600 hover:bg-blue-700 text-white';
+      ? 'bg-error-600 hover:bg-error-700 text-white'
+      : 'bg-primary-600 hover:bg-primary-700 text-white';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} description={description} size="sm">
+      {children}
       <ModalFooter>
         <button
           onClick={onClose}
           disabled={isLoading}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
         >
           {cancelLabel}
         </button>
