@@ -4,6 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { enforceRateLimit, rateLimitResponse } from '@/lib/api-guards';
+import { requireSessionWallet, requireSignature } from '@/lib/auth-middleware';
 
 /**
  * POST /api/circle/transaction
@@ -20,6 +22,25 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function POST(request: NextRequest) {
   try {
+    const sessionWallet = await requireSessionWallet(request);
+    if (sessionWallet.error) {
+      return sessionWallet.error;
+    }
+
+    const rateLimit = enforceRateLimit(request, {
+      limit: 15,
+      windowMs: 60_000,
+      identifier: sessionWallet.address,
+    });
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.resetAt);
+    }
+
+    const signatureResult = await requireSignature(request, sessionWallet.address, 'CIRCLE_TX_SUBMIT');
+    if (signatureResult.error) {
+      return signatureResult.error;
+    }
+
     const { walletId, to, value, data, gasLimit } = await request.json();
 
     // Validate required fields
@@ -78,6 +99,20 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    const sessionWallet = await requireSessionWallet(request);
+    if (sessionWallet.error) {
+      return sessionWallet.error;
+    }
+
+    const rateLimit = enforceRateLimit(request, {
+      limit: 30,
+      windowMs: 60_000,
+      identifier: sessionWallet.address,
+    });
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.resetAt);
+    }
+
     const { searchParams } = new URL(request.url);
     const transactionHash = searchParams.get('transactionHash');
 
@@ -124,6 +159,29 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
+    const sessionWallet = await requireSessionWallet(request);
+    if (sessionWallet.error) {
+      return sessionWallet.error;
+    }
+
+    const rateLimit = enforceRateLimit(request, {
+      limit: 20,
+      windowMs: 60_000,
+      identifier: sessionWallet.address,
+    });
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.resetAt);
+    }
+
+    const signatureResult = await requireSignature(
+      request,
+      sessionWallet.address,
+      'CIRCLE_TX_ESTIMATE'
+    );
+    if (signatureResult.error) {
+      return signatureResult.error;
+    }
+
     const { walletId, to, value, data } = await request.json();
 
     if (!walletId || !to) {

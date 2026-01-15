@@ -302,7 +302,7 @@ export function getNFTUrl(collection: Address, tokenId: string): string {
  * Build collection URL
  */
 export function getCollectionUrl(collection: Address): string {
-  return `/collection/${collection}`;
+  return `/collections/${collection}`;
 }
 
 /**

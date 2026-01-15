@@ -5,9 +5,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { initiateUserControlledWalletsClient } from '@circle-fin/user-controlled-wallets';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
-import { getCircleApiKey, getCircleEnvironment } from '@/lib/circle-config';
+import { getCircleApiKey } from '@/lib/circle-config';
+import { enforceRateLimit, rateLimitResponse, requireSessionUser } from '@/lib/api-guards';
+import { isTokenVaultEnabled, storeCircleTokens } from '@/lib/token-vault';
 
 // Initialize Circle SDK client
 // Automatically uses testnet or mainnet credentials based on NEXT_PUBLIC_CIRCLE_ENVIRONMENT
@@ -33,25 +33,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the user is authenticated (optional, recommended for production)
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Please sign in' },
-        { status: 401 }
-      );
+    const sessionCheck = await requireSessionUser(userId);
+    if (sessionCheck.error) {
+      return sessionCheck.error;
+    }
+
+    const rateLimit = enforceRateLimit(request, {
+      limit: 10,
+      windowMs: 60_000,
+      identifier: userId,
+    });
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.resetAt);
     }
 
     // Create or ensure user exists in Circle
     try {
       await circleClient.createUser({ userId });
-      console.log(`✅ Circle user created/verified: ${userId}`);
     } catch (error: any) {
       // User might already exist, check if it's a duplicate error
       if (error.response?.status !== 409) {
         throw error;
       }
-      console.log(`ℹ️  Circle user already exists: ${userId}`);
     }
 
     // Generate user token
@@ -62,12 +65,28 @@ export async function POST(request: NextRequest) {
     }
 
     const { userToken, encryptionKey } = tokenResponse.data;
+    await storeCircleTokens({
+      userId,
+      userToken,
+      encryptionKey,
+      expiresAt: Date.now() + 3600 * 1000,
+      updatedAt: Date.now(),
+    });
+
+    if (isTokenVaultEnabled()) {
+      return NextResponse.json({
+        success: true,
+        expiresIn: 3600,
+        vaultMode: true,
+      });
+    }
 
     return NextResponse.json({
       success: true,
       userToken,
       encryptionKey,
       expiresIn: 3600, // 1 hour (Circle's default)
+      vaultMode: false,
     });
   } catch (error: any) {
     console.error('Circle auth error:', error);
@@ -77,7 +96,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Circle authentication failed',
-          details: error.response.data
         },
         { status: error.response.status || 500 }
       );
@@ -111,6 +129,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const sessionCheck = await requireSessionUser(userId);
+    if (sessionCheck.error) {
+      return sessionCheck.error;
+    }
+
+    const rateLimit = enforceRateLimit(request, {
+      limit: 10,
+      windowMs: 60_000,
+      identifier: userId,
+    });
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.resetAt);
+    }
+
     // Refresh the user token using Circle SDK
     const tokenResponse = await circleClient.refreshUserToken({
       userId,
@@ -123,12 +155,30 @@ export async function GET(request: NextRequest) {
     }
 
     const { userToken, encryptionKey } = tokenResponse.data;
+    await storeCircleTokens({
+      userId,
+      userToken,
+      encryptionKey,
+      refreshToken,
+      deviceId,
+      expiresAt: Date.now() + 3600 * 1000,
+      updatedAt: Date.now(),
+    });
+
+    if (isTokenVaultEnabled()) {
+      return NextResponse.json({
+        success: true,
+        expiresIn: 3600,
+        vaultMode: true,
+      });
+    }
 
     return NextResponse.json({
       success: true,
       userToken,
       encryptionKey,
       expiresIn: 3600,
+      vaultMode: false,
     });
   } catch (error: any) {
     console.error('Token refresh error:', error);
@@ -137,7 +187,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Token refresh failed',
-          details: error.response.data
         },
         { status: error.response.status || 500 }
       );

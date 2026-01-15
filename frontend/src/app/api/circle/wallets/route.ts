@@ -6,12 +6,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { callCircleAPI } from '@/lib/circle-api';
+import { enforceRateLimit, rateLimitResponse, requireSessionUser } from '@/lib/api-guards';
+import { getCircleTokens, isTokenVaultEnabled } from '@/lib/token-vault';
 
 export const runtime = 'nodejs';
 
 interface CreateWalletRequest {
   userId: string;
-  userToken: string;
+  userToken?: string;
   blockchain?: string;
 }
 
@@ -36,10 +38,35 @@ export async function POST(request: NextRequest) {
   try {
     const body: CreateWalletRequest = await request.json();
 
-    if (!body.userId || !body.userToken) {
+    if (!body.userId || (!body.userToken && !isTokenVaultEnabled())) {
       return NextResponse.json(
         { error: 'userId and userToken are required' },
         { status: 400 }
+      );
+    }
+
+    const sessionCheck = await requireSessionUser(body.userId);
+    if (sessionCheck.error) {
+      return sessionCheck.error;
+    }
+
+    const rateLimit = enforceRateLimit(request, {
+      limit: 10,
+      windowMs: 60_000,
+      identifier: body.userId,
+    });
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.resetAt);
+    }
+
+    const effectiveUserToken = isTokenVaultEnabled()
+      ? (await getCircleTokens(body.userId))?.userToken
+      : body.userToken;
+
+    if (!effectiveUserToken) {
+      return NextResponse.json(
+        { error: 'Circle authentication required' },
+        { status: 401 }
       );
     }
 
@@ -47,7 +74,7 @@ export async function POST(request: NextRequest) {
     const challenge = await callCircleAPI<WalletChallenge>('/users/wallets', {
       method: 'POST',
       headers: {
-        'X-User-Token': body.userToken,
+        'X-User-Token': effectiveUserToken,
       },
       body: JSON.stringify({
         userId: body.userId,
@@ -67,8 +94,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        error: error.message || 'Failed to create wallet',
-        code: error.circleCode,
+        error: 'Failed to create wallet',
+        code: error.circleCode || 'CIRCLE_WALLET_CREATE_FAILED',
       },
       { status: error.statusCode || 500 }
     );
@@ -84,10 +111,35 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId');
     const userToken = searchParams.get('userToken');
 
-    if (!userId || !userToken) {
+    if (!userId || (!userToken && !isTokenVaultEnabled())) {
       return NextResponse.json(
         { error: 'userId and userToken are required' },
         { status: 400 }
+      );
+    }
+
+    const sessionCheck = await requireSessionUser(userId);
+    if (sessionCheck.error) {
+      return sessionCheck.error;
+    }
+
+    const rateLimit = enforceRateLimit(request, {
+      limit: 30,
+      windowMs: 60_000,
+      identifier: userId,
+    });
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.resetAt);
+    }
+
+    const effectiveUserToken = isTokenVaultEnabled()
+      ? (await getCircleTokens(userId))?.userToken
+      : userToken;
+
+    if (!effectiveUserToken) {
+      return NextResponse.json(
+        { error: 'Circle authentication required' },
+        { status: 401 }
       );
     }
 
@@ -95,7 +147,7 @@ export async function GET(request: NextRequest) {
     const response = await callCircleAPI<{ wallets: CircleWallet[] }>(`/wallets?userId=${userId}`, {
       method: 'GET',
       headers: {
-        'X-User-Token': userToken,
+        'X-User-Token': effectiveUserToken,
       },
     });
 
@@ -108,8 +160,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(
       {
-        error: error.message || 'Failed to fetch wallets',
-        code: error.circleCode,
+        error: 'Failed to fetch wallets',
+        code: error.circleCode || 'CIRCLE_WALLET_FETCH_FAILED',
       },
       { status: error.statusCode || 500 }
     );

@@ -33,9 +33,11 @@ interface CircleWalletContextType {
 
   // Wallet state
   wallets: CircleWallet[];
-  activeWallet: CircleWallet | null;
+  currentWallet: CircleWallet | null;
+  isAuthenticated: boolean;
   isConnected: boolean;
-  loading: boolean;
+  isLoading: boolean;
+  isCreatingWallet: boolean;
   error: Error | null;
 
   // Authentication
@@ -43,9 +45,11 @@ interface CircleWalletContextType {
   encryptionKey: string | null;
 
   // Wallet operations
-  createWallet: (blockchains?: string[], accountType?: string) => Promise<string>;
-  loadWallets: () => Promise<void>;
-  setActiveWallet: (wallet: CircleWallet) => void;
+  createUser: () => Promise<void>;
+  createWallet: (blockchains?: string[], accountType?: string) => Promise<CircleWallet | null>;
+  loadWallets: () => Promise<CircleWallet[]>;
+  selectWallet: (walletId: string) => void;
+  logout: () => void;
   disconnectWallet: () => void;
 
   // Challenge execution (for PIN setup)
@@ -79,13 +83,17 @@ export function CircleWalletProvider({ children }: CircleWalletProviderProps) {
 
   // Wallet state
   const [wallets, setWallets] = useState<CircleWallet[]>([]);
-  const [activeWallet, setActiveWalletState] = useState<CircleWallet | null>(null);
+  const [currentWallet, setCurrentWallet] = useState<CircleWallet | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isCreatingWallet, setIsCreatingWallet] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [userToken, setUserToken] = useState<string | null>(null);
   const [encryptionKey, setEncryptionKey] = useState<string | null>(null);
+  const [isVaultMode, setIsVaultMode] = useState(false);
 
-  const isConnected = activeWallet !== null && session !== null;
+  const isAuthenticated = sessionStatus === 'authenticated';
+  const isConnected = isAuthenticated && currentWallet !== null;
+  const isLoading = loading || sessionStatus === 'loading';
 
   // Initialize Web SDK on mount
   useEffect(() => {
@@ -135,6 +143,12 @@ export function CircleWalletProvider({ children }: CircleWalletProviderProps) {
       }
 
       const data = await response.json();
+      setIsVaultMode(Boolean(data.vaultMode));
+
+      if (!data.userToken || !data.encryptionKey) {
+        return null;
+      }
+
       setUserToken(data.userToken);
       setEncryptionKey(data.encryptionKey);
 
@@ -152,168 +166,109 @@ export function CircleWalletProvider({ children }: CircleWalletProviderProps) {
         encryptionKey: data.encryptionKey,
       };
     } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to get authentication tokens');
       console.error('Failed to get auth tokens:', err);
+      setError(error);
       return null;
     }
   }, [session, sdk, isSDKReady]);
 
+  const persistActiveWalletId = useCallback((walletId: string | null) => {
+    if (typeof window === 'undefined') return;
+    if (walletId) {
+      localStorage.setItem('circle_active_wallet_id', walletId);
+    } else {
+      localStorage.removeItem('circle_active_wallet_id');
+    }
+  }, []);
+
   /**
    * Load wallets for the current user
    */
-  const loadWallets = useCallback(async () => {
+  const loadWallets = useCallback(async (): Promise<CircleWallet[]> => {
     if (!session?.user) {
       setWallets([]);
-      return;
+      setCurrentWallet(null);
+      persistActiveWalletId(null);
+      return [];
     }
 
     setLoading(true);
     setError(null);
 
     try {
-      // Get auth tokens first
-      let tokens = userToken ? { userToken, encryptionKey: encryptionKey! } : await getAuthTokens();
+      const tokens =
+        userToken && encryptionKey
+          ? { userToken, encryptionKey }
+          : await getAuthTokens();
 
-      if (!tokens) {
-        throw new Error('Failed to authenticate');
+      if (!isVaultMode && !tokens) {
+        throw new Error('Failed to authenticate with Circle');
       }
 
-      // Fetch wallets from backend
-      const response = await fetch(
-        `/api/circle/wallet?userToken=${tokens.userToken}`,
-        { method: 'GET' }
-      );
+      const userId = (session.user as any).userId || session.user.email;
+      const walletQuery = new URLSearchParams({ userId });
+      if (tokens?.userToken) {
+        walletQuery.set('userToken', tokens.userToken);
+      }
+
+      const response = await fetch(`/api/circle/wallet?${walletQuery.toString()}`);
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to load wallets');
       }
 
       const data = await response.json();
-      setWallets(data.wallets || []);
+      const walletList: CircleWallet[] = data.wallets || [];
 
-      // Set first wallet as active if none selected
-      if (data.wallets?.length > 0 && !activeWallet) {
-        setActiveWalletState(data.wallets[0]);
+      setWallets(walletList);
+
+      const savedWalletId =
+        typeof window !== 'undefined' ? localStorage.getItem('circle_active_wallet_id') : null;
+
+      let nextWallet: CircleWallet | null = null;
+      if (walletList.length > 0) {
+        nextWallet =
+          (savedWalletId && walletList.find((wallet) => wallet.id === savedWalletId)) ||
+          walletList[0];
       }
+
+      setCurrentWallet(nextWallet);
+      persistActiveWalletId(nextWallet ? nextWallet.id : null);
+
+      return walletList;
     } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to load wallets');
       console.error('Failed to load wallets:', err);
-      setError(err as Error);
+      setError(error);
+      setWallets([]);
+      setCurrentWallet(null);
+      persistActiveWalletId(null);
+      return [];
     } finally {
       setLoading(false);
     }
-  }, [session, userToken, encryptionKey, activeWallet, getAuthTokens]);
-
-  /**
-   * Create a new Circle wallet for the user
-   *
-   * NOTE: This initiates a challenge that requires the user to set up a PIN.
-   * You will need to integrate Circle's Web SDK to complete the challenge.
-   */
-  const createWallet = useCallback(
-    async (blockchains: string[] = ['ETH'], accountType: string = 'EOA'): Promise<string> => {
-      if (!session?.user) {
-        throw new Error('User not authenticated');
-      }
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        // Get auth tokens first
-        let tokens = userToken ? { userToken, encryptionKey: encryptionKey! } : await getAuthTokens();
-
-        if (!tokens) {
-          throw new Error('Failed to authenticate');
-        }
-
-        const userId = (session.user as any).userId || session.user.email;
-
-        // Create wallet via backend API
-        const response = await fetch('/api/circle/wallet', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId,
-            userToken: tokens.userToken,
-            blockchains,
-            accountType,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to create wallet');
-        }
-
-        const data = await response.json();
-
-        console.log(`✅ Wallet creation initiated. Challenge ID: ${data.challengeId}`);
-        console.log('⏳ Executing challenge (PIN setup)...');
-
-        // Execute challenge with Web SDK (PIN setup)
-        if (sdk && isSDKReady) {
-          const success = await executeChallenge(data.challengeId);
-
-          if (success) {
-            // Reload wallets to get the new wallet
-            await loadWallets();
-            console.log('✅ Wallet creation completed successfully');
-          } else {
-            console.error('❌ Challenge execution failed');
-          }
-        } else {
-          console.warn('⚠️  Web SDK not ready - challenge must be completed manually');
-        }
-
-        return data.challengeId;
-      } catch (err) {
-        setError(err as Error);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [session, userToken, encryptionKey, getAuthTokens, loadWallets]
-  );
-
-  /**
-   * Set the active wallet
-   */
-  const setActiveWallet = useCallback((wallet: CircleWallet) => {
-    setActiveWalletState(wallet);
-    localStorage.setItem('circle_active_wallet_id', wallet.id);
-  }, []);
-
-  /**
-   * Disconnect Circle wallet
-   */
-  const disconnectWallet = useCallback(() => {
-    setActiveWalletState(null);
-    setUserToken(null);
-    setEncryptionKey(null);
-    localStorage.removeItem('circle_active_wallet_id');
-  }, []);
+  }, [session, userToken, encryptionKey, isVaultMode, getAuthTokens, persistActiveWalletId]);
 
   /**
    * Execute a Circle challenge (PIN setup, transaction signing, etc.)
    *
    * This opens the Circle Web SDK UI for the user to complete the challenge
-   * @param challengeId - The challenge ID from Circle API
-   * @returns Promise<boolean> - true if challenge was completed successfully
    */
   const executeChallenge = useCallback(
     async (challengeId: string): Promise<boolean> => {
       if (!sdk || !isSDKReady) {
-        throw new CircleWalletError('Web SDK not initialized');
+        console.warn('Circle Web SDK not initialized. Challenge must be handled manually.');
+        return false;
       }
 
       return new Promise((resolve) => {
         try {
-          // Execute challenge - this will show Circle's UI for PIN/biometric input
-          sdk.execute(challengeId, (error, result) => {
-            if (error) {
-              console.error('Challenge execution error:', error);
-              setError(new Error(error.message || 'Challenge failed'));
+          sdk.execute(challengeId, (executionError, result) => {
+            if (executionError) {
+              console.error('Challenge execution error:', executionError);
+              setError(new Error(executionError.message || 'Challenge failed'));
               resolve(false);
               return;
             }
@@ -331,42 +286,190 @@ export function CircleWalletProvider({ children }: CircleWalletProviderProps) {
     [sdk, isSDKReady]
   );
 
+  /**
+   * Ensure a Circle user exists and tokens are cached locally.
+   */
+  const createUser = useCallback(async () => {
+    if (!session?.user) {
+      throw new Error('User not authenticated');
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const tokens = await getAuthTokens();
+      if (!tokens) {
+        throw new Error('Failed to authenticate with Circle');
+      }
+
+      await loadWallets();
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to create Circle user');
+      console.error('Failed to create Circle user:', err);
+      setError(error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [session, getAuthTokens, loadWallets]);
+
+  /**
+   * Select an active wallet by ID.
+   */
+  const selectWallet = useCallback(
+    (walletId: string) => {
+      const wallet = wallets.find((item) => item.id === walletId) || null;
+      setCurrentWallet(wallet);
+      persistActiveWalletId(wallet ? wallet.id : null);
+    },
+    [wallets, persistActiveWalletId]
+  );
+
+  /**
+   * Clear all wallet-related state and credentials.
+   */
+  const logout = useCallback(() => {
+    setWallets([]);
+    setCurrentWallet(null);
+    setUserToken(null);
+    setEncryptionKey(null);
+    setIsVaultMode(false);
+    persistActiveWalletId(null);
+  }, [persistActiveWalletId]);
+
+  /**
+   * Disconnect wallet alias (kept for backwards compatibility).
+   */
+  const disconnectWallet = useCallback(() => {
+    logout();
+  }, [logout]);
+
+  /**
+   * Create a new Circle wallet for the user.
+   */
+  const createWallet = useCallback(
+    async (blockchains: string[] = ['ETH'], accountType: string = 'EOA'): Promise<CircleWallet | null> => {
+      if (!session?.user) {
+        throw new Error('User not authenticated');
+      }
+
+      setIsCreatingWallet(true);
+      setError(null);
+
+      try {
+        const tokens =
+          userToken && encryptionKey
+            ? { userToken, encryptionKey }
+            : await getAuthTokens();
+
+        if (!isVaultMode && !tokens) {
+          throw new Error('Failed to authenticate with Circle');
+        }
+
+        const userId = (session.user as any).userId || session.user.email;
+
+        const payload: Record<string, unknown> = {
+          userId,
+          blockchains,
+          accountType,
+        };
+
+        if (tokens?.userToken) {
+          payload.userToken = tokens.userToken;
+        }
+
+        const response = await fetch('/api/circle/wallet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to create wallet');
+        }
+
+        const data = await response.json();
+        const challengeId: string | undefined = data.challengeId;
+        const challengeToken: string | undefined = data.challengeToken;
+        const challengeEncryptionKey: string | undefined = data.challengeEncryptionKey;
+
+        if (challengeId) {
+          if (sdk && isSDKReady && challengeToken && challengeEncryptionKey) {
+            sdk.setAuthentication({
+              userToken: challengeToken,
+              encryptionKey: challengeEncryptionKey,
+            });
+          }
+
+          const challengeCompleted = await executeChallenge(challengeId);
+          if (!challengeCompleted) {
+            throw new Error('Circle challenge execution failed');
+          }
+        }
+
+        const previousIds = new Set(wallets.map((wallet) => wallet.id));
+        const updatedWallets = await loadWallets();
+        const newWallet =
+          updatedWallets.find((wallet) => !previousIds.has(wallet.id)) ||
+          updatedWallets.find((wallet) => wallet.state === 'LIVE') ||
+          updatedWallets[0] ||
+          null;
+
+        if (newWallet) {
+          selectWallet(newWallet.id);
+        }
+
+        return newWallet;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Failed to create wallet');
+        console.error('Failed to create wallet:', err);
+        setError(error);
+        throw error;
+      } finally {
+        setIsCreatingWallet(false);
+      }
+    },
+    [
+      session,
+      userToken,
+      encryptionKey,
+      isVaultMode,
+      getAuthTokens,
+      executeChallenge,
+      loadWallets,
+      wallets,
+      selectWallet,
+    ]
+  );
+
   // Auto-load wallets when user session is established
   useEffect(() => {
     if (sessionStatus === 'authenticated' && session) {
       loadWallets();
     } else if (sessionStatus === 'unauthenticated') {
-      setWallets([]);
-      setActiveWalletState(null);
-      setUserToken(null);
-      setEncryptionKey(null);
+      logout();
     }
-  }, [sessionStatus, session]);
-
-  // Restore active wallet from localStorage on mount
-  useEffect(() => {
-    const savedWalletId = localStorage.getItem('circle_active_wallet_id');
-    if (savedWalletId && wallets.length > 0) {
-      const wallet = wallets.find(w => w.id === savedWalletId);
-      if (wallet) {
-        setActiveWalletState(wallet);
-      }
-    }
-  }, [wallets]);
+  }, [sessionStatus, session, loadWallets, logout]);
 
   const contextValue: CircleWalletContextType = {
     sdk,
     isSDKReady,
     wallets,
-    activeWallet,
+    currentWallet,
+    isAuthenticated,
     isConnected,
-    loading,
+    isLoading,
+    isCreatingWallet,
     error,
     userToken,
     encryptionKey,
+    createUser,
     createWallet,
     loadWallets,
-    setActiveWallet,
+    selectWallet,
+    logout,
     disconnectWallet,
     executeChallenge,
   };
@@ -384,13 +487,13 @@ export function CircleWalletProvider({ children }: CircleWalletProviderProps) {
  * @example
  * ```tsx
  * function WalletInfo() {
- *   const { activeWallet, isConnected, disconnectWallet } = useCircleWallet();
+ *   const { currentWallet, isConnected, disconnectWallet } = useCircleWallet();
  *
  *   if (!isConnected) return <div>Not connected</div>;
  *
  *   return (
  *     <div>
- *       <p>Address: {activeWallet?.address}</p>
+ *       <p>Address: {currentWallet?.address}</p>
  *       <button onClick={disconnectWallet}>Disconnect</button>
  *     </div>
  *   );

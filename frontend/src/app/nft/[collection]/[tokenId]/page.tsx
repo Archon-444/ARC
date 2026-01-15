@@ -31,21 +31,28 @@ import { ListNFTModal } from '@/components/marketplace/ListNFTModal';
 import { CreateAuctionModal } from '@/components/marketplace/CreateAuctionModal';
 import { CancelListingModal } from '@/components/marketplace/CancelListingModal';
 import { CancelAuctionModal } from '@/components/marketplace/CancelAuctionModal';
+import { ActivityTable } from '@/components/collection/ActivityTable';
+import { RarityBadge } from '@/components/nft/RarityBadge';
+import { TraitRarityTable } from '@/components/nft/TraitRarityTable';
+import { PriceHistoryChart } from '@/components/nft/PriceHistoryChart';
+import { SimilarItemsCarousel } from '@/components/nft/SimilarItemsCarousel';
+import { AttributeCard } from '@/components/nft/AttributeCard';
 import { fetchNFTDetails } from '@/lib/graphql-client';
 import {
   formatUSDC,
   formatTimeRemaining,
   formatRelativeTime,
-  formatDate,
   truncateAddress,
   getImageUrl,
   getCollectionUrl,
   getProfileUrl,
-  getTransactionUrl,
   cn,
   getTimeRemaining,
 } from '@/lib/utils';
 import type { NFT, Listing, Auction, Sale, Address } from '@/types';
+import { useRarityData } from '@/hooks/useRarityData';
+import { RarityCalculator } from '@/lib/rarity/calculator';
+import { useNFTRarity } from '@/hooks/useRarityData';
 
 interface PageProps {
   params: Promise<{
@@ -65,6 +72,9 @@ export default function NFTDetailPage({ params }: PageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [isLiked, setIsLiked] = useState(false);
+  const { rarity } = useNFTRarity(collection, tokenId);
+  const { data: collectionRarity } = useRarityData({ collectionAddress: collection });
+  const rarityCalculator = collectionRarity ? new RarityCalculator(collectionRarity) : null;
 
   // Modal states
   const [showBuyModal, setShowBuyModal] = useState(false);
@@ -182,15 +192,22 @@ export default function NFTDetailPage({ params }: PageProps) {
             <div className="rounded-lg border border-gray-200 bg-white p-6">
               <h3 className="mb-4 text-lg font-semibold">Attributes</h3>
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                {nft.attributes.map((attr, index) => (
-                  <div
-                    key={index}
-                    className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-center"
-                  >
-                    <p className="text-xs text-gray-600">{attr.trait_type}</p>
-                    <p className="font-semibold text-gray-900">{attr.value}</p>
-                  </div>
-                ))}
+                {nft.attributes.map((attr, index) => {
+                  const traitRarity = rarityCalculator?.getTraitRarity({
+                    trait_type: attr.trait_type,
+                    value: String(attr.value),
+                  });
+
+                  return (
+                    <AttributeCard
+                      key={index}
+                      traitType={attr.trait_type}
+                      value={String(attr.value)}
+                      frequency={traitRarity?.frequency}
+                      showRarity
+                    />
+                  );
+                })}
               </div>
             </div>
           )}
@@ -217,6 +234,16 @@ export default function NFTDetailPage({ params }: PageProps) {
               <p className="mt-3 text-gray-600">{nft.description}</p>
             )}
           </div>
+
+          {rarity && (
+            <RarityBadge
+              rarityTier={rarity.rarityTier}
+              rarityRank={rarity.rarityRank}
+              rarityPercentile={rarity.rarityPercentile}
+              showRank
+              size="lg"
+            />
+          )}
 
           {/* Owner */}
           <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -369,6 +396,7 @@ export default function NFTDetailPage({ params }: PageProps) {
                 <TrendingUp className="h-5 w-5" />
                 Price History
               </h3>
+              <PriceHistoryChart sales={sales} />
               <div className="space-y-3">
                 {sales.slice(0, 5).map((sale) => (
                   <div key={sale.id} className="flex items-center justify-between border-b border-gray-100 pb-3 last:border-0">
@@ -423,6 +451,32 @@ export default function NFTDetailPage({ params }: PageProps) {
               </div>
             </div>
           </div>
+
+          {rarity && rarity.attributes && rarity.attributes.length > 0 && (
+            <details className="rounded-lg border border-gray-200 bg-white p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-gray-900">
+                Detailed Trait Analysis
+              </summary>
+              <div className="mt-4">
+                <TraitRarityTable
+                  traits={rarity.attributes}
+                  collectionAddress={nft.collection.id}
+                />
+              </div>
+            </details>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-12 space-y-8">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Item Activity</h2>
+          <ActivityTable collectionAddress={collection} tokenId={tokenId} />
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Similar Items</h2>
+          <SimilarItemsCarousel collectionAddress={collection} tokenId={tokenId} />
         </div>
       </div>
 

@@ -5,9 +5,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { initiateUserControlledWalletsClient } from '@circle-fin/user-controlled-wallets';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
 import { getCircleApiKey } from '@/lib/circle-config';
+import { enforceRateLimit, rateLimitResponse, requireSessionUser } from '@/lib/api-guards';
+import { getCircleTokens, isTokenVaultEnabled } from '@/lib/token-vault';
 
 // Initialize Circle SDK client
 // Automatically uses testnet or mainnet credentials based on NEXT_PUBLIC_CIRCLE_ENVIRONMENT
@@ -26,18 +26,34 @@ export async function POST(request: NextRequest) {
   try {
     const { userId, userToken, blockchains = ['ETH'], accountType = 'EOA' } = await request.json();
 
-    if (!userId || !userToken) {
+    if (!userId || (!userToken && !isTokenVaultEnabled())) {
       return NextResponse.json(
         { error: 'userId and userToken are required' },
         { status: 400 }
       );
     }
 
-    // Verify the user is authenticated
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    const sessionCheck = await requireSessionUser(userId);
+    if (sessionCheck.error) {
+      return sessionCheck.error;
+    }
+
+    const rateLimit = enforceRateLimit(request, {
+      limit: 15,
+      windowMs: 60_000,
+      identifier: userId,
+    });
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.resetAt);
+    }
+
+    const effectiveUserToken = isTokenVaultEnabled()
+      ? (await getCircleTokens(userId))?.userToken
+      : userToken;
+
+    if (!effectiveUserToken) {
       return NextResponse.json(
-        { error: 'Unauthorized - Please sign in' },
+        { error: 'Circle authentication required' },
         { status: 401 }
       );
     }
@@ -45,7 +61,7 @@ export async function POST(request: NextRequest) {
     // Create wallet using Circle SDK
     // This returns a challenge ID that must be completed via PIN entry
     const walletResponse = await circleClient.createWallet({
-      userToken,
+      userToken: effectiveUserToken,
       blockchains,
       accountType,
     });
@@ -56,7 +72,21 @@ export async function POST(request: NextRequest) {
 
     const { challengeId } = walletResponse.data;
 
-    console.log(`✅ Circle wallet creation initiated for user ${userId}, challengeId: ${challengeId}`);
+    if (isTokenVaultEnabled()) {
+      const challengeTokenResponse = await circleClient.createUserToken({ userId });
+      if (!challengeTokenResponse.data) {
+        throw new Error('Failed to generate challenge token');
+      }
+
+      return NextResponse.json({
+        success: true,
+        challengeId,
+        challengeToken: challengeTokenResponse.data.userToken,
+        challengeEncryptionKey: challengeTokenResponse.data.encryptionKey,
+        challengeExpiresIn: 300,
+        message: 'Wallet creation challenge created. User must complete PIN setup.',
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -70,7 +100,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Wallet creation failed',
-          details: error.response.data
         },
         { status: error.response.status || 500 }
       );
@@ -97,18 +126,36 @@ export async function GET(request: NextRequest) {
     const walletId = searchParams.get('walletId');
     const userId = searchParams.get('userId');
 
-    if (!userToken && !userId) {
+    if (!userToken && !userId && !isTokenVaultEnabled()) {
       return NextResponse.json(
         { error: 'userToken or userId is required' },
         { status: 400 }
       );
     }
 
-    // Verify the user is authenticated
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    const sessionCheck = await requireSessionUser(userId || undefined);
+    if (sessionCheck.error) {
+      return sessionCheck.error;
+    }
+
+    const effectiveUserId = userId || sessionCheck.sessionUserId || undefined;
+
+    const rateLimit = enforceRateLimit(request, {
+      limit: 30,
+      windowMs: 60_000,
+      identifier: effectiveUserId,
+    });
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.resetAt);
+    }
+
+    const effectiveUserToken = isTokenVaultEnabled()
+      ? (await getCircleTokens(effectiveUserId || ''))?.userToken
+      : userToken || undefined;
+
+    if (isTokenVaultEnabled() && !effectiveUserToken) {
       return NextResponse.json(
-        { error: 'Unauthorized - Please sign in' },
+        { error: 'Circle authentication required' },
         { status: 401 }
       );
     }
@@ -117,8 +164,8 @@ export async function GET(request: NextRequest) {
     if (walletId) {
       const walletResponse = await circleClient.getWallet({
         id: walletId,
-        userToken: userToken || undefined,
-        userId: userId || undefined,
+        userToken: effectiveUserToken,
+        userId: effectiveUserId,
       } as any);
 
       if (!walletResponse.data) {
@@ -136,8 +183,8 @@ export async function GET(request: NextRequest) {
 
     // Otherwise, list all wallets for the user
     const walletsResponse = await circleClient.listWallets({
-      userToken: userToken || undefined,
-      userId: userId || undefined,
+      userToken: effectiveUserToken,
+      userId: effectiveUserId,
     } as any);
 
     if (!walletsResponse.data) {
@@ -158,7 +205,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Failed to retrieve wallet',
-          details: error.response.data
         },
         { status: error.response.status || 500 }
       );
@@ -182,18 +228,36 @@ export async function PATCH(request: NextRequest) {
   try {
     const { walletId, userToken, userId, name, refId } = await request.json();
 
-    if (!walletId || (!userToken && !userId)) {
+    if (!walletId || (!userToken && !userId && !isTokenVaultEnabled())) {
       return NextResponse.json(
         { error: 'walletId and (userToken or userId) are required' },
         { status: 400 }
       );
     }
 
-    // Verify the user is authenticated
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    const sessionCheck = await requireSessionUser(userId || undefined);
+    if (sessionCheck.error) {
+      return sessionCheck.error;
+    }
+
+    const effectiveUserId = userId || sessionCheck.sessionUserId || undefined;
+
+    const rateLimit = enforceRateLimit(request, {
+      limit: 20,
+      windowMs: 60_000,
+      identifier: effectiveUserId,
+    });
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.resetAt);
+    }
+
+    const effectiveUserToken = isTokenVaultEnabled()
+      ? (await getCircleTokens(effectiveUserId || ''))?.userToken
+      : userToken || undefined;
+
+    if (isTokenVaultEnabled() && !effectiveUserToken) {
       return NextResponse.json(
-        { error: 'Unauthorized - Please sign in' },
+        { error: 'Circle authentication required' },
         { status: 401 }
       );
     }
@@ -201,8 +265,8 @@ export async function PATCH(request: NextRequest) {
     // Update wallet using Circle SDK
     const walletResponse = await circleClient.updateWallet({
       id: walletId,
-      userToken: userToken || undefined,
-      userId: userId || undefined,
+      userToken: effectiveUserToken,
+      userId: effectiveUserId,
       name,
       refId,
     } as any);
@@ -222,7 +286,6 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Wallet update failed',
-          details: error.response.data
         },
         { status: error.response.status || 500 }
       );

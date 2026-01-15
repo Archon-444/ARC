@@ -5,9 +5,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { initiateSmartContractPlatformClient } from '@circle-fin/smart-contract-platform';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
 import { getCircleApiKey, getCircleEntitySecret } from '@/lib/circle-config';
+import { enforceRateLimit, rateLimitResponse, requireSessionUser } from '@/lib/api-guards';
 
 // Initialize Circle Smart Contract Platform client
 // Automatically uses testnet or mainnet credentials based on NEXT_PUBLIC_CIRCLE_ENVIRONMENT
@@ -34,6 +33,20 @@ const scpClient = initiateSmartContractPlatformClient({
  */
 export async function POST(request: NextRequest) {
   try {
+    const sessionCheck = await requireSessionUser();
+    if (sessionCheck.error) {
+      return sessionCheck.error;
+    }
+
+    const rateLimit = enforceRateLimit(request, {
+      limit: 5,
+      windowMs: 60_000,
+      identifier: sessionCheck.sessionUserId,
+    });
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.resetAt);
+    }
+
     const {
       name,
       description,
@@ -52,19 +65,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the user is authenticated (optional, recommended for production)
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Please sign in' },
-        { status: 401 }
-      );
-    }
-
     // Deploy contract via Circle Smart Contract Platform
     const response = await scpClient.deployContract({
       name,
-      description: description || `Contract deployed by ${session.user?.name || 'user'}`,
+      description: description || 'Contract deployed via ARC',
       walletId,
       abiJson,
       bytecode,
@@ -75,10 +79,6 @@ export async function POST(request: NextRequest) {
     if (!response.data) {
       throw new Error('Failed to deploy contract');
     }
-
-    console.log(`✅ Contract deployment initiated: ${name}`);
-    console.log(`   Contract ID: ${response.data.id}`);
-    console.log(`   Status: ${response.data.deployStatus}`);
 
     return NextResponse.json({
       success: true,
@@ -95,7 +95,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Contract deployment failed',
-          details: error.response.data,
         },
         { status: error.response.status || 500 }
       );
@@ -117,6 +116,20 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    const sessionCheck = await requireSessionUser();
+    if (sessionCheck.error) {
+      return sessionCheck.error;
+    }
+
+    const rateLimit = enforceRateLimit(request, {
+      limit: 30,
+      windowMs: 60_000,
+      identifier: sessionCheck.sessionUserId,
+    });
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.resetAt);
+    }
+
     const { searchParams } = new URL(request.url);
     const contractId = searchParams.get('contractId');
 
@@ -124,15 +137,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: 'contractId is required' },
         { status: 400 }
-      );
-    }
-
-    // Verify the user is authenticated
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Please sign in' },
-        { status: 401 }
       );
     }
 
@@ -157,7 +161,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Failed to retrieve contract',
-          details: error.response.data,
         },
         { status: error.response.status || 500 }
       );

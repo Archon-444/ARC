@@ -12,6 +12,7 @@ import NextAuth, { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import FacebookProvider from 'next-auth/providers/facebook';
 import AppleProvider from 'next-auth/providers/apple';
+import { listConnectedWallets } from '@/lib/wallet-ownership';
 
 /**
  * NextAuth Configuration
@@ -108,6 +109,11 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as any).provider = token.provider;
         (session.user as any).userId = token.userId;
+        if (token.userId) {
+          (session.user as any).connectedWallets = await listConnectedWallets(token.userId as string);
+        } else {
+          (session.user as any).connectedWallets = [];
+        }
       }
 
       return session;

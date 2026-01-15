@@ -2,7 +2,7 @@
 
 import './globals.css';
 import '@rainbow-me/rainbowkit/styles.css';
-import { QueryClient, QueryClientProvider } from '@tantml:tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider } from 'wagmi';
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { SessionProvider } from 'next-auth/react';

@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { callCircleAPI } from '@/lib/circle-api';
+import { enforceRateLimit, rateLimitResponse, requireSessionUser } from '@/lib/api-guards';
 
 export const runtime = 'nodejs';
 
@@ -30,6 +31,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const sessionCheck = await requireSessionUser(body.userId);
+    if (sessionCheck.error) {
+      return sessionCheck.error;
+    }
+
+    const rateLimit = enforceRateLimit(request, {
+      limit: 10,
+      windowMs: 60_000,
+      identifier: body.userId,
+    });
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.resetAt);
+    }
+
     // Create user in Circle
     const user = await callCircleAPI<CircleUser>('/users', {
       method: 'POST',
@@ -51,8 +66,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        error: error.message || 'Failed to create Circle user',
-        code: error.circleCode,
+        error: 'Failed to create Circle user',
+        code: error.circleCode || 'CIRCLE_USER_CREATE_FAILED',
       },
       { status: error.statusCode || 500 }
     );

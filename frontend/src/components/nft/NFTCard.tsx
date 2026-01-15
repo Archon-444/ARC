@@ -10,6 +10,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Clock, Heart } from 'lucide-react';
+import { RarityBadge } from '@/components/nft/RarityBadge';
+import { useNFTRarity } from '@/hooks/useRarityData';
 import { useState } from 'react';
 import type { NFT, Listing, Auction } from '@/types';
 import {
@@ -21,6 +23,8 @@ import {
   truncateAddress,
 } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/LoadingSpinner';
+import { useNFTRarity } from '@/hooks/useRarityData';
+import { RarityBadge } from '@/components/nft/RarityBadge';
 
 interface NFTCardProps {
   nft: NFT;
@@ -43,6 +47,8 @@ export function NFTCard({
 }: NFTCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const { rarity } = useNFTRarity(nft.collection.id, nft.tokenId);
+  const { rarity } = useNFTRarity(nft.collection?.id, nft.tokenId);
 
   const imageUrl = getImageUrl(nft.image);
   const nftUrl = getNFTUrl(nft.collection.id, nft.tokenId);
@@ -97,6 +103,12 @@ export function NFTCard({
           </div>
         )}
 
+        {rarity && (
+          <div className="absolute top-3 right-14 z-10">
+            <RarityBadge rarityTier={rarity.rarityTier} rarityRank={rarity.rarityRank} size="sm" />
+          </div>
+        )}
+
         {/* Like Button */}
         <button
           onClick={(e) => {
@@ -111,6 +123,12 @@ export function NFTCard({
             className={cn('h-4 w-4', isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600')}
           />
         </button>
+
+        {rarity && (
+          <div className="absolute bottom-3 right-3">
+            <RarityBadge rarityTier={rarity.rarityTier} rarityRank={rarity.rarityRank} size="sm" />
+          </div>
+        )}
 
         {/* Auction Time Remaining Overlay */}
         {auction && (

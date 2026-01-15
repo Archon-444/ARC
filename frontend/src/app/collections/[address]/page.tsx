@@ -1,16 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect, useMemo } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import NFTCard from '@/components/NFTCard';
+import { NFTVirtualGrid } from '@/components/collection/NFTVirtualGrid';
+import { ActivityTable } from '@/components/collection/ActivityTable';
 import { fetchGraphQL } from '@/lib/graphql-client';
 import { GET_COLLECTION } from '@/graphql/queries';
 import { formatUSDC } from '@/hooks/useMarketplace';
+import { useVirtualScroll } from '@/hooks/useVirtualScroll';
 
 type SortOption = 'recently-listed' | 'price-low-high' | 'price-high-low' | 'token-id';
 
 export default function CollectionPage() {
   const params = useParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const address = params?.address as string;
 
   const [collection, setCollection] = useState<any>(null);
@@ -20,6 +25,19 @@ export default function CollectionPage() {
   const [sortBy, setSortBy] = useState<SortOption>('recently-listed');
   const [filterStatus, setFilterStatus] = useState<'all' | 'listed' | 'auction'>('all');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
+  const [filtersInitialized, setFiltersInitialized] = useState(false);
+
+  useVirtualScroll(`collection-scroll:${address}`);
+
+  const initialFilters = useMemo(() => {
+    if (!searchParams) return null;
+    return {
+      sortBy: (searchParams.get('sort') as SortOption) || 'recently-listed',
+      status: (searchParams.get('status') as 'all' | 'listed' | 'auction') || 'all',
+      min: searchParams.get('min') || '',
+      max: searchParams.get('max') || '',
+    };
+  }, [searchParams]);
 
   useEffect(() => {
     if (address) {
@@ -28,8 +46,36 @@ export default function CollectionPage() {
   }, [address]);
 
   useEffect(() => {
+    if (!initialFilters || filtersInitialized) {
+      return;
+    }
+    setSortBy(initialFilters.sortBy);
+    setFilterStatus(initialFilters.status);
+    setPriceRange({ min: initialFilters.min, max: initialFilters.max });
+    setFiltersInitialized(true);
+  }, [initialFilters, filtersInitialized]);
+
+  useEffect(() => {
     applyFiltersAndSort();
   }, [nfts, sortBy, filterStatus, priceRange]);
+
+  useEffect(() => {
+    if (!filtersInitialized) return;
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('sort', sortBy);
+    params.set('status', filterStatus);
+    if (priceRange.min) {
+      params.set('min', priceRange.min);
+    } else {
+      params.delete('min');
+    }
+    if (priceRange.max) {
+      params.set('max', priceRange.max);
+    } else {
+      params.delete('max');
+    }
+    router.replace(`/collections/${address}?${params.toString()}`);
+  }, [sortBy, filterStatus, priceRange, filtersInitialized, router, address, searchParams]);
 
   const loadCollection = async () => {
     setLoading(true);
@@ -68,8 +114,10 @@ export default function CollectionPage() {
           ? BigInt(nft.auction.highestBid || nft.auction.reservePrice)
           : BigInt(0);
 
-        const minPrice = priceRange.min ? BigInt(parseFloat(priceRange.min) * 1e6) : BigInt(0);
-        const maxPrice = priceRange.max ? BigInt(parseFloat(priceRange.max) * 1e6) : BigInt(Number.MAX_SAFE_INTEGER);
+        const minPrice = priceRange.min ? BigInt(Math.floor(parseFloat(priceRange.min) * 1e6)) : BigInt(0);
+        const maxPrice = priceRange.max
+          ? BigInt(Math.floor(parseFloat(priceRange.max) * 1e6))
+          : BigInt(Number.MAX_SAFE_INTEGER);
 
         return price >= minPrice && price <= maxPrice && price > BigInt(0);
       });
@@ -247,53 +295,83 @@ export default function CollectionPage() {
       </div>
 
       {/* Filters and Sort */}
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+      <div className="flex flex-col gap-4">
         {/* Filter Tabs */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setFilterStatus('all')}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              filterStatus === 'all'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }`}
-          >
-            All ({nfts.length})
-          </button>
-          <button
-            onClick={() => setFilterStatus('listed')}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              filterStatus === 'listed'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }`}
-          >
-            Listed ({stats.listed})
-          </button>
-          <button
-            onClick={() => setFilterStatus('auction')}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              filterStatus === 'auction'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }`}
-          >
-            Auctions
-          </button>
-        </div>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setFilterStatus('all')}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                filterStatus === 'all'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              All ({nfts.length})
+            </button>
+            <button
+              onClick={() => setFilterStatus('listed')}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                filterStatus === 'listed'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              Listed ({stats.listed})
+            </button>
+            <button
+              onClick={() => setFilterStatus('auction')}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                filterStatus === 'auction'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              Auctions
+            </button>
+          </div>
 
-        {/* Sort Dropdown */}
-        <div className="flex items-center gap-4">
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="recently-listed">Recently Listed</option>
-            <option value="price-low-high">Price: Low to High</option>
-            <option value="price-high-low">Price: High to Low</option>
-            <option value="token-id">Token ID</option>
-          </select>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+              <span>Price (USDC)</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={priceRange.min}
+                onChange={(e) => setPriceRange((prev) => ({ ...prev, min: e.target.value }))}
+                placeholder="Min"
+                className="w-24 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <span>to</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={priceRange.max}
+                onChange={(e) => setPriceRange((prev) => ({ ...prev, max: e.target.value }))}
+                placeholder="Max"
+                className="w-24 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                onClick={() => setPriceRange({ min: '', max: '' })}
+                className="text-sm font-medium text-blue-600 hover:text-blue-700"
+              >
+                Clear
+              </button>
+            </div>
+
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="recently-listed">Recently Listed</option>
+              <option value="price-low-high">Price: Low to High</option>
+              <option value="price-high-low">Price: High to Low</option>
+              <option value="token-id">Token ID</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -321,12 +399,18 @@ export default function CollectionPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredNFTs.map((nft) => (
-            <NFTCard key={nft.id} nft={nft} />
-          ))}
-        </div>
+        <NFTVirtualGrid
+          items={filteredNFTs}
+          renderItem={(nft) => <NFTCard key={(nft as any).id} nft={nft as any} />}
+        />
       )}
+
+      <div className="pt-8">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+          Collection Activity
+        </h2>
+        <ActivityTable collectionAddress={address} />
+      </div>
     </div>
   );
 }
