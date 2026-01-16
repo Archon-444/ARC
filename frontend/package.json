@@ -1,6 +1,6 @@
 {
   "name": "arcmarket-frontend",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "ArcMarket - NFT Marketplace on Circle Arc Blockchain",
   "private": true,
   "scripts": {
