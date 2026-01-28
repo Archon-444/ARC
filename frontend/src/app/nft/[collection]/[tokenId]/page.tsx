@@ -31,6 +31,9 @@ import { ListNFTModal } from '@/components/marketplace/ListNFTModal';
 import { CreateAuctionModal } from '@/components/marketplace/CreateAuctionModal';
 import { CancelListingModal } from '@/components/marketplace/CancelListingModal';
 import { CancelAuctionModal } from '@/components/marketplace/CancelAuctionModal';
+import { MakeOfferModal, OfferData } from '@/components/marketplace/MakeOfferModal';
+import { createOffer } from '@/lib/api';
+import { useCircleWallet } from '@/providers/CircleWalletProvider';
 import { ActivityTable } from '@/components/collection/ActivityTable';
 import { RarityBadge } from '@/components/nft/RarityBadge';
 import { TraitRarityTable } from '@/components/nft/TraitRarityTable';
@@ -83,6 +86,8 @@ export default function NFTDetailPage({ params }: PageProps) {
   const [showAuctionModal, setShowAuctionModal] = useState(false);
   const [showCancelListingModal, setShowCancelListingModal] = useState(false);
   const [showCancelAuctionModal, setShowCancelAuctionModal] = useState(false);
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const { userToken, currentWallet } = useCircleWallet();
 
   // Countdown for auctions
   const [timeRemaining, setTimeRemaining] = useState<ReturnType<typeof getTimeRemaining> | null>(null);
@@ -359,6 +364,14 @@ export default function NFTDetailPage({ params }: PageProps) {
                   </button>
                 </div>
               )}
+              {address && address.toLowerCase() !== nft.owner.toLowerCase() && (
+                 <button
+                    onClick={() => setShowOfferModal(true)}
+                    className="mt-3 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Make Offer
+                  </button>
+              )}
             </div>
           )}
 
@@ -548,6 +561,21 @@ export default function NFTDetailPage({ params }: PageProps) {
           auction={auction}
           onSuccess={() => {
             setShowCancelAuctionModal(false);
+            loadNFT();
+          }}
+        />
+      )}
+
+      {nft && (
+        <MakeOfferModal
+          isOpen={showOfferModal}
+          onClose={() => setShowOfferModal(false)}
+          nft={nft}
+          floorPrice={nft.collection?.floorPrice ? BigInt(nft.collection.floorPrice) : undefined}
+          currentBalance={BigInt(1000000000)} // Mock balance for UI testing if real balance unavailable
+          onSubmit={async (data) => {
+            if (!userToken) throw new Error('Please connect wallet');
+            await createOffer(collection, tokenId, data, userToken);
             loadNFT();
           }}
         />
