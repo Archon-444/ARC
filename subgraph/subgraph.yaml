@@ -5,11 +5,11 @@ dataSources:
   # NFTMarketplace contract
   - kind: ethereum
     name: NFTMarketplace
-    network: arc-testnet # Update for mainnet deployment
+    network: arc-testnet
     source:
-      address: "0x0000000000000000000000000000000000000000" # Replace with deployed address
+      address: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
       abi: NFTMarketplace
-      startBlock: 0 # Replace with deployment block
+      startBlock: 0
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -58,9 +58,9 @@ dataSources:
     name: FeeVault
     network: arc-testnet
     source:
-      address: "0x0000000000000000000000000000000000000000" # Replace with deployed address
+      address: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
       abi: FeeVault
-      startBlock: 0 # Replace with deployment block
+      startBlock: 0
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -85,9 +85,9 @@ dataSources:
     name: ProfileRegistry
     network: arc-testnet
     source:
-      address: "0x0000000000000000000000000000000000000000" # Replace with deployed address
+      address: "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
       abi: ProfileRegistry
-      startBlock: 0 # Replace with deployment block
+      startBlock: 0
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
