@@ -69,20 +69,18 @@ async function main() {
   console.log("✅ FeeVault deployed to:", feeVaultAddress);
 
   // ========================================
-  // Deploy NFTMarketplace
+  // Deploy ArcMarketplace
   // ========================================
-  console.log("\n📄 [2/5] Deploying NFTMarketplace...");
-  const NFTMarketplace = await hre.ethers.getContractFactory("NFTMarketplace");
-  const protocolFeeBps = 250; // 2.5%
-  const marketplace = await NFTMarketplace.deploy(
+  console.log("\n📄 [2/5] Deploying ArcMarketplace...");
+  const ArcMarketplace = await hre.ethers.getContractFactory("ArcMarketplace");
+  const marketplace = await ArcMarketplace.deploy(
     usdcAddress,
-    feeVaultAddress,
-    protocolFeeBps
+    feeVaultAddress // feeRecipient — fees flow to FeeVault
   );
   await marketplace.waitForDeployment();
   const marketplaceAddress = await marketplace.getAddress();
-  console.log("✅ NFTMarketplace deployed to:", marketplaceAddress);
-  console.log("   Protocol Fee:", protocolFeeBps / 100, "%");
+  console.log("✅ ArcMarketplace deployed to:", marketplaceAddress);
+  console.log("   Platform Fee: 2.5% (default)");
 
   // Update FeeVault with correct marketplace address
   console.log("\n🔧 Updating FeeVault with marketplace address...");
@@ -126,6 +124,14 @@ async function main() {
   console.log("   Quorum: 10% of total staked");
 
   // ========================================
+  // Link ArcMarketplace ↔ StakingRewards
+  // ========================================
+  console.log("\n🔧 Setting staking contract on ArcMarketplace...");
+  const stakingTx = await marketplace.setStakingContract(stakingRewardsAddress);
+  await stakingTx.wait();
+  console.log("✅ Staking contract linked for fee discounts");
+
+  // ========================================
   // Configure FeeVault with default splits
   // ========================================
   console.log("\n🔧 Setting up default global splits (platform fee)...");
@@ -162,7 +168,7 @@ async function main() {
     contracts: {
       USDC: usdcAddress,
       FeeVault: feeVaultAddress,
-      NFTMarketplace: marketplaceAddress,
+      ArcMarketplace: marketplaceAddress,
       ProfileRegistry: profileRegistryAddress,
       StakingRewards: stakingRewardsAddress,
       SimpleGovernance: simpleGovernanceAddress,
@@ -250,7 +256,7 @@ NEXT_PUBLIC_DEPLOYMENT_BLOCK=${startBlock}
   console.log("\n📜 Core Contracts:");
   console.log(`   USDC:              ${usdcAddress}`);
   console.log(`   FeeVault:          ${feeVaultAddress}`);
-  console.log(`   NFTMarketplace:    ${marketplaceAddress}`);
+  console.log(`   ArcMarketplace:    ${marketplaceAddress}`);
   console.log(`   ProfileRegistry:   ${profileRegistryAddress}`);
   console.log("\n📜 v0.2 Contracts:");
   console.log(`   StakingRewards:    ${stakingRewardsAddress}`);

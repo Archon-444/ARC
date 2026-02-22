@@ -14,7 +14,7 @@ const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS as `0x${string}`;
 
 export interface Listing {
   seller: string;
-  collection: string;
+  nftContract: string;
   tokenId: bigint;
   price: bigint;
   active: boolean;
@@ -22,18 +22,17 @@ export interface Listing {
 
 export interface Auction {
   seller: string;
-  collection: string;
+  nftContract: string;
   tokenId: bigint;
-  reservePrice: bigint;
-  startTime: bigint;
-  endTime: bigint;
-  highestBidder: string;
+  startingPrice: bigint;
   highestBid: bigint;
-  settled: boolean;
+  highestBidder: string;
+  endTime: bigint;
+  active: boolean;
 }
 
 /**
- * Hook for listing NFTs on the marketplace
+ * Hook for listing NFTs on the marketplace (ArcMarketplace.createListing)
  */
 export function useListItem() {
   const { writeContract, data: hash, isPending: isWriting } = useWriteContract();
@@ -42,15 +41,15 @@ export function useListItem() {
   });
 
   const listItem = useCallback(
-    (collection: string, token: string, priceInUSDC: string) => {
+    (nftContract: string, tokenId: string, priceInUSDC: string) => {
       writeContract({
         address: MARKETPLACE_ADDRESS,
         abi: NFTMarketplaceABI,
-        functionName: 'listItem',
+        functionName: 'createListing',
         args: [
-          collection as `0x${string}`,
-          BigInt(token),
-          parseUnits(priceInUSDC, 6), // USDC has 6 decimals
+          nftContract as `0x${string}`,
+          BigInt(tokenId),
+          parseUnits(priceInUSDC, 6),
         ],
       });
     },
@@ -66,7 +65,7 @@ export function useListItem() {
 }
 
 /**
- * Hook for buying NFTs
+ * Hook for buying NFTs (ArcMarketplace.buyListing)
  */
 export function useBuyItem() {
   const { writeContract, data: hash, isPending: isWriting } = useWriteContract();
@@ -75,14 +74,13 @@ export function useBuyItem() {
   });
 
   const buyItem = useCallback(
-    (collection: string, token: string) => {
+    (listingId: string) => {
       writeContract({
         address: MARKETPLACE_ADDRESS,
         abi: NFTMarketplaceABI,
-        functionName: 'buyItem',
+        functionName: 'buyListing',
         args: [
-          collection as `0x${string}`,
-          BigInt(token),
+          BigInt(listingId),
         ],
       });
     },
@@ -98,7 +96,7 @@ export function useBuyItem() {
 }
 
 /**
- * Hook for canceling listings
+ * Hook for canceling listings (ArcMarketplace.cancelListing)
  */
 export function useCancelListing() {
   const { writeContract, data: hash, isPending: isWriting } = useWriteContract();
@@ -107,14 +105,13 @@ export function useCancelListing() {
   });
 
   const cancelListing = useCallback(
-    (collection: string, token: string) => {
+    (listingId: string) => {
       writeContract({
         address: MARKETPLACE_ADDRESS,
         abi: NFTMarketplaceABI,
         functionName: 'cancelListing',
         args: [
-          collection as `0x${string}`,
-          BigInt(token),
+          BigInt(listingId),
         ],
       });
     },
@@ -130,7 +127,7 @@ export function useCancelListing() {
 }
 
 /**
- * Hook for creating auctions
+ * Hook for creating auctions (ArcMarketplace.createAuction)
  */
 export function useCreateAuction() {
   const { writeContract, data: hash, isPending: isWriting } = useWriteContract();
@@ -140,22 +137,20 @@ export function useCreateAuction() {
 
   const createAuction = useCallback(
     (
-      collection: string,
+      nftContract: string,
       tokenId: string,
-      reservePrice: string,
-      startTime: number,
-      endTime: number
+      startingPrice: string,
+      durationSeconds: number
     ) => {
       writeContract({
         address: MARKETPLACE_ADDRESS,
         abi: NFTMarketplaceABI,
         functionName: 'createAuction',
         args: [
-          collection as `0x${string}`,
+          nftContract as `0x${string}`,
           BigInt(tokenId),
-          parseUnits(reservePrice, 6),
-          BigInt(startTime),
-          BigInt(endTime),
+          parseUnits(startingPrice, 6),
+          BigInt(durationSeconds),
         ],
       });
     },
@@ -171,7 +166,7 @@ export function useCreateAuction() {
 }
 
 /**
- * Hook for placing bids on auctions
+ * Hook for placing bids on auctions (ArcMarketplace.placeBid)
  */
 export function usePlaceBid() {
   const { writeContract, data: hash, isPending: isWriting } = useWriteContract();
@@ -180,14 +175,13 @@ export function usePlaceBid() {
   });
 
   const placeBid = useCallback(
-    (collection: string, tokenId: string, bidAmount: string) => {
+    (auctionId: string, bidAmount: string) => {
       writeContract({
         address: MARKETPLACE_ADDRESS,
         abi: NFTMarketplaceABI,
         functionName: 'placeBid',
         args: [
-          collection as `0x${string}`,
-          BigInt(tokenId),
+          BigInt(auctionId),
           parseUnits(bidAmount, 6),
         ],
       });
@@ -204,23 +198,22 @@ export function usePlaceBid() {
 }
 
 /**
- * Hook for settling auctions
+ * Hook for ending auctions (ArcMarketplace.endAuction)
  */
-export function useSettleAuction() {
+export function useEndAuction() {
   const { writeContract, data: hash, isPending: isWriting } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
 
-  const settleAuction = useCallback(
-    (collection: string, token: string) => {
+  const endAuction = useCallback(
+    (auctionId: string) => {
       writeContract({
         address: MARKETPLACE_ADDRESS,
         abi: NFTMarketplaceABI,
-        functionName: 'settleAuction',
+        functionName: 'endAuction',
         args: [
-          collection as `0x${string}`,
-          BigInt(token),
+          BigInt(auctionId),
         ],
       });
     },
@@ -228,7 +221,7 @@ export function useSettleAuction() {
   );
 
   return {
-    settleAuction,
+    endAuction,
     isLoading: isWriting || isConfirming,
     isSuccess,
     txHash: hash,
@@ -292,16 +285,16 @@ export function useApproveNFT(collectionAddress: string) {
 }
 
 /**
- * Hook for reading listing data
+ * Hook for reading listing data by ID
  */
-export function useListing(collectionAddress: string, tokenId: string) {
+export function useListing(listingId: string) {
   const { data, isError, isLoading, refetch } = useReadContract({
     address: MARKETPLACE_ADDRESS,
     abi: NFTMarketplaceABI,
     functionName: 'listings',
-    args: collectionAddress && tokenId ? [collectionAddress as `0x${string}`, BigInt(tokenId)] : undefined,
+    args: listingId ? [BigInt(listingId)] : undefined,
     query: {
-      enabled: !!collectionAddress && !!tokenId,
+      enabled: !!listingId,
     }
   });
 
@@ -314,16 +307,16 @@ export function useListing(collectionAddress: string, tokenId: string) {
 }
 
 /**
- * Hook for reading auction data
+ * Hook for reading auction data by ID
  */
-export function useAuction(collectionAddress: string, tokenId: string) {
+export function useAuction(auctionId: string) {
   const { data, isError, isLoading, refetch } = useReadContract({
     address: MARKETPLACE_ADDRESS,
     abi: NFTMarketplaceABI,
     functionName: 'auctions',
-    args: collectionAddress && tokenId ? [collectionAddress as `0x${string}`, BigInt(tokenId)] : undefined,
+    args: auctionId ? [BigInt(auctionId)] : undefined,
     query: {
-      enabled: !!collectionAddress && !!tokenId,
+      enabled: !!auctionId,
     }
   });
 
@@ -336,18 +329,18 @@ export function useAuction(collectionAddress: string, tokenId: string) {
 }
 
 /**
- * Hook for reading protocol fee
+ * Hook for reading platform fee
  */
-export function useProtocolFee() {
+export function usePlatformFee() {
   const { data, isError, isLoading } = useReadContract({
     address: MARKETPLACE_ADDRESS,
     abi: NFTMarketplaceABI,
-    functionName: 'protocolFeeBps',
+    functionName: 'platformFee',
   });
 
   return {
-    protocolFeeBps: data as number | undefined,
-    protocolFeePercent: data ? Number(data) / 100 : undefined,
+    platformFeeBps: data as number | undefined,
+    platformFeePercent: data ? Number(data) / 100 : undefined,
     isError,
     isLoading,
   };

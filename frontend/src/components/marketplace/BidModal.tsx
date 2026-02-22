@@ -9,7 +9,8 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { Gavel, AlertCircle, CheckCircle2, ExternalLink, Loader2, Clock } from 'lucide-react';
+import { Gavel, AlertCircle, CheckCircle2, ExternalLink, Loader2, Clock, PauseCircle } from 'lucide-react';
+import { useIsPaused } from '@/hooks/useIsPaused';
 import { Modal, ModalSection, ModalFooter } from '@/components/ui/Modal';
 import { USDCApproval } from './USDCApproval';
 import {
@@ -46,6 +47,7 @@ enum BidStep {
 
 export function BidModal({ isOpen, onClose, nft, auction, onSuccess }: BidModalProps) {
   const { address } = useAccount();
+  const { isPaused } = useIsPaused();
   const [step, setStep] = useState<BidStep>(BidStep.INPUT);
   const [bidAmount, setBidAmount] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -128,15 +130,14 @@ export function BidModal({ isOpen, onClose, nft, auction, onSuccess }: BidModalP
           type: 'function',
           stateMutability: 'nonpayable',
           inputs: [
-            { name: 'collection', type: 'address' },
-            { name: 'tokenId', type: 'uint256' },
+            { name: 'auctionId', type: 'uint256' },
             { name: 'bidAmount', type: 'uint256' },
           ],
           outputs: [],
         },
       ],
       functionName: 'placeBid',
-      args: [auction.collection, BigInt(auction.tokenId), userBid],
+      args: [BigInt(auction.id), userBid],
     });
   };
 
@@ -204,6 +205,21 @@ export function BidModal({ isOpen, onClose, nft, auction, onSuccess }: BidModalP
             )}
           </div>
         </ModalSection>
+
+        {/* Marketplace Paused Banner */}
+        {isPaused && !isAuctionExpired && (
+          <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-4">
+            <div className="flex items-start gap-3">
+              <PauseCircle className="h-5 w-5 flex-shrink-0 text-yellow-600" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-yellow-900">Marketplace is paused</p>
+                <p className="mt-1 text-xs text-yellow-700">
+                  Bidding is temporarily disabled. Please try again later.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Auction Expired Warning */}
         {isAuctionExpired && (
@@ -372,6 +388,7 @@ export function BidModal({ isOpen, onClose, nft, auction, onSuccess }: BidModalP
             onClick={handleBid}
             disabled={
               !address ||
+              isPaused ||
               !bidAmount ||
               hasInsufficientBalance ||
               isBidTooLow ||

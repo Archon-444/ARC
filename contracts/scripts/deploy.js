@@ -26,18 +26,16 @@ async function main() {
   const feeVaultAddress = await feeVault.getAddress();
   console.log("FeeVault deployed to:", feeVaultAddress);
 
-  // Deploy NFTMarketplace
-  console.log("\nDeploying NFTMarketplace...");
-  const NFTMarketplace = await hre.ethers.getContractFactory("NFTMarketplace");
-  const protocolFeeBps = 250; // 2.5%
-  const marketplace = await NFTMarketplace.deploy(
+  // Deploy ArcMarketplace
+  console.log("\nDeploying ArcMarketplace...");
+  const ArcMarketplace = await hre.ethers.getContractFactory("ArcMarketplace");
+  const marketplace = await ArcMarketplace.deploy(
     usdcAddress,
-    feeVaultAddress,
-    protocolFeeBps
+    deployer.address // feeRecipient
   );
   await marketplace.waitForDeployment();
   const marketplaceAddress = await marketplace.getAddress();
-  console.log("NFTMarketplace deployed to:", marketplaceAddress);
+  console.log("ArcMarketplace deployed to:", marketplaceAddress);
 
   // Update FeeVault with correct marketplace address
   console.log("\nUpdating FeeVault marketplace address...");
@@ -90,14 +88,14 @@ async function main() {
   console.log("Deployer:", deployer.address);
   console.log("\nv0.1 Core Contracts:");
   console.log("  MockUSDC:", usdcAddress);
-  console.log("  NFTMarketplace:", marketplaceAddress);
+  console.log("  ArcMarketplace:", marketplaceAddress);
   console.log("  FeeVault:", feeVaultAddress);
   console.log("  ProfileRegistry:", profileRegistryAddress);
   console.log("\nv0.2 Contracts:");
   console.log("  StakingRewards:", stakingRewardsAddress);
   console.log("  SimpleGovernance:", simpleGovernanceAddress);
   console.log("\nConfiguration:");
-  console.log("  Protocol Fee:", protocolFeeBps / 100, "%");
+  console.log("  Platform Fee: 2.5% (250 bps, max 10%)");
   console.log("  Staking Tiers: Bronze (100), Silver (500), Gold (2000), Platinum (10000) USDC");
   console.log("  Governance: 7-day voting, 1000 USDC min to propose");
 
@@ -111,14 +109,15 @@ async function main() {
     deployer: deployer.address,
     contracts: {
       MockUSDC: usdcAddress,
-      NFTMarketplace: marketplaceAddress,
+      ArcMarketplace: marketplaceAddress,
       FeeVault: feeVaultAddress,
       ProfileRegistry: profileRegistryAddress,
       StakingRewards: stakingRewardsAddress,
       SimpleGovernance: simpleGovernanceAddress,
     },
     configuration: {
-      protocolFeeBps: protocolFeeBps,
+      platformFeeBps: 250,
+      maxFeeBps: 1000,
     },
   };
 

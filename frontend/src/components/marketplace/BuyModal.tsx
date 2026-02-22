@@ -9,7 +9,8 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { ShoppingCart, AlertCircle, CheckCircle2, ExternalLink, Loader2 } from 'lucide-react';
+import { ShoppingCart, AlertCircle, CheckCircle2, ExternalLink, Loader2, PauseCircle } from 'lucide-react';
+import { useIsPaused } from '@/hooks/useIsPaused';
 import { Modal, ModalSection, ModalFooter } from '@/components/ui/Modal';
 import { USDCApproval } from './USDCApproval';
 import {
@@ -43,6 +44,7 @@ enum BuyStep {
 
 export function BuyModal({ isOpen, onClose, nft, listing, onSuccess }: BuyModalProps) {
   const { address } = useAccount();
+  const { isPaused } = useIsPaused();
   const [step, setStep] = useState<BuyStep>(BuyStep.APPROVAL);
   const [error, setError] = useState<string | null>(null);
 
@@ -108,18 +110,17 @@ export function BuyModal({ isOpen, onClose, nft, listing, onSuccess }: BuyModalP
       address: MARKETPLACE_ADDRESS,
       abi: [
         {
-          name: 'buyNFT',
+          name: 'buyListing',
           type: 'function',
           stateMutability: 'nonpayable',
           inputs: [
-            { name: 'collection', type: 'address' },
-            { name: 'tokenId', type: 'uint256' },
+            { name: 'listingId', type: 'uint256' },
           ],
           outputs: [],
         },
       ],
-      functionName: 'buyNFT',
-      args: [listing.collection, BigInt(listing.tokenId)],
+      functionName: 'buyListing',
+      args: [BigInt(listing.id)],
     });
   };
 
@@ -143,6 +144,21 @@ export function BuyModal({ isOpen, onClose, nft, listing, onSuccess }: BuyModalP
       closeOnOverlayClick={step !== BuyStep.PURCHASE && step !== BuyStep.CONFIRMING}
     >
       <div className="space-y-6">
+        {/* Marketplace Paused Banner */}
+        {isPaused && (
+          <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-4">
+            <div className="flex items-start gap-3">
+              <PauseCircle className="h-5 w-5 flex-shrink-0 text-yellow-600" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-yellow-900">Marketplace is paused</p>
+                <p className="mt-1 text-xs text-yellow-700">
+                  Transactions are temporarily disabled. Please try again later.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* NFT Preview */}
         <ModalSection title="Item">
           <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
@@ -281,6 +297,7 @@ export function BuyModal({ isOpen, onClose, nft, listing, onSuccess }: BuyModalP
             onClick={handleBuy}
             disabled={
               !address ||
+              isPaused ||
               hasInsufficientBalance ||
               step === BuyStep.PURCHASE ||
               step === BuyStep.CONFIRMING

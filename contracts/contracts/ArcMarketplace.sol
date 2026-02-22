@@ -5,20 +5,32 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
 /**
+ * @notice Interface for the ARC staking contract to query fee discounts
+ */
+interface IArcStaking {
+    function getFeeDiscount(address user) external view returns (uint256);
+}
+
+/**
  * @title ArcMarketplace
  * @dev NFT Marketplace with USDC payments, fixed-price listings, and auctions
- * Supports royalty payments and tiered fee discounts for stakers
+ * Supports royalty payments, capped royalties (10%), tiered fee discounts for
+ * stakers, and anti-sniping auction extensions.
  */
-contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
+contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Pausable, Ownable {
     IERC20 public usdc;
     address public stakingContract;
 
     uint256 public platformFee = 250; // 2.5% in basis points
     uint256 public constant MAX_FEE = 1000; // 10% maximum
+    uint256 public constant MAX_ROYALTY_BPS = 1000; // 10% royalty cap
+    uint256 public constant ANTI_SNIPE_DURATION = 10 minutes;
+    uint256 public constant MAX_AUCTION_EXTENSIONS = 5;
     address public feeRecipient;
 
     struct Listing {
@@ -37,6 +49,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
         uint256 highestBid;
         address highestBidder;
         uint256 endTime;
+        uint256 extensionCount;
         bool active;
     }
 
@@ -51,6 +64,10 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
     // User => Earnings
     mapping(address => uint256) public earnings;
 
+    // O(1) active counters (maintained on create/cancel/buy/settle)
+    uint256 public activeListingsCount;
+    uint256 public activeAuctionsCount;
+
     // Events
     event ListingCreated(uint256 indexed listingId, address indexed seller, address nftContract, uint256 tokenId, uint256 price);
     event ListingCancelled(uint256 indexed listingId);
@@ -60,9 +77,12 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
     event BidPlaced(uint256 indexed auctionId, address indexed bidder, uint256 amount);
     event AuctionEnded(uint256 indexed auctionId, address indexed winner, uint256 amount);
     event AuctionCancelled(uint256 indexed auctionId);
+    event AuctionExtended(uint256 indexed auctionId, uint256 newEndTime);
 
     event PlatformFeeUpdated(uint256 newFee);
     event EarningsWithdrawn(address indexed user, uint256 amount);
+    event FeeRecipientUpdated(address indexed oldRecipient, address indexed newRecipient);
+    event StakingContractUpdated(address indexed oldContract, address indexed newContract);
 
     constructor(address _usdc, address _feeRecipient) Ownable(msg.sender) {
         require(_usdc != address(0), "Invalid USDC address");
@@ -75,7 +95,9 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
      * @dev Set the staking contract address
      */
     function setStakingContract(address _stakingContract) external onlyOwner {
+        address oldContract = stakingContract;
         stakingContract = _stakingContract;
+        emit StakingContractUpdated(oldContract, _stakingContract);
     }
 
     /**
@@ -88,13 +110,38 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
     }
 
     /**
+     * @dev Update fee recipient address
+     * @param _newRecipient New address to receive platform fees
+     */
+    function setFeeRecipient(address _newRecipient) external onlyOwner {
+        require(_newRecipient != address(0), "Invalid fee recipient");
+        address oldRecipient = feeRecipient;
+        feeRecipient = _newRecipient;
+        emit FeeRecipientUpdated(oldRecipient, _newRecipient);
+    }
+
+    /**
+     * @dev Pause the marketplace. Disables listings, purchases, auctions, and bids.
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @dev Unpause the marketplace. Re-enables all marketplace operations.
+     */
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    /**
      * @dev Create a fixed-price listing
      */
     function createListing(
         address nftContract,
         uint256 tokenId,
         uint256 price
-    ) external nonReentrant returns (uint256) {
+    ) external nonReentrant whenNotPaused returns (uint256) {
         require(price > 0, "Price must be greater than 0");
 
         IERC721 nft = IERC721(nftContract);
@@ -115,6 +162,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
         // Transfer NFT to marketplace
         nft.safeTransferFrom(msg.sender, address(this), tokenId);
 
+        activeListingsCount++;
         emit ListingCreated(listingId, msg.sender, nftContract, tokenId, price);
         return listingId;
     }
@@ -126,7 +174,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
         address nftContract,
         uint256[] calldata tokenIds,
         uint256[] calldata prices
-    ) external nonReentrant returns (uint256[] memory) {
+    ) external nonReentrant whenNotPaused returns (uint256[] memory) {
         require(tokenIds.length == prices.length, "Array length mismatch");
         require(tokenIds.length > 0, "Empty arrays");
 
@@ -161,6 +209,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
 
         nft.safeTransferFrom(msg.sender, address(this), tokenId);
 
+        activeListingsCount++;
         emit ListingCreated(listingId, msg.sender, nftContract, tokenId, price);
         return listingId;
     }
@@ -174,6 +223,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
         require(listing.seller == msg.sender, "Not seller");
 
         listing.active = false;
+        activeListingsCount--;
 
         // Return NFT to seller
         IERC721(listing.nftContract).safeTransferFrom(address(this), msg.sender, listing.tokenId);
@@ -184,12 +234,13 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
     /**
      * @dev Buy a listed NFT
      */
-    function buyListing(uint256 listingId) external nonReentrant {
+    function buyListing(uint256 listingId) external nonReentrant whenNotPaused {
         Listing storage listing = listings[listingId];
         require(listing.active, "Listing not active");
         require(msg.sender != listing.seller, "Cannot buy own listing");
 
         listing.active = false;
+        activeListingsCount--;
 
         // Calculate fees and royalties
         (uint256 royaltyAmount, address royaltyReceiver) = _getRoyalty(listing.nftContract, listing.tokenId, listing.price);
@@ -216,7 +267,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
     /**
      * @dev Batch buy multiple listings
      */
-    function batchBuyListings(uint256[] calldata listingIds) external nonReentrant {
+    function batchBuyListings(uint256[] calldata listingIds) external nonReentrant whenNotPaused {
         for (uint256 i = 0; i < listingIds.length; i++) {
             _buyListingInternal(listingIds[i]);
         }
@@ -228,6 +279,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
         require(msg.sender != listing.seller, "Cannot buy own listing");
 
         listing.active = false;
+        activeListingsCount--;
 
         (uint256 royaltyAmount, address royaltyReceiver) = _getRoyalty(listing.nftContract, listing.tokenId, listing.price);
         uint256 fee = _calculateFee(msg.sender, listing.price);
@@ -256,7 +308,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
         uint256 tokenId,
         uint256 startingPrice,
         uint256 duration
-    ) external nonReentrant returns (uint256) {
+    ) external nonReentrant whenNotPaused returns (uint256) {
         require(startingPrice > 0, "Starting price must be greater than 0");
         require(duration > 0, "Duration must be greater than 0");
 
@@ -275,12 +327,14 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
             highestBid: 0,
             highestBidder: address(0),
             endTime: block.timestamp + duration,
+            extensionCount: 0,
             active: true
         });
 
         // Transfer NFT to marketplace
         nft.safeTransferFrom(msg.sender, address(this), tokenId);
 
+        activeAuctionsCount++;
         emit AuctionCreated(auctionId, msg.sender, nftContract, tokenId, startingPrice, block.timestamp + duration);
         return auctionId;
     }
@@ -288,7 +342,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
     /**
      * @dev Place a bid on an auction
      */
-    function placeBid(uint256 auctionId, uint256 bidAmount) external nonReentrant {
+    function placeBid(uint256 auctionId, uint256 bidAmount) external nonReentrant whenNotPaused {
         Auction storage auction = auctions[auctionId];
         require(auction.active, "Auction not active");
         require(block.timestamp < auction.endTime, "Auction ended");
@@ -307,6 +361,14 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
         auction.highestBid = bidAmount;
         auction.highestBidder = msg.sender;
 
+        // Anti-sniping: extend auction if bid is placed in final 10 minutes (capped)
+        if (auction.endTime - block.timestamp < ANTI_SNIPE_DURATION
+            && auction.extensionCount < MAX_AUCTION_EXTENSIONS) {
+            auction.endTime = block.timestamp + ANTI_SNIPE_DURATION;
+            auction.extensionCount++;
+            emit AuctionExtended(auctionId, auction.endTime);
+        }
+
         emit BidPlaced(auctionId, msg.sender, bidAmount);
     }
 
@@ -319,6 +381,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
         require(block.timestamp >= auction.endTime, "Auction not ended");
 
         auction.active = false;
+        activeAuctionsCount--;
 
         if (auction.highestBidder != address(0)) {
             // Calculate fees and royalties
@@ -358,6 +421,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
         require(auction.highestBidder == address(0), "Cannot cancel with bids");
 
         auction.active = false;
+        activeAuctionsCount--;
 
         // Return NFT to seller
         IERC721(auction.nftContract).safeTransferFrom(address(this), msg.sender, auction.tokenId);
@@ -379,22 +443,30 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
     }
 
     /**
-     * @dev Calculate fee with staker discount
+     * @dev Calculate fee with staker discount.
+     * Queries the staking contract for the buyer's discount (in bps).
+     * Discount is capped at 50% (5000 bps) to prevent fee elimination.
      */
     function _calculateFee(address buyer, uint256 price) internal view returns (uint256) {
         uint256 fee = (price * platformFee) / 10000;
 
-        // Apply staker discount if staking contract is set
         if (stakingContract != address(0)) {
-            // Call staking contract to get discount tier
-            // For now, return standard fee
+            try IArcStaking(stakingContract).getFeeDiscount(buyer) returns (uint256 discountBps) {
+                // Cap discount at 50% (5000 bps) to prevent fee elimination
+                if (discountBps > 5000) discountBps = 5000;
+                fee = fee - ((fee * discountBps) / 10000);
+            } catch {
+                // If staking call fails, use standard fee (no discount)
+            }
         }
 
         return fee;
     }
 
     /**
-     * @dev Get royalty information (EIP-2981)
+     * @dev Get royalty information (EIP-2981) with a 10% cap.
+     * Prevents malicious NFT contracts from setting excessively high royalties
+     * that could drain the buyer or starve the seller.
      */
     function _getRoyalty(address nftContract, uint256 tokenId, uint256 salePrice)
         internal
@@ -405,36 +477,25 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
             address receiver,
             uint256 amount
         ) {
-            return (amount, receiver);
+            uint256 maxRoyalty = (salePrice * MAX_ROYALTY_BPS) / 10000;
+            return (amount > maxRoyalty ? maxRoyalty : amount, receiver);
         } catch {
             return (0, address(0));
         }
     }
 
     /**
-     * @dev Get active listings count
+     * @dev Get active listings count (O(1) via maintained counter)
      */
     function getActiveListingsCount() external view returns (uint256) {
-        uint256 count = 0;
-        for (uint256 i = 0; i < listingIdCounter; i++) {
-            if (listings[i].active) {
-                count++;
-            }
-        }
-        return count;
+        return activeListingsCount;
     }
 
     /**
-     * @dev Get active auctions count
+     * @dev Get active auctions count (O(1) via maintained counter)
      */
     function getActiveAuctionsCount() external view returns (uint256) {
-        uint256 count = 0;
-        for (uint256 i = 0; i < auctionIdCounter; i++) {
-            if (auctions[i].active) {
-                count++;
-            }
-        }
-        return count;
+        return activeAuctionsCount;
     }
 }
 
