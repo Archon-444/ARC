@@ -164,10 +164,8 @@ export function updateCollectionFloorPrice(
 ): void {
   let collection = getOrCreateCollection(collectionAddress);
 
-  if (
-    collection.floorPrice == null ||
-    price.lt(collection.floorPrice as BigInt)
-  ) {
+  let currentFloor = collection.floorPrice;
+  if (currentFloor === null || price.lt(currentFloor)) {
     collection.floorPrice = price;
     collection.save();
   }

@@ -283,8 +283,6 @@ export function handleBidPlaced(event: BidPlaced): void {
     return;
   }
 
-  // Create bid record
-  let bidIndex = auction.highestBid != null ? ONE_BI : ZERO_BI;
   // Use tx hash + log index for unique bid ID
   let bidId = generateBidId(
     auctionId,
@@ -329,11 +327,9 @@ export function handleAuctionEnded(event: AuctionEnded): void {
   stats.activeAuctions = stats.activeAuctions.minus(ONE_BI);
 
   // Winner exists — create sale record
-  if (
-    event.params.amount.gt(ZERO_BI) &&
-    event.params.winner.toHexString() !=
-      "0x0000000000000000000000000000000000000000"
-  ) {
+  let winnerHex = event.params.winner.toHexString();
+  let isZeroAddress = winnerHex == "0x0000000000000000000000000000000000000000";
+  if (event.params.amount.gt(ZERO_BI) && !isZeroAddress) {
     let winner = getOrCreateUser(event.params.winner);
     let seller = User.load(auction.seller);
 

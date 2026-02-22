@@ -38,7 +38,7 @@ type NFT @entity {
   tokenId: BigInt!
   collection: Collection!
   creator: String
-  owner: String!
+  owner: User!
   tokenURI: String
   listing: Listing
   auction: Auction
