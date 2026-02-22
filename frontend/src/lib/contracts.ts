@@ -5,6 +5,7 @@ export const CONTRACTS = {
   MARKETPLACE: process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS || '0x',
   STAKING: process.env.NEXT_PUBLIC_STAKING_ADDRESS || '0x',
   GOVERNANCE: process.env.NEXT_PUBLIC_GOVERNANCE_ADDRESS || '0x',
+  TOKEN_FACTORY: process.env.NEXT_PUBLIC_TOKEN_FACTORY_ADDRESS || '0x',
 };
 
 // Simplified ABIs for frontend use
@@ -68,6 +69,42 @@ export const ABIS = {
     'function transfer(address to, uint256 amount) returns (bool)',
     'function decimals() view returns (uint8)',
   ],
+
+  TOKEN_FACTORY: [
+    'function createToken(string _name, string _symbol, string _description, string _imageUrl, uint256 _totalSupply, uint256 _basePrice, uint256 _slope, uint8 _curveType) returns (address tokenAddress, address ammAddress)',
+    'function getAllTokens() view returns (address[])',
+    'function getTotalTokens() view returns (uint256)',
+    'function getTokenConfig(address _tokenAddress) view returns (tuple(string name, string symbol, string description, string imageUrl, uint256 totalSupply, uint256 basePrice, uint256 slope, uint8 curveType, uint256 graduationThreshold, address creator, uint256 createdAt))',
+    'function getTokenAMM(address _tokenAddress) view returns (address)',
+    'function isArcToken(address) view returns (bool)',
+    'function CREATION_FEE_USDC() view returns (uint256)',
+    'function paused() view returns (bool)',
+  ],
+
+  BONDING_CURVE: [
+    'function buyTokens(uint256 usdcAmount, uint256 minTokensOut)',
+    'function sellTokens(uint256 tokenAmount, uint256 minUsdcOut)',
+    'function calculateBuyReturn(uint256 usdcAmount) view returns (uint256 tokensOut, uint256 fee)',
+    'function calculateSellReturn(uint256 tokenAmount) view returns (uint256 usdcOut, uint256 fee)',
+    'function getCurrentPrice() view returns (uint256)',
+    'function currentSupply() view returns (uint256)',
+    'function totalVolume() view returns (uint256)',
+    'function isGraduated() view returns (bool)',
+    'function getGraduationProgress() view returns (uint256)',
+    'function getReserveBalance() view returns (uint256)',
+    'function getAvailableTokens() view returns (uint256)',
+    'function graduationThreshold() view returns (uint256)',
+    'function tokenCreator() view returns (address)',
+    'function stakeTokens(uint256 tokenAmount)',
+    'function claimStakingRewards()',
+    'function unstakeTokens(uint256 tokenAmount)',
+    'function getClaimableRewards(address user) view returns (uint256)',
+    'function tokenStaked(address) view returns (uint256)',
+    'function totalTokenStaked() view returns (uint256)',
+    'function getStakingPoolRemaining() view returns (uint256)',
+    'function getCreatorReserveBalance() view returns (uint256)',
+    'function withdrawCreatorReserve(uint256 usdcAmount, string reason)',
+  ],
 };
 
 // Tier enum for TypeScript
@@ -90,6 +127,14 @@ export enum ProposalType {
   CollectionCuration = 2,
   TreasuryAllocation = 3,
 }
+
+// Bonding curve types
+export enum CurveType {
+  LINEAR = 0,
+  EXPONENTIAL = 1,
+}
+
+export const CURVE_TYPE_NAMES = ['Linear', 'Exponential'];
 
 // Proposal status
 export enum ProposalStatus {
