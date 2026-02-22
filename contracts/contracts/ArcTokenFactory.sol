@@ -66,6 +66,9 @@ contract ArcTokenFactory is Ownable, ReentrancyGuard, Pausable {
     mapping(address => uint256) public lastTokenCreation;
     uint256 public constant CREATION_COOLDOWN = 60;     // 1 minute
 
+    // CREATE2 deterministic nonce per creator
+    mapping(address => uint256) public creatorNonce;
+
     // Safety limits
     uint256 public constant MAX_TOTAL_SUPPLY = 1e12 * 1e18;
     uint256 public constant MIN_TOTAL_SUPPLY = 1e18;
@@ -231,7 +234,7 @@ contract ArcTokenFactory is Ownable, ReentrancyGuard, Pausable {
         uint256 _totalSupply
     ) internal returns (address) {
         bytes32 salt = keccak256(
-            abi.encodePacked(_name, _symbol, msg.sender, block.timestamp)
+            abi.encodePacked(_name, _symbol, msg.sender, creatorNonce[msg.sender]++)
         );
         bytes memory bytecode = abi.encodePacked(
             type(ArcToken).creationCode,

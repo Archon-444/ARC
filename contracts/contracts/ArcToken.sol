@@ -53,6 +53,7 @@ contract ArcToken {
     }
 
     function approve(address spender, uint256 value) external returns (bool) {
+        if (spender == address(0)) revert ZeroAddress();
         allowance[msg.sender][spender] = value;
         emit Approval(msg.sender, spender, value);
         return true;

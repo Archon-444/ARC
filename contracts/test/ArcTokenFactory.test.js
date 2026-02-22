@@ -202,6 +202,13 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
       ).to.be.reverted;
     });
 
+    it("should revert ArcToken approve with zero-address spender", async function () {
+      const { token } = await createToken();
+      await expect(
+        token.connect(buyer).approve(ethers.ZeroAddress, USDC(100))
+      ).to.be.revertedWithCustomError(token, "ZeroAddress");
+    });
+
     it("should succeed sellTokens after token approval", async function () {
       const { amm, token } = await createToken();
 
@@ -316,8 +323,9 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
     });
 
     it("should transfer entire supply to AMM", async function () {
-      const { token, ammAddress } = await createToken();
-      const ammBalance = await token.balanceOf(ammAddress);
+      const { token, amm } = await createToken();
+      const ammAddr = await amm.getAddress();
+      const ammBalance = await token.balanceOf(ammAddr);
       expect(ammBalance).to.equal(TOTAL_SUPPLY);
     });
 
@@ -329,6 +337,17 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
       expect(await factory.getTotalTokens()).to.equal(2);
       const allTokens = await factory.getAllTokens();
       expect(allTokens.length).to.equal(2);
+    });
+
+    it("should increment creator nonce for deterministic CREATE2", async function () {
+      expect(await factory.creatorNonce(creator.address)).to.equal(0);
+
+      await createToken();
+      expect(await factory.creatorNonce(creator.address)).to.equal(1);
+
+      await time.increase(61);
+      await createToken(creator, { name: "Token2", symbol: "T2" });
+      expect(await factory.creatorNonce(creator.address)).to.equal(2);
     });
 
     it("should store token config correctly", async function () {
