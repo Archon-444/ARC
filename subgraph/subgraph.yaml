@@ -104,3 +104,65 @@ dataSources:
         - event: ProfileUpdated(indexed address,string)
           handler: handleProfileUpdated
       file: ./src/profile-registry.ts
+
+  # ArcTokenFactory contract
+  - kind: ethereum
+    name: ArcTokenFactory
+    network: arc-testnet
+    source:
+      address: "0x0000000000000000000000000000000000000000"
+      abi: ArcTokenFactory
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - LaunchedToken
+        - AmmTokenLookup
+        - TokenLauncherStats
+      abis:
+        - name: ArcTokenFactory
+          file: ../contracts/artifacts/contracts/ArcTokenFactory.sol/ArcTokenFactory.json
+      eventHandlers:
+        - event: TokenCreated(indexed address,indexed address,indexed address,string,string,uint256,uint256,uint256)
+          handler: handleTokenCreated
+      file: ./src/arc-token-factory.ts
+
+templates:
+  # ArcBondingCurveAMM — one per launched token, instantiated by factory handler
+  - kind: ethereum
+    name: ArcBondingCurveAMM
+    network: arc-testnet
+    source:
+      abi: ArcBondingCurveAMM
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - LaunchedToken
+        - TokenTrade
+        - TokenGraduation
+        - TokenStake
+        - TokenRewardClaim
+        - CreatorWithdrawal
+        - AmmTokenLookup
+        - TokenLauncherStats
+      abis:
+        - name: ArcBondingCurveAMM
+          file: ../contracts/artifacts/contracts/ArcBondingCurveAMM.sol/ArcBondingCurveAMM.json
+      eventHandlers:
+        - event: TokensBought(indexed address,uint256,uint256,uint256,uint256,uint256)
+          handler: handleTokensBought
+        - event: TokensSold(indexed address,uint256,uint256,uint256,uint256,uint256)
+          handler: handleTokensSold
+        - event: TokenGraduated(uint256,uint256,uint256,uint256,uint256)
+          handler: handleTokenGraduated
+        - event: StakingStarted(indexed address,uint256,uint256)
+          handler: handleStakingStarted
+        - event: StakingRewardsClaimed(indexed address,uint256,uint256,uint256)
+          handler: handleStakingRewardsClaimed
+        - event: CreatorReserveWithdrawn(indexed address,uint256,string,uint256)
+          handler: handleCreatorReserveWithdrawn
+      file: ./src/arc-bonding-curve-amm.ts
