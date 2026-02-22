@@ -97,7 +97,6 @@ export function CreateAuctionModal({ isOpen, onClose, nft, onSuccess }: CreateAu
     if (!address || !isMinBidValid) return;
 
     setError(null);
-    const endTime = Math.floor(Date.now() / 1000) + duration;
 
     createAuction({
       address: MARKETPLACE_ADDRESS,
@@ -107,16 +106,16 @@ export function CreateAuctionModal({ isOpen, onClose, nft, onSuccess }: CreateAu
           type: 'function',
           stateMutability: 'nonpayable',
           inputs: [
-            { name: 'collection', type: 'address' },
+            { name: 'nftContract', type: 'address' },
             { name: 'tokenId', type: 'uint256' },
-            { name: 'minBid', type: 'uint256' },
-            { name: 'endTime', type: 'uint256' },
+            { name: 'startingPrice', type: 'uint256' },
+            { name: 'duration', type: 'uint256' },
           ],
-          outputs: [],
+          outputs: [{ name: '', type: 'uint256' }],
         },
       ],
       functionName: 'createAuction',
-      args: [nft.collection.id as Address, BigInt(nft.tokenId), minBidInUSDC, BigInt(endTime)],
+      args: [nft.collection.id as Address, BigInt(nft.tokenId), minBidInUSDC, BigInt(duration)],
     });
   };
 

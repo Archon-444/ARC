@@ -110,18 +110,17 @@ export function BuyModal({ isOpen, onClose, nft, listing, onSuccess }: BuyModalP
       address: MARKETPLACE_ADDRESS,
       abi: [
         {
-          name: 'buyNFT',
+          name: 'buyListing',
           type: 'function',
           stateMutability: 'nonpayable',
           inputs: [
-            { name: 'collection', type: 'address' },
-            { name: 'tokenId', type: 'uint256' },
+            { name: 'listingId', type: 'uint256' },
           ],
           outputs: [],
         },
       ],
-      functionName: 'buyNFT',
-      args: [listing.collection, BigInt(listing.tokenId)],
+      functionName: 'buyListing',
+      args: [BigInt(listing.tokenId)],
     });
   };
 

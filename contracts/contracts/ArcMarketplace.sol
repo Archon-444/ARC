@@ -30,6 +30,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Pausable, Ownable {
     uint256 public constant MAX_FEE = 1000; // 10% maximum
     uint256 public constant MAX_ROYALTY_BPS = 1000; // 10% royalty cap
     uint256 public constant ANTI_SNIPE_DURATION = 10 minutes;
+    uint256 public constant MAX_AUCTION_EXTENSIONS = 5;
     address public feeRecipient;
 
     struct Listing {
@@ -48,6 +49,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Pausable, Ownable {
         uint256 highestBid;
         address highestBidder;
         uint256 endTime;
+        uint256 extensionCount;
         bool active;
     }
 
@@ -80,6 +82,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Pausable, Ownable {
     event PlatformFeeUpdated(uint256 newFee);
     event EarningsWithdrawn(address indexed user, uint256 amount);
     event FeeRecipientUpdated(address indexed oldRecipient, address indexed newRecipient);
+    event StakingContractUpdated(address indexed oldContract, address indexed newContract);
 
     constructor(address _usdc, address _feeRecipient) Ownable(msg.sender) {
         require(_usdc != address(0), "Invalid USDC address");
@@ -92,7 +95,9 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Pausable, Ownable {
      * @dev Set the staking contract address
      */
     function setStakingContract(address _stakingContract) external onlyOwner {
+        address oldContract = stakingContract;
         stakingContract = _stakingContract;
+        emit StakingContractUpdated(oldContract, _stakingContract);
     }
 
     /**
@@ -322,6 +327,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Pausable, Ownable {
             highestBid: 0,
             highestBidder: address(0),
             endTime: block.timestamp + duration,
+            extensionCount: 0,
             active: true
         });
 
@@ -355,9 +361,11 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Pausable, Ownable {
         auction.highestBid = bidAmount;
         auction.highestBidder = msg.sender;
 
-        // Anti-sniping: extend auction if bid is placed in final 10 minutes
-        if (auction.endTime - block.timestamp < ANTI_SNIPE_DURATION) {
+        // Anti-sniping: extend auction if bid is placed in final 10 minutes (capped)
+        if (auction.endTime - block.timestamp < ANTI_SNIPE_DURATION
+            && auction.extensionCount < MAX_AUCTION_EXTENSIONS) {
             auction.endTime = block.timestamp + ANTI_SNIPE_DURATION;
+            auction.extensionCount++;
             emit AuctionExtended(auctionId, auction.endTime);
         }
 

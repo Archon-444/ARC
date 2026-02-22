@@ -76,8 +76,8 @@ export function useBuyNFT() {
         // Step 2: Buy the NFT
         const buyData = encodeFunctionData({
           abi: NFTMarketplaceABI,
-          functionName: 'buyItem',
-          args: [collection as `0x${string}`, BigInt(tokenId)],
+          functionName: 'buyListing',
+          args: [BigInt(tokenId)],
         });
 
         const buyResponse = await fetch('/api/circle/transaction', {
@@ -122,8 +122,8 @@ export function useBuyNFT() {
         await writeContract({
           address: MARKETPLACE_ADDRESS,
           abi: NFTMarketplaceABI,
-          functionName: 'buyItem',
-          args: [collection as `0x${string}`, BigInt(tokenId)],
+          functionName: 'buyListing',
+          args: [BigInt(tokenId)],
         });
 
         return true;

@@ -130,15 +130,14 @@ export function BidModal({ isOpen, onClose, nft, auction, onSuccess }: BidModalP
           type: 'function',
           stateMutability: 'nonpayable',
           inputs: [
-            { name: 'collection', type: 'address' },
-            { name: 'tokenId', type: 'uint256' },
+            { name: 'auctionId', type: 'uint256' },
             { name: 'bidAmount', type: 'uint256' },
           ],
           outputs: [],
         },
       ],
       functionName: 'placeBid',
-      args: [auction.collection, BigInt(auction.tokenId), userBid],
+      args: [BigInt(auction.tokenId), userBid],
     });
   };
 

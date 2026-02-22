@@ -90,18 +90,18 @@ export function ListNFTModal({ isOpen, onClose, nft, onSuccess }: ListNFTModalPr
       address: MARKETPLACE_ADDRESS,
       abi: [
         {
-          name: 'listNFT',
+          name: 'createListing',
           type: 'function',
           stateMutability: 'nonpayable',
           inputs: [
-            { name: 'collection', type: 'address' },
+            { name: 'nftContract', type: 'address' },
             { name: 'tokenId', type: 'uint256' },
             { name: 'price', type: 'uint256' },
           ],
-          outputs: [],
+          outputs: [{ name: '', type: 'uint256' }],
         },
       ],
-      functionName: 'listNFT',
+      functionName: 'createListing',
       args: [nft.collection.id as Address, BigInt(nft.tokenId), priceInUSDC],
     });
   };
