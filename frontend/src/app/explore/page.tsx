@@ -8,8 +8,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Search, SlidersHorizontal, TrendingUp, Package } from 'lucide-react';
+import { Search, SlidersHorizontal, TrendingUp, Package, Coins } from 'lucide-react';
 import { NFTGrid } from '@/components/nft/NFTCard';
+import { TokenGrid } from '@/components/token/TokenCard';
+import { useAllTokens } from '@/hooks/useTokenFactory';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingPage } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay, EmptyState } from '@/components/ui/ErrorDisplay';
@@ -17,7 +19,7 @@ import { fetchListings, fetchAuctions, fetchMarketplaceStats } from '@/lib/graph
 import { formatUSDC, formatCompactUSDC, formatNumber, debounce } from '@/lib/utils';
 import type { NFT, Listing, Auction, MarketplaceStats, SortOption } from '@/types';
 
-type ViewMode = 'all' | 'listings' | 'auctions';
+type ViewMode = 'all' | 'listings' | 'auctions' | 'tokens';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -40,6 +42,9 @@ export default function ExplorePage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [stats, setStats] = useState<MarketplaceStats | null>(null);
+
+  // Token launcher data
+  const { tokens: launchedTokens, isLoading: tokensLoading } = useAllTokens();
 
   // UI state
   const [isLoading, setIsLoading] = useState(true);
@@ -281,10 +286,24 @@ export default function ExplorePage() {
             label="Auctions"
             count={auctions.length}
           />
+          <TabButton
+            active={viewMode === 'tokens'}
+            onClick={() => {
+              setViewMode('tokens');
+              setCurrentPage(1);
+            }}
+            label="Tokens"
+            count={launchedTokens.length}
+          />
         </div>
 
+        {/* Token Grid (when Tokens tab is active) */}
+        {viewMode === 'tokens' && (
+          <TokenGrid tokens={launchedTokens} isLoading={tokensLoading} />
+        )}
+
         {/* NFT Grid */}
-        {filteredNFTs.length === 0 && !isLoading ? (
+        {viewMode !== 'tokens' && filteredNFTs.length === 0 && !isLoading ? (
           <EmptyState
             title="No NFTs found"
             description={
@@ -293,7 +312,7 @@ export default function ExplorePage() {
                 : 'No NFTs are currently available in this category'
             }
           />
-        ) : (
+        ) : viewMode !== 'tokens' ? (
           <>
             <NFTGrid
               nfts={filteredNFTs}
@@ -313,7 +332,7 @@ export default function ExplorePage() {
               </div>
             )}
           </>
-        )}
+        ) : null}
       </div>
     </div>
   );

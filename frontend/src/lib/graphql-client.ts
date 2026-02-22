@@ -313,3 +313,195 @@ export async function fetchUserActivity(address: string) {
     return null;
   }
 }
+
+// ============================================
+// Token Launcher Queries
+// ============================================
+
+/**
+ * Fetch all launched tokens (explore page)
+ */
+export async function fetchLaunchedTokens(params: {
+  first?: number;
+  skip?: number;
+  orderBy?: string;
+  orderDirection?: 'asc' | 'desc';
+  graduatedOnly?: boolean;
+}) {
+  const query = `
+    query GetLaunchedTokens($first: Int!, $skip: Int!, $orderBy: String, $orderDirection: String, $where: LaunchedToken_filter) {
+      launchedTokens(
+        first: $first
+        skip: $skip
+        orderBy: $orderBy
+        orderDirection: $orderDirection
+        where: $where
+      ) {
+        id
+        address
+        amm
+        creator
+        name
+        symbol
+        totalSupply
+        soldSupply
+        totalVolume
+        totalTrades
+        isGraduated
+        createdAt
+        updatedAt
+        graduation {
+          creatorReserve
+          stakingRewardPool
+          platformFee
+          finalSupply
+          createdAt
+        }
+      }
+    }
+  `;
+
+  const variables: Record<string, any> = {
+    first: params.first || 20,
+    skip: params.skip || 0,
+    orderBy: params.orderBy || 'createdAt',
+    orderDirection: params.orderDirection || 'desc',
+  };
+
+  if (params.graduatedOnly) {
+    variables.where = { isGraduated: true };
+  }
+
+  try {
+    const data = await fetchGraphQL<{ launchedTokens: any[] }>(query, variables);
+    return data.launchedTokens;
+  } catch (error) {
+    console.error('Failed to fetch launched tokens:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch a single token detail with recent trades
+ */
+export async function fetchTokenDetail(tokenAddress: string) {
+  const query = `
+    query GetTokenDetail($id: String!) {
+      launchedToken(id: $id) {
+        id
+        address
+        amm
+        creator
+        name
+        symbol
+        totalSupply
+        soldSupply
+        totalVolume
+        totalTrades
+        isGraduated
+        createdAt
+        graduation {
+          creatorReserve
+          stakingRewardPool
+          platformFee
+          finalSupply
+          createdAt
+        }
+        trades(first: 50, orderBy: createdAt, orderDirection: desc) {
+          id
+          trader
+          tradeType
+          usdcAmount
+          tokenAmount
+          platformFee
+          newPrice
+          createdAt
+          txHash
+        }
+        stakes(first: 20, orderBy: createdAt, orderDirection: desc) {
+          id
+          user
+          amount
+          createdAt
+        }
+      }
+    }
+  `;
+
+  try {
+    const data = await fetchGraphQL<{ launchedToken: any }>(query, {
+      id: tokenAddress.toLowerCase(),
+    });
+    return data.launchedToken;
+  } catch (error) {
+    console.error('Failed to fetch token detail:', error);
+    return null;
+  }
+}
+
+/**
+ * Fetch trade history for a specific token
+ */
+export async function fetchTokenTrades(tokenAddress: string, params: {
+  first?: number;
+  skip?: number;
+}) {
+  const query = `
+    query GetTokenTrades($tokenId: String!, $first: Int!, $skip: Int!) {
+      tokenTrades(
+        first: $first
+        skip: $skip
+        orderBy: createdAt
+        orderDirection: desc
+        where: { token: $tokenId }
+      ) {
+        id
+        trader
+        tradeType
+        usdcAmount
+        tokenAmount
+        platformFee
+        newPrice
+        createdAt
+        txHash
+      }
+    }
+  `;
+
+  try {
+    const data = await fetchGraphQL<{ tokenTrades: any[] }>(query, {
+      tokenId: tokenAddress.toLowerCase(),
+      first: params.first || 50,
+      skip: params.skip || 0,
+    });
+    return data.tokenTrades;
+  } catch (error) {
+    console.error('Failed to fetch token trades:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch token launcher global stats
+ */
+export async function fetchTokenLauncherStats() {
+  const query = `
+    query GetTokenLauncherStats {
+      tokenLauncherStats(id: "token-launcher") {
+        totalTokens
+        totalVolume
+        totalTrades
+        totalGraduated
+        updatedAt
+      }
+    }
+  `;
+
+  try {
+    const data = await fetchGraphQL<{ tokenLauncherStats: any }>(query);
+    return data.tokenLauncherStats;
+  } catch (error) {
+    console.error('Failed to fetch token launcher stats:', error);
+    return null;
+  }
+}

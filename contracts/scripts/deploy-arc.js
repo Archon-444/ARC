@@ -61,7 +61,7 @@ async function main() {
   // ========================================
   // Deploy FeeVault
   // ========================================
-  console.log("📄 [1/5] Deploying FeeVault...");
+  console.log("📄 [1/6] Deploying FeeVault...");
   const FeeVault = await hre.ethers.getContractFactory("FeeVault");
   const feeVault = await FeeVault.deploy(usdcAddress, deployer.address); // temp marketplace
   await feeVault.waitForDeployment();
@@ -71,7 +71,7 @@ async function main() {
   // ========================================
   // Deploy ArcMarketplace
   // ========================================
-  console.log("\n📄 [2/5] Deploying ArcMarketplace...");
+  console.log("\n📄 [2/6] Deploying ArcMarketplace...");
   const ArcMarketplace = await hre.ethers.getContractFactory("ArcMarketplace");
   const marketplace = await ArcMarketplace.deploy(
     usdcAddress,
@@ -91,7 +91,7 @@ async function main() {
   // ========================================
   // Deploy ProfileRegistry
   // ========================================
-  console.log("\n📄 [3/5] Deploying ProfileRegistry...");
+  console.log("\n📄 [3/6] Deploying ProfileRegistry...");
   const ProfileRegistry = await hre.ethers.getContractFactory("ProfileRegistry");
   const profileRegistry = await ProfileRegistry.deploy();
   await profileRegistry.waitForDeployment();
@@ -101,7 +101,7 @@ async function main() {
   // ========================================
   // Deploy StakingRewards (v0.2)
   // ========================================
-  console.log("\n📄 [4/5] Deploying StakingRewards...");
+  console.log("\n📄 [4/6] Deploying StakingRewards...");
   const StakingRewards = await hre.ethers.getContractFactory("StakingRewards");
   const stakingRewards = await StakingRewards.deploy(usdcAddress);
   await stakingRewards.waitForDeployment();
@@ -113,7 +113,7 @@ async function main() {
   // ========================================
   // Deploy SimpleGovernance (v0.2)
   // ========================================
-  console.log("\n📄 [5/5] Deploying SimpleGovernance...");
+  console.log("\n📄 [5/6] Deploying SimpleGovernance...");
   const SimpleGovernance = await hre.ethers.getContractFactory("SimpleGovernance");
   const simpleGovernance = await SimpleGovernance.deploy(usdcAddress, stakingRewardsAddress);
   await simpleGovernance.waitForDeployment();
@@ -122,6 +122,23 @@ async function main() {
   console.log("   Voting period: 7 days");
   console.log("   Min stake to propose: 1000 USDC");
   console.log("   Quorum: 10% of total staked");
+
+  // ========================================
+  // Deploy ArcTokenFactory (Token Launcher)
+  // ========================================
+  console.log("\n📄 [6/6] Deploying ArcTokenFactory...");
+  const ArcTokenFactory = await hre.ethers.getContractFactory("ArcTokenFactory");
+  const tokenFactory = await ArcTokenFactory.deploy(
+    usdcAddress,
+    stakingRewardsAddress,
+    feeVaultAddress
+  );
+  await tokenFactory.waitForDeployment();
+  const tokenFactoryAddress = await tokenFactory.getAddress();
+  console.log("✅ ArcTokenFactory deployed to:", tokenFactoryAddress);
+  console.log("   Creation fee: $25 USDC");
+  console.log("   Cooldown: 60 seconds");
+  console.log("   Staker discounts: via StakingRewards");
 
   // ========================================
   // Link ArcMarketplace ↔ StakingRewards
@@ -172,9 +189,10 @@ async function main() {
       ProfileRegistry: profileRegistryAddress,
       StakingRewards: stakingRewardsAddress,
       SimpleGovernance: simpleGovernanceAddress,
+      ArcTokenFactory: tokenFactoryAddress,
     },
     configuration: {
-      protocolFeeBps: protocolFeeBps,
+      protocolFeeBps: 250,
       gasToken: "USDC (6 decimals)",
       finality: "100-350ms",
     },
@@ -221,6 +239,7 @@ NEXT_PUBLIC_MARKETPLACE_ADDRESS=${marketplaceAddress}
 NEXT_PUBLIC_PROFILE_REGISTRY_ADDRESS=${profileRegistryAddress}
 NEXT_PUBLIC_STAKING_ADDRESS=${stakingRewardsAddress}
 NEXT_PUBLIC_GOVERNANCE_ADDRESS=${simpleGovernanceAddress}
+NEXT_PUBLIC_TOKEN_FACTORY_ADDRESS=${tokenFactoryAddress}
 
 # Subgraph (update after subgraph deployment)
 NEXT_PUBLIC_SUBGRAPH_URL=https://api.studio.thegraph.com/query/YOUR_SUBGRAPH_ID/arcmarket/v0.1.0
@@ -261,6 +280,8 @@ NEXT_PUBLIC_DEPLOYMENT_BLOCK=${startBlock}
   console.log("\n📜 v0.2 Contracts:");
   console.log(`   StakingRewards:    ${stakingRewardsAddress}`);
   console.log(`   SimpleGovernance:  ${simpleGovernanceAddress}`);
+  console.log("\n📜 Token Launcher:");
+  console.log(`   ArcTokenFactory:   ${tokenFactoryAddress}`);
   console.log("━".repeat(60));
   console.log("\n🔍 View on Arc Explorer:");
   console.log(`   ${blockExplorerUrl}/address/${marketplaceAddress}`);

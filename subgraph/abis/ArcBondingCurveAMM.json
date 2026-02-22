@@ -1,0 +1,72 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "buyer", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "usdcAmount", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "tokensOut", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "platformFee", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "newPrice", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+    ],
+    "name": "TokensBought",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "seller", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "tokenAmount", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "usdcOut", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "platformFee", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "newPrice", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+    ],
+    "name": "TokensSold",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": false, "internalType": "uint256", "name": "creatorReserve", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "stakingRewardPool", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "platformFee", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "finalSupply", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+    ],
+    "name": "TokenGraduated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "tokenAmount", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+    ],
+    "name": "StakingStarted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "rewardAmount", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "tokensStaked", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+    ],
+    "name": "StakingRewardsClaimed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "creator", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "usdcAmount", "type": "uint256" },
+      { "indexed": false, "internalType": "string", "name": "reason", "type": "string" },
+      { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+    ],
+    "name": "CreatorReserveWithdrawn",
+    "type": "event"
+  }
+]

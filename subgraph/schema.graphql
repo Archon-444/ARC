@@ -38,7 +38,7 @@ type NFT @entity {
   tokenId: BigInt!
   collection: Collection!
   creator: String
-  owner: String!
+  owner: User!
   tokenURI: String
   listing: Listing
   auction: Auction
@@ -147,4 +147,93 @@ type DailyStats @entity {
   activeUsers: BigInt!
   newListings: BigInt!
   newAuctions: BigInt!
+}
+
+# ========== Token Launcher Entities ==========
+
+type LaunchedToken @entity {
+  id: ID! # token contract address (lowercase hex)
+  address: Bytes!
+  amm: Bytes!
+  creator: Bytes!
+  name: String!
+  symbol: String!
+  totalSupply: BigInt!
+  creationFee: BigInt!
+  soldSupply: BigInt! # net tokens sold via bonding curve (buys - sells)
+  totalVolume: BigInt!
+  totalTrades: BigInt!
+  isGraduated: Boolean!
+  graduation: TokenGraduation
+  trades: [TokenTrade!]! @derivedFrom(field: "token")
+  stakes: [TokenStake!]! @derivedFrom(field: "token")
+  createdAt: BigInt!
+  updatedAt: BigInt!
+}
+
+type TokenTrade @entity {
+  id: ID! # txHash-logIndex
+  token: LaunchedToken!
+  trader: Bytes!
+  tradeType: String! # "Buy" or "Sell"
+  usdcAmount: BigInt!
+  tokenAmount: BigInt!
+  platformFee: BigInt!
+  newPrice: BigInt!
+  createdAt: BigInt!
+  txHash: Bytes!
+}
+
+type TokenGraduation @entity {
+  id: ID! # token address
+  token: LaunchedToken!
+  creatorReserve: BigInt!
+  stakingRewardPool: BigInt!
+  platformFee: BigInt!
+  finalSupply: BigInt!
+  createdAt: BigInt!
+  txHash: Bytes!
+}
+
+type TokenStake @entity {
+  id: ID! # txHash-logIndex
+  token: LaunchedToken!
+  user: Bytes!
+  amount: BigInt!
+  createdAt: BigInt!
+  txHash: Bytes!
+}
+
+type TokenRewardClaim @entity {
+  id: ID! # txHash-logIndex
+  token: LaunchedToken!
+  user: Bytes!
+  rewardAmount: BigInt!
+  tokensStaked: BigInt!
+  createdAt: BigInt!
+  txHash: Bytes!
+}
+
+type CreatorWithdrawal @entity {
+  id: ID! # txHash-logIndex
+  token: LaunchedToken!
+  creator: Bytes!
+  amount: BigInt!
+  reason: String!
+  createdAt: BigInt!
+  txHash: Bytes!
+}
+
+type TokenLauncherStats @entity {
+  id: ID! # "token-launcher" singleton
+  totalTokens: BigInt!
+  totalVolume: BigInt!
+  totalTrades: BigInt!
+  totalGraduated: BigInt!
+  updatedAt: BigInt!
+}
+
+type AmmTokenLookup @entity {
+  id: ID! # AMM address (lowercase hex) — reverse lookup
+  token: LaunchedToken!
 }
