@@ -160,7 +160,7 @@ type LaunchedToken @entity {
   symbol: String!
   totalSupply: BigInt!
   creationFee: BigInt!
-  currentSupply: BigInt!
+  soldSupply: BigInt! # net tokens sold via bonding curve (buys - sells)
   totalVolume: BigInt!
   totalTrades: BigInt!
   isGraduated: Boolean!

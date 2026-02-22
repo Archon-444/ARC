@@ -64,7 +64,7 @@ export function handleTokensBought(event: TokensBought): void {
   trade.save();
 
   // Update token aggregate stats
-  token.currentSupply = token.currentSupply.plus(event.params.tokensOut);
+  token.soldSupply = token.soldSupply.plus(event.params.tokensOut);
   token.totalVolume = token.totalVolume.plus(event.params.usdcAmount);
   token.totalTrades = token.totalTrades.plus(ONE_BI);
   token.updatedAt = event.block.timestamp;
@@ -110,7 +110,7 @@ export function handleTokensSold(event: TokensSold): void {
   trade.save();
 
   // Update token aggregate stats
-  token.currentSupply = token.currentSupply.minus(event.params.tokenAmount);
+  token.soldSupply = token.soldSupply.minus(event.params.tokenAmount);
   token.totalVolume = token.totalVolume.plus(event.params.usdcOut);
   token.totalTrades = token.totalTrades.plus(ONE_BI);
   token.updatedAt = event.block.timestamp;

@@ -39,7 +39,7 @@ export function handleTokenCreated(event: TokenCreated): void {
   token.symbol = event.params.symbol;
   token.totalSupply = event.params.totalSupply;
   token.creationFee = event.params.creationFeeUSDC;
-  token.currentSupply = ZERO_BI;
+  token.soldSupply = ZERO_BI;
   token.totalVolume = ZERO_BI;
   token.totalTrades = ZERO_BI;
   token.isGraduated = false;

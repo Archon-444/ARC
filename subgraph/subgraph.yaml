@@ -123,7 +123,7 @@ dataSources:
         - TokenLauncherStats
       abis:
         - name: ArcTokenFactory
-          file: ../contracts/artifacts/contracts/ArcTokenFactory.sol/ArcTokenFactory.json
+          file: ./abis/ArcTokenFactory.json
       eventHandlers:
         - event: TokenCreated(indexed address,indexed address,indexed address,string,string,uint256,uint256,uint256)
           handler: handleTokenCreated
@@ -151,7 +151,7 @@ templates:
         - TokenLauncherStats
       abis:
         - name: ArcBondingCurveAMM
-          file: ../contracts/artifacts/contracts/ArcBondingCurveAMM.sol/ArcBondingCurveAMM.json
+          file: ./abis/ArcBondingCurveAMM.json
       eventHandlers:
         - event: TokensBought(indexed address,uint256,uint256,uint256,uint256,uint256)
           handler: handleTokensBought
