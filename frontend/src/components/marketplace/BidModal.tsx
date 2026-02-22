@@ -137,7 +137,7 @@ export function BidModal({ isOpen, onClose, nft, auction, onSuccess }: BidModalP
         },
       ],
       functionName: 'placeBid',
-      args: [BigInt(auction.tokenId), userBid],
+      args: [BigInt(auction.id), userBid],
     });
   };
 

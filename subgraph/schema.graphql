@@ -1,122 +1,150 @@
 type User @entity {
-  id: ID! # wallet address
-  nftsOwned: [Token!]! @derivedFrom(field: "owner")
+  id: ID! # wallet address (lowercase hex)
+  address: Bytes!
+  nftsOwned: [NFT!]! @derivedFrom(field: "owner")
   listings: [Listing!]! @derivedFrom(field: "seller")
   bids: [Bid!]! @derivedFrom(field: "bidder")
-  offers: [Offer!]! @derivedFrom(field: "maker")
-  sales: [Listing!]! @derivedFrom(field: "buyer")
+  salesAsBuyer: [Sale!]! @derivedFrom(field: "buyer")
+  profile: Profile
   totalSpent: BigInt!
   totalEarned: BigInt!
-  xp: BigInt! # Gamification XP
-  badges: [UserBadge!]! @derivedFrom(field: "user")
-  joinedAt: BigInt!
-  lastActive: BigInt!
+  createdAt: BigInt!
+  updatedAt: BigInt!
 }
 
-type Badge @entity {
-  id: ID! # badge_id from frontend (e.g., "early_adopter")
-  name: String!
-  description: String!
-  icon: String!
-  users: [UserBadge!]! @derivedFrom(field: "badge")
-}
-
-type UserBadge @entity {
-  id: ID! # user.id + badge.id
+type Profile @entity {
+  id: ID! # same as user id
   user: User!
-  badge: Badge!
-  unlockedAt: BigInt!
+  metadataURI: String!
+  createdAt: BigInt!
+  updatedAt: BigInt!
 }
 
 type Collection @entity {
-  id: ID! # Contract address
+  id: ID! # contract address (lowercase hex)
+  address: Bytes!
   name: String
   symbol: String
-  totalSupply: BigInt
-  tokens: [Token!]! @derivedFrom(field: "collection")
+  nfts: [NFT!]! @derivedFrom(field: "collection")
   floorPrice: BigInt
   totalVolume: BigInt!
+  totalSales: BigInt!
+  createdAt: BigInt!
+  updatedAt: BigInt!
 }
 
-type Token @entity {
-  id: ID! # ContractAddress-TokenID
-  collection: Collection!
+type NFT @entity {
+  id: ID! # collectionAddress-tokenId
   tokenId: BigInt!
-  owner: User!
-  uri: String
-  activeListing: Listing
-  activeAuction: Auction
-  transfers: [Transfer!]! @derivedFrom(field: "token")
+  collection: Collection!
+  creator: String
+  owner: String!
+  tokenURI: String
+  listing: Listing
+  auction: Auction
+  createdAt: BigInt!
+  updatedAt: BigInt!
 }
 
 type Listing @entity {
-  id: ID!
+  id: ID! # on-chain listingId
+  listingId: BigInt!
+  collection: Collection!
+  nft: NFT!
   seller: User!
-  token: Token!
   price: BigInt!
-  createdAtTimestamp: BigInt!
-  soldAtTimestamp: BigInt
-  buyer: User
-  status: ListingStatus!
-}
-
-enum ListingStatus {
-  ACTIVE
-  SOLD
-  CANCELLED
+  active: Boolean!
+  sale: Sale
+  createdAt: BigInt!
+  updatedAt: BigInt!
+  cancelledAt: BigInt
+  soldAt: BigInt
 }
 
 type Auction @entity {
-  id: ID!
+  id: ID! # on-chain auctionId
+  auctionId: BigInt!
+  collection: Collection!
+  nft: NFT!
   seller: User!
-  token: Token!
   startingPrice: BigInt!
-  duration: BigInt!
-  endTime: BigInt!
   highestBid: BigInt
   highestBidder: User
-  status: AuctionStatus!
+  endTime: BigInt!
+  extensionCount: Int!
+  active: Boolean!
+  settled: Boolean!
   bids: [Bid!]! @derivedFrom(field: "auction")
-}
-
-enum AuctionStatus {
-  ACTIVE
-  ENDED
-  CANCELLED
+  sale: Sale
+  createdAt: BigInt!
+  settledAt: BigInt
 }
 
 type Bid @entity {
-  id: ID!
+  id: ID! # auctionId-bid-index
   auction: Auction!
   bidder: User!
   amount: BigInt!
-  timestamp: BigInt!
+  refunded: Boolean!
+  refundedAt: BigInt
+  createdAt: BigInt!
 }
 
-type Offer @entity {
-  id: ID!
-  maker: User!
-  taker: User # Nullable if collection offer
-  token: Token # Nullable if collection offer
+type Sale @entity {
+  id: ID! # txHash-logIndex
   collection: Collection!
+  nft: NFT!
+  seller: String!
+  buyer: User!
   price: BigInt!
-  expiration: BigInt!
-  status: OfferStatus!
-  signature: String!
+  saleType: String! # "Listing" or "Auction"
+  listing: Listing
+  auction: Auction
+  protocolFee: BigInt!
+  royaltyFee: BigInt!
+  createdAt: BigInt!
+  txHash: Bytes!
 }
 
-enum OfferStatus {
-  ACTIVE
-  ACCEPTED
-  CANCELLED
-  EXPIRED
+type FeeDistribution @entity {
+  id: ID! # txHash-logIndex
+  collection: Collection!
+  tokenId: BigInt!
+  amount: BigInt!
+  collectionSplits: [String!]!
+  globalSplits: [String!]!
+  createdAt: BigInt!
+  txHash: Bytes!
 }
 
-type Transfer @entity {
+type FeeSplit @entity {
   id: ID!
-  token: Token!
-  from: User!
-  to: User!
-  timestamp: BigInt!
-  transactionHash: String!
+  recipient: Bytes!
+  bps: Int!
+  collection: Collection
+}
+
+type MarketplaceStats @entity {
+  id: ID! # "marketplace" singleton
+  totalVolume: BigInt!
+  totalSales: BigInt!
+  totalListings: BigInt!
+  activeListings: BigInt!
+  totalAuctions: BigInt!
+  activeAuctions: BigInt!
+  totalUsers: BigInt!
+  totalCollections: BigInt!
+  protocolFeeBps: Int!
+  updatedAt: BigInt!
+}
+
+type DailyStats @entity {
+  id: ID! # day timestamp
+  date: BigInt!
+  volume: BigInt!
+  sales: BigInt!
+  newUsers: BigInt!
+  activeUsers: BigInt!
+  newListings: BigInt!
+  newAuctions: BigInt!
 }

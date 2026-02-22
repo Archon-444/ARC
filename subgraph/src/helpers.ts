@@ -6,7 +6,7 @@ import {
   MarketplaceStats,
   DailyStats,
 } from "../generated/schema";
-import { ERC721 } from "../generated/NFTMarketplace/ERC721";
+import { ERC721 } from "../generated/ArcMarketplace/ERC721";
 
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 export const ZERO_BI = BigInt.fromI32(0);
@@ -23,14 +23,13 @@ export function getOrCreateUser(address: Address): User {
     user.address = address;
     user.totalSpent = ZERO_BI;
     user.totalEarned = ZERO_BI;
-    user.createdAt = getTimestamp();
-    user.updatedAt = getTimestamp();
+    user.createdAt = ZERO_BI;
+    user.updatedAt = ZERO_BI;
     user.save();
 
     // Update marketplace stats
     let stats = getOrCreateMarketplaceStats();
     stats.totalUsers = stats.totalUsers.plus(ONE_BI);
-    stats.updatedAt = getTimestamp();
     stats.save();
   }
 
@@ -48,9 +47,8 @@ export function getOrCreateCollection(address: Address): Collection {
     collection.address = address;
     collection.totalVolume = ZERO_BI;
     collection.totalSales = ZERO_BI;
-    collection.allowed = false;
-    collection.createdAt = getTimestamp();
-    collection.updatedAt = getTimestamp();
+    collection.createdAt = ZERO_BI;
+    collection.updatedAt = ZERO_BI;
 
     // Try to get name and symbol from ERC721 contract
     let erc721 = ERC721.bind(address);
@@ -69,7 +67,6 @@ export function getOrCreateCollection(address: Address): Collection {
     // Update marketplace stats
     let stats = getOrCreateMarketplaceStats();
     stats.totalCollections = stats.totalCollections.plus(ONE_BI);
-    stats.updatedAt = getTimestamp();
     stats.save();
   }
 
@@ -92,9 +89,9 @@ export function getOrCreateNFT(
     nft.tokenId = tokenId;
     nft.collection = collectionAddress.toHexString();
     nft.creator = creatorAddress.toHexString();
-    nft.owner = creatorAddress.toHexString(); // Initially owned by creator
-    nft.createdAt = getTimestamp();
-    nft.updatedAt = getTimestamp();
+    nft.owner = creatorAddress.toHexString();
+    nft.createdAt = ZERO_BI;
+    nft.updatedAt = ZERO_BI;
 
     // Try to get tokenURI
     let erc721 = ERC721.bind(collectionAddress);
@@ -126,7 +123,7 @@ export function getOrCreateMarketplaceStats(): MarketplaceStats {
     stats.totalUsers = ZERO_BI;
     stats.totalCollections = ZERO_BI;
     stats.protocolFeeBps = 250; // Default 2.5%
-    stats.updatedAt = getTimestamp();
+    stats.updatedAt = ZERO_BI;
     stats.save();
   }
 
@@ -137,7 +134,9 @@ export function getOrCreateMarketplaceStats(): MarketplaceStats {
  * Get or create DailyStats for a given timestamp
  */
 export function getOrCreateDailyStats(timestamp: BigInt): DailyStats {
-  let dayTimestamp = timestamp.div(BigInt.fromI32(86400)).times(BigInt.fromI32(86400));
+  let dayTimestamp = timestamp
+    .div(BigInt.fromI32(86400))
+    .times(BigInt.fromI32(86400));
   let id = dayTimestamp.toString();
   let stats = DailyStats.load(id);
 
@@ -157,15 +156,7 @@ export function getOrCreateDailyStats(timestamp: BigInt): DailyStats {
 }
 
 /**
- * Get current timestamp
- */
-export function getTimestamp(): BigInt {
-  return BigInt.fromI32(0); // Will be replaced by actual block timestamp in handlers
-}
-
-/**
  * Update collection floor price based on active listings
- * Note: This is a simplified version - in production, you'd want to query all active listings
  */
 export function updateCollectionFloorPrice(
   collectionAddress: Address,
@@ -173,33 +164,13 @@ export function updateCollectionFloorPrice(
 ): void {
   let collection = getOrCreateCollection(collectionAddress);
 
-  if (collection.floorPrice == null || price.lt(collection.floorPrice as BigInt)) {
+  if (
+    collection.floorPrice == null ||
+    price.lt(collection.floorPrice as BigInt)
+  ) {
     collection.floorPrice = price;
-    collection.updatedAt = getTimestamp();
     collection.save();
   }
-}
-
-/**
- * Generate listing ID
- */
-export function generateListingId(
-  collectionAddress: Address,
-  tokenId: BigInt,
-  timestamp: BigInt
-): string {
-  return collectionAddress.toHexString() + "-" + tokenId.toString() + "-" + timestamp.toString();
-}
-
-/**
- * Generate auction ID
- */
-export function generateAuctionId(
-  collectionAddress: Address,
-  tokenId: BigInt,
-  timestamp: BigInt
-): string {
-  return collectionAddress.toHexString() + "-" + tokenId.toString() + "-auction-" + timestamp.toString();
 }
 
 /**
@@ -210,8 +181,12 @@ export function generateSaleId(txHash: Bytes, logIndex: BigInt): string {
 }
 
 /**
- * Generate bid ID
+ * Generate bid ID from auction ID, tx hash, and log index
  */
-export function generateBidId(auctionId: string, bidIndex: BigInt): string {
-  return auctionId + "-bid-" + bidIndex.toString();
+export function generateBidId(
+  auctionId: string,
+  txHash: Bytes,
+  logIndex: BigInt
+): string {
+  return auctionId + "-bid-" + txHash.toHexString() + "-" + logIndex.toString();
 }

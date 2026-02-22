@@ -120,7 +120,7 @@ export function BuyModal({ isOpen, onClose, nft, listing, onSuccess }: BuyModalP
         },
       ],
       functionName: 'buyListing',
-      args: [BigInt(listing.tokenId)],
+      args: [BigInt(listing.id)],
     });
   };
 
