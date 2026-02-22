@@ -35,7 +35,6 @@
     "@circle-fin/user-controlled-wallets": "^9.3.0",
     "@circle-fin/w3s-pw-web-sdk": "^1.1.11",
     "@rainbow-me/rainbowkit": "^2.2.9",
-    "@react-native-async-storage/async-storage": "^2.2.0",
     "@tanstack/react-query": "^5.90.10",
     "@types/react": "^19.2.6",
     "@vercel/kv": "^1.0.1",
