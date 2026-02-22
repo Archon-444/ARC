@@ -13,6 +13,10 @@ type RateLimitEntry = {
   resetAt: number;
 };
 
+// TODO: Move to Redis (e.g. Upstash) for distributed rate limiting in production.
+// In-memory storage is not shared between serverless lambda instances, so an
+// attacker can bypass limits by hitting different containers. This is acceptable
+// for development but must be replaced before production deployment.
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
 function normalizeIdentifier(value?: string | null) {

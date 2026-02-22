@@ -9,7 +9,8 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { Tag, AlertCircle, CheckCircle2, ExternalLink, Loader2 } from 'lucide-react';
+import { Tag, AlertCircle, CheckCircle2, ExternalLink, Loader2, PauseCircle } from 'lucide-react';
+import { useIsPaused } from '@/hooks/useIsPaused';
 import { Modal, ModalSection, ModalFooter } from '@/components/ui/Modal';
 import { NFTApproval } from './USDCApproval';
 import {
@@ -41,6 +42,7 @@ enum ListStep {
 
 export function ListNFTModal({ isOpen, onClose, nft, onSuccess }: ListNFTModalProps) {
   const { address } = useAccount();
+  const { isPaused } = useIsPaused();
   const [step, setStep] = useState<ListStep>(ListStep.INPUT);
   const [price, setPrice] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -132,6 +134,21 @@ export function ListNFTModal({ isOpen, onClose, nft, onSuccess }: ListNFTModalPr
       closeOnOverlayClick={step !== ListStep.LISTING && step !== ListStep.CONFIRMING}
     >
       <div className="space-y-6">
+        {/* Marketplace Paused Banner */}
+        {isPaused && (
+          <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-4">
+            <div className="flex items-start gap-3">
+              <PauseCircle className="h-5 w-5 flex-shrink-0 text-yellow-600" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-yellow-900">Marketplace is paused</p>
+                <p className="mt-1 text-xs text-yellow-700">
+                  Listings are temporarily disabled. Please try again later.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* NFT Preview */}
         <ModalSection title="Item">
           <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
@@ -300,6 +317,7 @@ export function ListNFTModal({ isOpen, onClose, nft, onSuccess }: ListNFTModalPr
             onClick={handleList}
             disabled={
               !address ||
+              isPaused ||
               !isPriceValid ||
               step === ListStep.LISTING ||
               step === ListStep.CONFIRMING

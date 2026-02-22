@@ -33,6 +33,9 @@ export const ABIS = {
     'function auctions(uint256 auctionId) view returns (address seller, address nftContract, uint256 tokenId, uint256 startingPrice, uint256 highestBid, address highestBidder, uint256 endTime, bool active)',
     'function getActiveListingsCount() view returns (uint256)',
     'function getActiveAuctionsCount() view returns (uint256)',
+    'function paused() view returns (bool)',
+    'function pause()',
+    'function unpause()',
   ],
 
   STAKING: [

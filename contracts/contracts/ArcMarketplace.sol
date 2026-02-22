@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
@@ -13,7 +14,7 @@ import "@openzeppelin/contracts/token/common/ERC2981.sol";
  * @dev NFT Marketplace with USDC payments, fixed-price listings, and auctions
  * Supports royalty payments and tiered fee discounts for stakers
  */
-contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
+contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Pausable, Ownable {
     IERC20 public usdc;
     address public stakingContract;
 
@@ -63,6 +64,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
 
     event PlatformFeeUpdated(uint256 newFee);
     event EarningsWithdrawn(address indexed user, uint256 amount);
+    event FeeRecipientUpdated(address indexed oldRecipient, address indexed newRecipient);
 
     constructor(address _usdc, address _feeRecipient) Ownable(msg.sender) {
         require(_usdc != address(0), "Invalid USDC address");
@@ -88,13 +90,38 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
     }
 
     /**
+     * @dev Update fee recipient address
+     * @param _newRecipient New address to receive platform fees
+     */
+    function setFeeRecipient(address _newRecipient) external onlyOwner {
+        require(_newRecipient != address(0), "Invalid fee recipient");
+        address oldRecipient = feeRecipient;
+        feeRecipient = _newRecipient;
+        emit FeeRecipientUpdated(oldRecipient, _newRecipient);
+    }
+
+    /**
+     * @dev Pause the marketplace. Disables listings, purchases, auctions, and bids.
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @dev Unpause the marketplace. Re-enables all marketplace operations.
+     */
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    /**
      * @dev Create a fixed-price listing
      */
     function createListing(
         address nftContract,
         uint256 tokenId,
         uint256 price
-    ) external nonReentrant returns (uint256) {
+    ) external nonReentrant whenNotPaused returns (uint256) {
         require(price > 0, "Price must be greater than 0");
 
         IERC721 nft = IERC721(nftContract);
@@ -126,7 +153,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
         address nftContract,
         uint256[] calldata tokenIds,
         uint256[] calldata prices
-    ) external nonReentrant returns (uint256[] memory) {
+    ) external nonReentrant whenNotPaused returns (uint256[] memory) {
         require(tokenIds.length == prices.length, "Array length mismatch");
         require(tokenIds.length > 0, "Empty arrays");
 
@@ -184,7 +211,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
     /**
      * @dev Buy a listed NFT
      */
-    function buyListing(uint256 listingId) external nonReentrant {
+    function buyListing(uint256 listingId) external nonReentrant whenNotPaused {
         Listing storage listing = listings[listingId];
         require(listing.active, "Listing not active");
         require(msg.sender != listing.seller, "Cannot buy own listing");
@@ -216,7 +243,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
     /**
      * @dev Batch buy multiple listings
      */
-    function batchBuyListings(uint256[] calldata listingIds) external nonReentrant {
+    function batchBuyListings(uint256[] calldata listingIds) external nonReentrant whenNotPaused {
         for (uint256 i = 0; i < listingIds.length; i++) {
             _buyListingInternal(listingIds[i]);
         }
@@ -256,7 +283,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
         uint256 tokenId,
         uint256 startingPrice,
         uint256 duration
-    ) external nonReentrant returns (uint256) {
+    ) external nonReentrant whenNotPaused returns (uint256) {
         require(startingPrice > 0, "Starting price must be greater than 0");
         require(duration > 0, "Duration must be greater than 0");
 
@@ -288,7 +315,7 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Ownable {
     /**
      * @dev Place a bid on an auction
      */
-    function placeBid(uint256 auctionId, uint256 bidAmount) external nonReentrant {
+    function placeBid(uint256 auctionId, uint256 bidAmount) external nonReentrant whenNotPaused {
         Auction storage auction = auctions[auctionId];
         require(auction.active, "Auction not active");
         require(block.timestamp < auction.endTime, "Auction ended");

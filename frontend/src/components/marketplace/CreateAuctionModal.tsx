@@ -9,7 +9,8 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { Gavel, AlertCircle, CheckCircle2, ExternalLink, Loader2, Clock } from 'lucide-react';
+import { Gavel, AlertCircle, CheckCircle2, ExternalLink, Loader2, Clock, PauseCircle } from 'lucide-react';
+import { useIsPaused } from '@/hooks/useIsPaused';
 import { Modal, ModalSection, ModalFooter } from '@/components/ui/Modal';
 import { NFTApproval } from './USDCApproval';
 import {
@@ -51,6 +52,7 @@ const DURATION_OPTIONS = [
 
 export function CreateAuctionModal({ isOpen, onClose, nft, onSuccess }: CreateAuctionModalProps) {
   const { address } = useAccount();
+  const { isPaused } = useIsPaused();
   const [step, setStep] = useState<AuctionStep>(AuctionStep.INPUT);
   const [minBid, setMinBid] = useState('');
   const [duration, setDuration] = useState(DURATION_OPTIONS[2].value); // Default to 1 day
@@ -150,6 +152,21 @@ export function CreateAuctionModal({ isOpen, onClose, nft, onSuccess }: CreateAu
       closeOnOverlayClick={step !== AuctionStep.CREATING && step !== AuctionStep.CONFIRMING}
     >
       <div className="space-y-6">
+        {/* Marketplace Paused Banner */}
+        {isPaused && (
+          <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-4">
+            <div className="flex items-start gap-3">
+              <PauseCircle className="h-5 w-5 flex-shrink-0 text-yellow-600" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-yellow-900">Marketplace is paused</p>
+                <p className="mt-1 text-xs text-yellow-700">
+                  Auction creation is temporarily disabled. Please try again later.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* NFT Preview */}
         <ModalSection title="Item">
           <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-neutral-700 dark:bg-neutral-800">
@@ -351,6 +368,7 @@ export function CreateAuctionModal({ isOpen, onClose, nft, onSuccess }: CreateAu
             onClick={handleCreateAuction}
             disabled={
               !address ||
+              isPaused ||
               !isMinBidValid ||
               step === AuctionStep.CREATING ||
               step === AuctionStep.CONFIRMING
