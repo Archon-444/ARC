@@ -26,7 +26,7 @@ dataSources:
         - DailyStats
       abis:
         - name: ArcMarketplace
-          file: ../contracts/artifacts/contracts/ArcMarketplace.sol/ArcMarketplace.json
+          file: ./abis/ArcMarketplace.json
         - name: ERC721
           file: ./abis/ERC721.json
       eventHandlers:
@@ -72,7 +72,7 @@ dataSources:
         - FeeSplit
       abis:
         - name: FeeVault
-          file: ../contracts/artifacts/contracts/FeeVault.sol/FeeVault.json
+          file: ./abis/FeeVault.json
       eventHandlers:
         - event: Distributed(indexed address,indexed uint256,uint256)
           handler: handleDistributed
@@ -99,7 +99,7 @@ dataSources:
         - User
       abis:
         - name: ProfileRegistry
-          file: ../contracts/artifacts/contracts/ProfileRegistry.sol/ProfileRegistry.json
+          file: ./abis/ProfileRegistry.json
       eventHandlers:
         - event: ProfileUpdated(indexed address,string)
           handler: handleProfileUpdated
