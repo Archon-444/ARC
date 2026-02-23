@@ -10,8 +10,9 @@
 import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
-import { Rocket, AlertCircle, CheckCircle2, Loader2, Info } from 'lucide-react';
+import { Rocket, AlertCircle, CheckCircle2, Loader2, Info, Sparkles } from 'lucide-react';
 import { useCreateToken, useApproveFactoryUSDC, useCreationFee } from '@/hooks/useTokenFactory';
+import { useGenerateTokenPage } from '@/hooks/useGenerateTokenPage';
 import { useUSDCBalance } from '@/hooks/useMarketplace';
 import { CurveType, CURVE_TYPE_NAMES } from '@/lib/contracts';
 import { formatUSDC } from '@/lib/utils';
@@ -35,6 +36,7 @@ export default function LaunchPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Hooks
+  const { generate, isLoading: isGenerating, error: generateError } = useGenerateTokenPage();
   const { fee, feeFormatted } = useCreationFee();
   const { balance, balanceFormatted } = useUSDCBalance(address || '');
   const {
@@ -180,14 +182,43 @@ export default function LaunchPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Description</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">Description</label>
+                  <button
+                    type="button"
+                    disabled={isGenerating || !name.trim() || !symbol.trim() || !description.trim() || description.trim().length < 10}
+                    onClick={() => {
+                      generate(
+                        { name, symbol, description, totalSupply, basePrice, curveType },
+                        {
+                          onSuccess: (data) => {
+                            if (data.fullDescription) {
+                              setDescription(data.fullDescription);
+                            }
+                          },
+                        }
+                      );
+                    }}
+                    className="inline-flex items-center gap-1 rounded-md border border-blue-300 bg-white px-2.5 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-blue-600 dark:bg-neutral-800 dark:text-blue-400 dark:hover:bg-neutral-700"
+                  >
+                    {isGenerating ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3 w-3" />
+                    )}
+                    {isGenerating ? 'Generating...' : 'AI Generate'}
+                  </button>
+                </div>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="What is this token about?"
-                  rows={3}
+                  placeholder="What is this token about? (Enter a brief seed description, then click AI Generate for an enhanced version)"
+                  rows={4}
                   className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-600 dark:bg-neutral-800 dark:text-white"
                 />
+                {generateError && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{generateError.message}</p>
+                )}
               </div>
 
               <div>

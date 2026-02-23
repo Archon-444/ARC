@@ -482,6 +482,126 @@ export async function fetchTokenTrades(tokenAddress: string, params: {
 }
 
 /**
+ * Fetch all tokens launched by a specific creator (for risk scoring)
+ */
+export async function fetchCreatorTokens(creatorAddress: string) {
+  const query = `
+    query GetCreatorTokens($creator: Bytes!) {
+      launchedTokens(
+        where: { creator: $creator }
+        orderBy: createdAt
+        orderDirection: desc
+      ) {
+        id
+        address
+        name
+        symbol
+        totalSupply
+        soldSupply
+        totalVolume
+        totalTrades
+        isGraduated
+        createdAt
+        graduation {
+          creatorReserve
+          stakingRewardPool
+          platformFee
+          finalSupply
+          createdAt
+        }
+      }
+    }
+  `;
+
+  try {
+    const data = await fetchGraphQL<{ launchedTokens: any[] }>(query, {
+      creator: creatorAddress.toLowerCase(),
+    });
+    return data.launchedTokens;
+  } catch (error) {
+    console.error('Failed to fetch creator tokens:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch trade metrics for a token (unique traders, buy/sell ratio, volume concentration)
+ */
+export async function fetchTokenTradeMetrics(tokenAddress: string) {
+  const query = `
+    query GetTokenTradeMetrics($tokenId: String!) {
+      buyTrades: tokenTrades(
+        where: { token: $tokenId, tradeType: "Buy" }
+        first: 1000
+        orderBy: createdAt
+        orderDirection: desc
+      ) {
+        trader
+        usdcAmount
+        createdAt
+      }
+      sellTrades: tokenTrades(
+        where: { token: $tokenId, tradeType: "Sell" }
+        first: 1000
+        orderBy: createdAt
+        orderDirection: desc
+      ) {
+        trader
+        usdcAmount
+        createdAt
+      }
+    }
+  `;
+
+  try {
+    const data = await fetchGraphQL<{
+      buyTrades: Array<{ trader: string; usdcAmount: string; createdAt: string }>;
+      sellTrades: Array<{ trader: string; usdcAmount: string; createdAt: string }>;
+    }>(query, {
+      tokenId: tokenAddress.toLowerCase(),
+    });
+    return {
+      buyTrades: data.buyTrades || [],
+      sellTrades: data.sellTrades || [],
+    };
+  } catch (error) {
+    console.error('Failed to fetch token trade metrics:', error);
+    return { buyTrades: [], sellTrades: [] };
+  }
+}
+
+/**
+ * Fetch creator withdrawals for a token (for rug-pull detection)
+ */
+export async function fetchCreatorWithdrawals(tokenAddress: string) {
+  const query = `
+    query GetCreatorWithdrawals($tokenId: String!) {
+      creatorWithdrawals(
+        where: { token: $tokenId }
+        orderBy: createdAt
+        orderDirection: desc
+      ) {
+        amount
+        reason
+        createdAt
+      }
+    }
+  `;
+
+  try {
+    const data = await fetchGraphQL<{
+      creatorWithdrawals: Array<{ amount: string; reason: string; createdAt: string }>;
+    }>(query, {
+      tokenId: tokenAddress.toLowerCase(),
+    });
+    return data.creatorWithdrawals || [];
+  } catch (error) {
+    console.error('Failed to fetch creator withdrawals:', error);
+    return [];
+  }
+}
+
+/**
  * Fetch token launcher global stats
  */
 export async function fetchTokenLauncherStats() {
