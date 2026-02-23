@@ -1,12 +1,14 @@
 import { redirect } from 'next/navigation';
+import { use } from 'react';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     collection: string;
     id: string;
-  };
+  }>;
 }
 
 export default function LegacyNftRedirect({ params }: PageProps) {
-  redirect(`/nft/${params.collection}/${params.id}`);
+  const { collection, id } = use(params);
+  redirect(`/nft/${collection}/${id}`);
 }

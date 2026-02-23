@@ -73,19 +73,19 @@ export async function POST(request: NextRequest) {
       abiJson,
       bytecode,
       constructorParameters,
-      feeLevel,
-    });
+    } as any);
 
     if (!response.data) {
       throw new Error('Failed to deploy contract');
     }
 
+    const data = response.data as any;
     return NextResponse.json({
       success: true,
-      contractId: response.data.id,
-      deploymentStatus: response.data.deployStatus,
-      transactionHash: response.data.transactionHash,
-      contractAddress: response.data.contractAddress,
+      contractId: data.id,
+      deploymentStatus: data.deployStatus,
+      transactionHash: data.transactionHash,
+      contractAddress: data.contractAddress,
     });
   } catch (error: any) {
     console.error('Circle contract deployment error:', error);

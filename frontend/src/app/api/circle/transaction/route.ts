@@ -23,7 +23,7 @@ import { requireSessionWallet, requireSignature } from '@/lib/auth-middleware';
 export async function POST(request: NextRequest) {
   try {
     const sessionWallet = await requireSessionWallet(request);
-    if (sessionWallet.error) {
+    if ('error' in sessionWallet) {
       return sessionWallet.error;
     }
 
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const sessionWallet = await requireSessionWallet(request);
-    if (sessionWallet.error) {
+    if ('error' in sessionWallet) {
       return sessionWallet.error;
     }
 
@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const sessionWallet = await requireSessionWallet(request);
-    if (sessionWallet.error) {
+    if ('error' in sessionWallet) {
       return sessionWallet.error;
     }
 

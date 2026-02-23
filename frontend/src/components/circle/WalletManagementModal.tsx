@@ -20,7 +20,7 @@ interface WalletManagementModalProps {
 }
 
 export function WalletManagementModal({ isOpen, onClose }: WalletManagementModalProps) {
-  const { wallets, activeWallet, setActiveWallet, disconnectWallet } = useCircleWallet();
+  const { wallets, currentWallet: activeWallet, selectWallet: setActiveWallet, disconnectWallet } = useCircleWallet();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
 
@@ -37,7 +37,7 @@ export function WalletManagementModal({ isOpen, onClose }: WalletManagementModal
   const handleSelectWallet = (walletId: string) => {
     const wallet = wallets.find((w) => w.id === walletId);
     if (wallet) {
-      setActiveWallet(wallet);
+      setActiveWallet(wallet.id);
       onClose();
     }
   };

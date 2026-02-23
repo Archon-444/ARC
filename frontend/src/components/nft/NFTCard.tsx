@@ -23,8 +23,6 @@ import {
   truncateAddress,
 } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/LoadingSpinner';
-import { useNFTRarity } from '@/hooks/useRarityData';
-import { RarityBadge } from '@/components/nft/RarityBadge';
 
 interface NFTCardProps {
   nft: NFT;
@@ -47,7 +45,6 @@ export function NFTCard({
 }: NFTCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const { rarity } = useNFTRarity(nft.collection.id, nft.tokenId);
   const { rarity } = useNFTRarity(nft.collection?.id, nft.tokenId);
 
   const imageUrl = getImageUrl(nft.image);

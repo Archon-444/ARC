@@ -221,7 +221,7 @@ export function useFocusVisible() {
  */
 export function useAriaAnnouncement() {
   const [message, setMessage] = useState('');
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout>(undefined);
 
   const announce = (text: string, priority: 'polite' | 'assertive' = 'polite') => {
     if (timeoutRef.current) {

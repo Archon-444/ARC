@@ -65,7 +65,7 @@ const mobileNav = [
 export default function Navbar() {
   const pathname = usePathname();
   const { open } = useCommandPalette();
-  const { isConnected, activeWallet, wallets, createWallet, loading, disconnectWallet } = useCircleWallet();
+  const { isConnected, currentWallet: activeWallet, wallets, createWallet, isLoading: loading, disconnectWallet } = useCircleWallet();
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [exploreOpen, setExploreOpen] = useState(false);

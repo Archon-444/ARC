@@ -53,9 +53,8 @@ import {
   getTimeRemaining,
 } from '@/lib/utils';
 import type { NFT, Listing, Auction, Sale, Address } from '@/types';
-import { useRarityData } from '@/hooks/useRarityData';
+import { useRarityData, useNFTRarity } from '@/hooks/useRarityData';
 import { RarityCalculator } from '@/lib/rarity/calculator';
-import { useNFTRarity } from '@/hooks/useRarityData';
 
 interface PageProps {
   params: Promise<{
