@@ -192,7 +192,7 @@ console.log('[NextAuth] Sign in:', { user: user.email, provider: account?.provid
 
 ### SEC-08: Smart Contract Best Practices [INFO/ADVISORY]
 
-**Location:** `contracts/contracts/NFTMarketplace.sol`, `contracts/contracts/FeeVault.sol`
+**Location:** `contracts/contracts/ArcMarketplace.sol`, `contracts/contracts/FeeVault.sol`
 
 **Positive Findings:**
 - ✅ ReentrancyGuard used on state-changing functions
@@ -293,7 +293,7 @@ undici 6.0.0-6.21.1: Insufficient random values, DoS via bad certificates
 - `next.config.js`
 
 ### Smart Contracts
-- `contracts/contracts/NFTMarketplace.sol`
+- `contracts/contracts/ArcMarketplace.sol`
 - `contracts/contracts/FeeVault.sol`
 - `contracts/contracts/ProfileRegistry.sol`
 
