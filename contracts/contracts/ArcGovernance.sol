@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: MIT
+// DEPRECATED: v0.1 governance contract kept as reference only.
+// SimpleGovernance.sol is the canonical governance contract.
+// The quorum enforcement pattern from this contract has been ported to SimpleGovernance.sol.
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
