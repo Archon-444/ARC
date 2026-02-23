@@ -527,14 +527,24 @@ export interface RiskFactor {
   details: string;
 }
 
+export interface ScoringWeights {
+  creatorHistory: number;
+  contractHealth: number;
+  tradingPatterns: number;
+  liquidityProgress: number;
+}
+
 export interface TokenRiskAssessment {
-  overallScore: number; // 0-100 (0 = safest)
+  scoringVersion: string;
+  weights: ScoringWeights;
+  overallScore: number; // 0-100 (0 = lowest risk)
   creatorRisk: RiskFactor;
   contractRisk: RiskFactor;
   liquidityRisk: RiskFactor;
   tradingRisk: RiskFactor;
   redFlags: string[];
   recommendation: RiskRecommendation;
+  disclaimer: string;
   analyzedAt: number;
 }
 
