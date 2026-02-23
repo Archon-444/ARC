@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
       nextCursor: hasMore ? String(cursor + limit) : undefined,
     });
   } catch (error) {
-    console.error('Activity feed error:', error);
+    console.error('Activity feed error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { error: 'Failed to fetch activity' },
       { status: 500 }

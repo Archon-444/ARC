@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       message: 'Wallet creation challenge created. User must complete PIN setup.',
     });
   } catch (error: any) {
-    console.error('Circle wallet creation error:', error);
+    console.error('Circle wallet creation error:', error instanceof Error ? error.message : 'Unknown error');
 
     if (error.response?.data) {
       return NextResponse.json(
@@ -199,7 +199,7 @@ export async function GET(request: NextRequest) {
       wallets: walletsResponse.data.wallets || [],
     });
   } catch (error: any) {
-    console.error('Circle wallet retrieval error:', error);
+    console.error('Circle wallet retrieval error:', error instanceof Error ? error.message : 'Unknown error');
 
     if (error.response?.data) {
       return NextResponse.json(
@@ -280,7 +280,7 @@ export async function PATCH(request: NextRequest) {
       wallet: walletResponse.data.wallet,
     });
   } catch (error: any) {
-    console.error('Circle wallet update error:', error);
+    console.error('Circle wallet update error:', error instanceof Error ? error.message : 'Unknown error');
 
     if (error.response?.data) {
       return NextResponse.json(

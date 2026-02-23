@@ -49,7 +49,7 @@ export async function GET(
       rarityData,
     });
   } catch (error) {
-    console.error('Rarity calculation error:', error);
+    console.error('Rarity calculation error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { error: 'Failed to calculate rarity' },
       { status: 500 }
@@ -69,7 +69,7 @@ export async function POST(
       message: `Cache invalidated for ${address}`,
     });
   } catch (error) {
-    console.error('Cache invalidation error:', error);
+    console.error('Cache invalidation error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { error: 'Failed to invalidate cache' },
       { status: 500 }

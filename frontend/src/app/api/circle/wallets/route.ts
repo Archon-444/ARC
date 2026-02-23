@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Circle wallet creation failed:', error);
+    console.error('Circle wallet creation failed:', error instanceof Error ? error.message : 'Unknown error');
 
     return NextResponse.json(
       {
@@ -156,7 +156,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Circle wallet fetch failed:', error);
+    console.error('Circle wallet fetch failed:', error instanceof Error ? error.message : 'Unknown error');
 
     return NextResponse.json(
       {

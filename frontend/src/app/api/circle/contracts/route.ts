@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       contractAddress: data.contractAddress,
     });
   } catch (error: any) {
-    console.error('Circle contract deployment error:', error);
+    console.error('Circle contract deployment error:', error instanceof Error ? error.message : 'Unknown error');
 
     // Handle specific Circle API errors
     if (error.response?.data) {
@@ -155,7 +155,7 @@ export async function GET(request: NextRequest) {
       contract: response.data.contract,
     });
   } catch (error: any) {
-    console.error('Circle contract retrieval error:', error);
+    console.error('Circle contract retrieval error:', error instanceof Error ? error.message : 'Unknown error');
 
     if (error.response?.data) {
       return NextResponse.json(
