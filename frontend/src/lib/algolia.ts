@@ -69,6 +69,17 @@ export interface UserSearchResult {
 
 export type SearchResult = NFTSearchResult | CollectionSearchResult | UserSearchResult;
 
+export interface FacetValue {
+  value: string;
+  count: number;
+  highlighted?: string;
+}
+
+export interface SearchFacet {
+  field_name: string;
+  counts: FacetValue[];
+}
+
 export interface SearchResponse<T = SearchResult> {
   hits: T[];
   nbHits: number;
@@ -76,7 +87,11 @@ export interface SearchResponse<T = SearchResult> {
   nbPages: number;
   hitsPerPage: number;
   processingTimeMS: number;
+  facets?: SearchFacet[];
 }
+
+// Re-export index names with compatible key
+export const SEARCH_INDEXES = ALGOLIA_INDEXES;
 
 /**
  * Search across all indexes
@@ -137,6 +152,9 @@ export async function searchAll(
 
 /**
  * Search a specific index
+ *
+ * Accepts both Algolia-native params (filters, facetFilters) and
+ * Typesense-compatible params (filterBy, facetBy) for drop-in compatibility.
  */
 export async function searchIndex<T = SearchResult>(
   indexName: string,
@@ -146,21 +164,47 @@ export async function searchIndex<T = SearchResult>(
     page?: number;
     filters?: string;
     facetFilters?: string[][];
+    // Typesense-compatible params (translated to Algolia equivalents)
+    filterBy?: string;
+    facetBy?: string;
+    sortBy?: string;
   } = {}
 ): Promise<SearchResponse<T>> {
   const client = getSearchClient();
-  const { hitsPerPage = 20, page = 0, filters, facetFilters } = options;
+  const { hitsPerPage = 20, page = 0, filters, facetFilters, filterBy, facetBy } = options;
+
+  // Convert Typesense filterBy syntax to Algolia filters if needed
+  const effectiveFilters = filters || (filterBy ? convertTypesenseFilter(filterBy) : undefined);
+  const facets = facetBy ? facetBy.split(',').map(f => f.trim()) : undefined;
 
   try {
     const index = client.initIndex(indexName);
     const results = await index.search(query, {
       hitsPerPage,
       page,
-      filters,
+      filters: effectiveFilters,
       facetFilters,
+      facets: facets || [],
     });
 
-    return results as any as SearchResponse<T>;
+    // Convert Algolia facet response to our SearchFacet format
+    const mappedFacets: SearchFacet[] = [];
+    if ((results as any).facets) {
+      for (const [fieldName, values] of Object.entries((results as any).facets as Record<string, Record<string, number>>)) {
+        mappedFacets.push({
+          field_name: fieldName,
+          counts: Object.entries(values).map(([value, count]) => ({
+            value,
+            count,
+          })),
+        });
+      }
+    }
+
+    return {
+      ...(results as any),
+      facets: mappedFacets,
+    } as SearchResponse<T>;
   } catch (error) {
     console.error(`Search error in ${indexName}:`, error);
     return {
@@ -170,8 +214,36 @@ export async function searchIndex<T = SearchResult>(
       nbPages: 0,
       hitsPerPage,
       processingTimeMS: 0,
+      facets: [],
     };
   }
+}
+
+/**
+ * Convert Typesense filter syntax to Algolia filter syntax.
+ * Typesense: `field:=[value1,value2] && field2:=value3`
+ * Algolia: `field:value1 OR field:value2 AND field2:value3`
+ */
+function convertTypesenseFilter(filterBy: string): string {
+  if (!filterBy) return '';
+  return filterBy
+    .split('&&')
+    .map(part => {
+      const trimmed = part.trim();
+      const match = trimmed.match(/^(\w+):=\[(.+)\]$/);
+      if (match) {
+        const field = match[1];
+        const values = match[2].split(',').map(v => v.trim().replace(/`/g, ''));
+        return `(${values.map(v => `${field}:${v}`).join(' OR ')})`;
+      }
+      // Simple equality: field:=value
+      const simpleMatch = trimmed.match(/^(\w+):=(.+)$/);
+      if (simpleMatch) {
+        return `${simpleMatch[1]}:${simpleMatch[2].replace(/`/g, '')}`;
+      }
+      return trimmed;
+    })
+    .join(' AND ');
 }
 
 /**

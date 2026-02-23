@@ -138,8 +138,34 @@ export default function StudioPage() {
     setIsDeploying(false);
   };
 
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+
   const handleMint = async () => {
     setIsMinting(true);
+    setDuplicateWarning(null);
+
+    // Check for copymint before minting
+    if (mintForm.image) {
+      try {
+        const formData = new FormData();
+        formData.append('image', mintForm.image);
+        const checkUrl = `/api/nft/check-duplicate?collection=${mintForm.collectionAddress}&tokenId=pending&register=true`;
+        const dupResponse = await fetch(checkUrl, { method: 'POST', body: formData });
+        const dupResult = await dupResponse.json();
+
+        if (dupResult.isDuplicate) {
+          setDuplicateWarning(
+            `This image is visually similar to an existing NFT in collection ${dupResult.matches[0].collectionAddress}. Minting may be flagged as a copymint.`
+          );
+          setIsMinting(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Duplicate check failed:', error);
+        // Don't block minting if the check fails — it's a best-effort guard
+      }
+    }
+
     // Simulate minting delay
     await new Promise((resolve) => setTimeout(resolve, 3000));
 
@@ -155,6 +181,7 @@ export default function StudioPage() {
       image: null,
       imagePreview: '',
     });
+    setDuplicateWarning(null);
     setCreateStep('upload');
     alert('NFT Minted Successfully! (Mock)');
   };
@@ -539,6 +566,19 @@ export default function StudioPage() {
                       )}
                     </div>
                   </div>
+
+                  {duplicateWarning && (
+                    <div className="rounded-lg border border-orange-300 bg-orange-50 p-4 text-sm text-orange-800 dark:border-orange-700 dark:bg-orange-900/20 dark:text-orange-300">
+                      <p className="font-semibold mb-1">Potential Copymint Detected</p>
+                      <p>{duplicateWarning}</p>
+                      <button
+                        onClick={() => setDuplicateWarning(null)}
+                        className="mt-2 text-xs font-medium underline"
+                      >
+                        Dismiss and mint anyway
+                      </button>
+                    </div>
+                  )}
 
                   <div className="flex justify-between">
                     <Button variant="ghost" onClick={() => setCreateStep('collection')}>

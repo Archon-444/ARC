@@ -6,7 +6,7 @@ import { useMemo, useState, useEffect, useRef, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCommandPalette } from '@/hooks/useCommandPalette';
 import { formatUSDC } from '@/lib/utils';
-import { typesenseClient } from '@/lib/typesense';
+import { searchAll } from '@/lib/algolia';
 
 type CommandPaletteItem = {
   title: string;
@@ -25,7 +25,7 @@ export default function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  // Search Typesense
+  // Search via Algolia
   useEffect(() => {
     const search = async () => {
       if (!query) {
@@ -35,69 +35,41 @@ export default function CommandPalette() {
 
       setIsLoading(true);
       try {
-        const searchResults = await typesenseClient.multiSearch.perform({
-          searches: [
-            {
-              collection: 'collections',
-              q: query,
-              query_by: 'name,symbol',
-              per_page: 3,
-            },
-            {
-              collection: 'nfts',
-              q: query,
-              query_by: 'name,token_id',
-              per_page: 3,
-            },
-            {
-              collection: 'users',
-              q: query,
-              query_by: 'username,address',
-              per_page: 2,
-            },
-          ],
-        }) as any;
-
+        const searchResults = await searchAll(query, { hitsPerPage: 3 });
         const items: CommandPaletteItem[] = [];
 
         // Process Collections
-        if (searchResults.results[0]?.hits) {
-          searchResults.results[0].hits.forEach((hit: any) => {
-            items.push({
-              title: hit.document.name,
-              subtitle: hit.document.symbol,
-              href: `/collection/${hit.document.id}`,
-              icon: <Folder className="h-4 w-4" />,
-              metric: hit.document.floor_price ? `Floor ${hit.document.floor_price} USDC` : undefined,
-              category: 'collections',
-            });
+        for (const hit of searchResults.collections.hits) {
+          items.push({
+            title: hit.name,
+            subtitle: undefined,
+            href: `/collection/${hit.address}`,
+            icon: <Folder className="h-4 w-4" />,
+            metric: hit.floorPrice ? `Floor ${formatUSDC(hit.floorPrice)}` : undefined,
+            category: 'collections',
           });
         }
 
         // Process NFTs
-        if (searchResults.results[1]?.hits) {
-          searchResults.results[1].hits.forEach((hit: any) => {
-            items.push({
-              title: hit.document.name,
-              subtitle: hit.document.collection_name,
-              href: `/nft/${hit.document.collection_address}/${hit.document.token_id}`,
-              icon: <Sparkles className="h-4 w-4" />,
-              metric: hit.document.price ? `${hit.document.price} USDC` : undefined,
-              category: 'items',
-            });
+        for (const hit of searchResults.nfts.hits) {
+          items.push({
+            title: hit.name,
+            subtitle: hit.collection?.name,
+            href: `/nft/${hit.collection?.id}/${hit.tokenId}`,
+            icon: <Sparkles className="h-4 w-4" />,
+            metric: hit.price ? formatUSDC(hit.price) : undefined,
+            category: 'items',
           });
         }
 
         // Process Users
-        if (searchResults.results[2]?.hits) {
-          searchResults.results[2].hits.forEach((hit: any) => {
-            items.push({
-              title: hit.document.username || hit.document.address,
-              subtitle: hit.document.bio,
-              href: `/profile/${hit.document.address}`,
-              icon: <Users className="h-4 w-4" />,
-              category: 'users',
-            });
+        for (const hit of searchResults.users.hits) {
+          items.push({
+            title: hit.username || hit.address,
+            subtitle: undefined,
+            href: `/profile/${hit.address}`,
+            icon: <Users className="h-4 w-4" />,
+            category: 'users',
           });
         }
 

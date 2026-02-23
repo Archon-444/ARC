@@ -1,7 +1,7 @@
 /**
  * useSearch Hook
  *
- * React hook for search functionality with Typesense integration
+ * React hook for search functionality with Algolia integration
  * Provides search state management, debouncing, and recent searches
  */
 
@@ -11,13 +11,15 @@ import {
   searchAll,
   searchIndex,
   getSearchSuggestions,
+  SEARCH_INDEXES,
+} from '@/lib/algolia';
+import type {
   NFTSearchResult,
   CollectionSearchResult,
   UserSearchResult,
   SearchResult,
   SearchFacet,
-  SEARCH_INDEXES,
-} from '@/lib/search';
+} from '@/lib/algolia';
 import { debounce, getLocalStorage, setLocalStorage } from '@/lib/utils';
 
 const RECENT_SEARCHES_KEY = 'arc_recent_searches';
@@ -62,18 +64,18 @@ export function useSearch(options: UseSearchOptions = {}) {
     setRecentSearches(recent);
   }, []);
 
-  // Build Typesense filter string from active facets
+  // Build Algolia filter string from active facets
   const buildFilterString = useCallback(() => {
-    const filters: string[] = [];
+    const groups: string[] = [];
 
     Object.entries(activeFacets).forEach(([field, values]) => {
       if (values.length > 0) {
-        // Typesense filter format: field:=[value1,value2]
-        filters.push(`${field}:=[${values.map(v => `\`${v}\``).join(',')}]`);
+        // Algolia filter format: (field:value1 OR field:value2)
+        groups.push(`(${values.map(v => `${field}:${v}`).join(' OR ')})`);
       }
     });
 
-    return filters.join(' && ');
+    return groups.join(' AND ');
   }, [activeFacets]);
 
   // Perform search
@@ -87,7 +89,7 @@ export function useSearch(options: UseSearchOptions = {}) {
     setIsLoading(true);
 
     try {
-      const filterBy = buildFilterString();
+      const filters = buildFilterString();
 
       if (category === 'all') {
         const response = await searchAll(searchQuery, { hitsPerPage: 20 });
@@ -97,13 +99,11 @@ export function useSearch(options: UseSearchOptions = {}) {
           users: response.users.hits,
           total: response.nfts.nbHits + response.collections.nbHits + response.users.nbHits,
         });
-        setFacets([]); // No facets for 'all' category yet
+        setFacets([]);
       } else if (category === 'nfts') {
-        // Facet by common fields for NFTs
-        const facetBy = 'collection_name,status,traits';
         const response = await searchIndex<NFTSearchResult>(SEARCH_INDEXES.NFT, searchQuery, {
-          filterBy,
-          facetBy
+          filters,
+          facetBy: 'collection_name,status,traits',
         });
         setResults({
           nfts: response.hits,
@@ -113,10 +113,9 @@ export function useSearch(options: UseSearchOptions = {}) {
         });
         setFacets(response.facets || []);
       } else if (category === 'collections') {
-        const facetBy = 'verified';
         const response = await searchIndex<CollectionSearchResult>(SEARCH_INDEXES.COLLECTION, searchQuery, {
-          filterBy,
-          facetBy
+          filters,
+          facetBy: 'verified',
         });
         setResults({
           nfts: [],
@@ -126,7 +125,7 @@ export function useSearch(options: UseSearchOptions = {}) {
         });
         setFacets(response.facets || []);
       } else if (category === 'users') {
-        const response = await searchIndex<UserSearchResult>(SEARCH_INDEXES.USER, searchQuery, { filterBy });
+        const response = await searchIndex<UserSearchResult>(SEARCH_INDEXES.USER, searchQuery, { filters });
         setResults({
           nfts: [],
           collections: [],
