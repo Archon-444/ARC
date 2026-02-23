@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     await storeCircleTokens({
       userId,
       userToken,
-      encryptionKey,
+      encryptionKey: encryptionKey ?? '',
       expiresAt: Date.now() + 3600 * 1000,
       updatedAt: Date.now(),
     });
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       userToken,
-      encryptionKey,
+      encryptionKey: encryptionKey ?? '',
       expiresIn: 3600, // 1 hour (Circle's default)
       vaultMode: false,
     });
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
     await storeCircleTokens({
       userId,
       userToken,
-      encryptionKey,
+      encryptionKey: encryptionKey ?? '',
       refreshToken,
       deviceId,
       expiresAt: Date.now() + 3600 * 1000,
@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       userToken,
-      encryptionKey,
+      encryptionKey: encryptionKey ?? '',
       expiresIn: 3600,
       vaultMode: false,
     });

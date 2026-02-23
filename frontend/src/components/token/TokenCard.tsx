@@ -10,6 +10,8 @@ import Link from 'next/link';
 import { TrendingUp, Award } from 'lucide-react';
 import { useCurrentPrice, useGraduationProgress, useIsGraduated, useAMMStats } from '@/hooks/useTokenAMM';
 import { useTokenConfig, useTokenAMM } from '@/hooks/useTokenFactory';
+import { useTokenRisk } from '@/hooks/useTokenRisk';
+import { RiskBadge } from '@/components/token/RiskBadge';
 import { CURVE_TYPE_NAMES } from '@/lib/contracts';
 import { truncateAddress } from '@/lib/utils';
 
@@ -24,6 +26,7 @@ export function TokenCard({ tokenAddress }: TokenCardProps) {
   const { progressPercent } = useGraduationProgress(ammAddress || '');
   const { isGraduated } = useIsGraduated(ammAddress || '');
   const { totalVolumeFormatted } = useAMMStats(ammAddress || '');
+  const { risk } = useTokenRisk(tokenAddress);
 
   if (!config) return null;
 
@@ -53,9 +56,9 @@ export function TokenCard({ tokenAddress }: TokenCardProps) {
           </div>
           <p className="text-sm text-neutral-500">${config.symbol}</p>
         </div>
-        <div className="text-right">
+        <div className="text-right space-y-1">
           <p className="text-sm font-bold text-neutral-900 dark:text-white">${priceFormatted}</p>
-          <p className="text-xs text-neutral-500">USDC</p>
+          {risk ? <RiskBadge risk={risk} compact /> : <p className="text-xs text-neutral-500">USDC</p>}
         </div>
       </div>
 

@@ -14,9 +14,11 @@ import { formatEther } from 'viem';
 import { TrendingUp, ArrowUpRight, ArrowDownRight, Award, Lock } from 'lucide-react';
 import { useTokenConfig, useTokenAMM } from '@/hooks/useTokenFactory';
 import { useCurrentPrice, useIsGraduated, useGraduationProgress, useAMMStats } from '@/hooks/useTokenAMM';
+import { useTokenRisk } from '@/hooks/useTokenRisk';
 import { BuyTokenPanel } from '@/components/token/BuyTokenPanel';
 import { SellTokenPanel } from '@/components/token/SellTokenPanel';
 import { GraduationBanner } from '@/components/token/GraduationBanner';
+import { RiskBadge } from '@/components/token/RiskBadge';
 import { CURVE_TYPE_NAMES } from '@/lib/contracts';
 import { truncateAddress } from '@/lib/utils';
 
@@ -38,6 +40,7 @@ export default function TokenDetailPage() {
     totalVolumeFormatted,
     reserveFormatted,
   } = useAMMStats(ammAddress || '');
+  const { risk } = useTokenRisk(tokenAddress);
 
   if (configLoading) {
     return (
@@ -153,6 +156,9 @@ export default function TokenDetailPage() {
               </div>
             </dl>
           </div>
+
+          {/* Risk Assessment */}
+          {risk && <RiskBadge risk={risk} />}
         </div>
 
         {/* Right: Buy/Sell Panel */}

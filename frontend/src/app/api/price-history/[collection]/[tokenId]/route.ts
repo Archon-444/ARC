@@ -3,10 +3,10 @@ import { fetchNFTDetails } from '@/lib/graphql-client';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { collection: string; tokenId: string } }
+  { params }: { params: Promise<{ collection: string; tokenId: string }> }
 ) {
   try {
-    const { collection, tokenId } = params;
+    const { collection, tokenId } = await params;
     const searchParams = new URL(request.url).searchParams;
     const limit = Math.min(Number(searchParams.get('limit') || 5), 20);
 

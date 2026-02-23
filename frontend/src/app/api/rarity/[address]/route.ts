@@ -18,10 +18,10 @@ const COLLECTION_NFTS_QUERY = `
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { address: string } }
+  { params }: { params: Promise<{ address: string }> }
 ) {
   try {
-    const { address } = params;
+    const { address } = await params;
     if (!address) {
       return NextResponse.json(
         { error: 'Collection address required' },
@@ -59,10 +59,10 @@ export async function GET(
 
 export async function POST(
   _request: NextRequest,
-  { params }: { params: { address: string } }
+  { params }: { params: Promise<{ address: string }> }
 ) {
   try {
-    const { address } = params;
+    const { address } = await params;
     await RarityCache.invalidate(address);
     return NextResponse.json({
       success: true,
@@ -130,113 +130,4 @@ async function fetchNFTMetadata(tokenURI: string) {
   } catch {
     return null;
   }
-}
-import { NextRequest, NextResponse } from 'next/server';
-import { gql } from 'graphql-request';
-import { fetchGraphQL } from '@/lib/graphql-client';
-import { RarityCache } from '@/lib/rarity/cache';
-import { NFTMetadata } from '@/lib/rarity/calculator';
-import { getIPFSUrl } from '@/lib/utils';
-
-const GET_COLLECTION_NFTS = gql`
-  query GetCollectionNFTs($id: ID!, $first: Int = 1000, $skip: Int = 0) {
-    collection(id: $id) {
-      id
-      nfts(first: $first, skip: $skip) {
-        tokenId
-        tokenURI
-      }
-    }
-  }
-`;
-
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { address: string } }
-) {
-  try {
-    const { address } = params;
-    if (!address) {
-      return NextResponse.json(
-        { error: 'Collection address required' },
-        { status: 400 }
-      );
-    }
-
-    const nfts = await fetchCollectionNFTs(address);
-    if (!nfts.length) {
-      return NextResponse.json({ error: 'No NFTs found' }, { status: 404 });
-    }
-
-    const rarityData = await RarityCache.getOrCalculate(address, nfts);
-
-    return NextResponse.json({
-      success: true,
-      collectionAddress: address,
-      collectionSize: rarityData.length,
-      rarityData,
-    });
-  } catch (error) {
-    console.error('Rarity calculation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to calculate rarity' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { address: string } }
-) {
-  try {
-    const { address } = params;
-    if (!address) {
-      return NextResponse.json(
-        { error: 'Collection address required' },
-        { status: 400 }
-      );
-    }
-    await RarityCache.invalidate(address);
-
-    return NextResponse.json({
-      success: true,
-      message: `Cache invalidated for ${address}`,
-    });
-  } catch (error) {
-    console.error('Cache invalidation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to invalidate cache' },
-      { status: 500 }
-    );
-  }
-}
-
-async function fetchCollectionNFTs(address: string): Promise<NFTMetadata[]> {
-  const data = await fetchGraphQL<{
-    collection: { nfts: Array<{ tokenId: string; tokenURI: string }> } | null;
-  }>(GET_COLLECTION_NFTS, { id: address.toLowerCase() });
-
-  const nfts = data.collection?.nfts ?? [];
-
-  const metadataList: NFTMetadata[] = [];
-  for (const nft of nfts) {
-    if (!nft.tokenURI) continue;
-    try {
-      const response = await fetch(getIPFSUrl(nft.tokenURI), { next: { revalidate: 3600 } });
-      if (!response.ok) continue;
-      const metadata = await response.json();
-      if (!metadata?.attributes) continue;
-      metadataList.push({
-        tokenId: nft.tokenId,
-        name: metadata.name,
-        image: metadata.image,
-        attributes: metadata.attributes,
-      });
-    } catch (error) {
-      console.warn('Failed to fetch metadata', nft.tokenId, error);
-    }
-  }
-
-  return metadataList;
 }

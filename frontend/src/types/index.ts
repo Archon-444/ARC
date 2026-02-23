@@ -513,3 +513,49 @@ export const USDC_DECIMALS = 6; // CRITICAL: USDC has 6 decimals on Arc!
 export const SECONDS_PER_DAY = 86400;
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 100;
+
+// ============================================
+// Token Risk Assessment
+// ============================================
+
+export type RiskLevel = 'low' | 'medium' | 'high';
+export type RiskRecommendation = 'safe_buy' | 'moderate_buy' | 'speculative' | 'avoid';
+
+export interface RiskFactor {
+  level: RiskLevel;
+  score: number;
+  details: string;
+}
+
+export interface TokenRiskAssessment {
+  overallScore: number; // 0-100 (0 = safest)
+  creatorRisk: RiskFactor;
+  contractRisk: RiskFactor;
+  liquidityRisk: RiskFactor;
+  tradingRisk: RiskFactor;
+  redFlags: string[];
+  recommendation: RiskRecommendation;
+  analyzedAt: number;
+}
+
+// ============================================
+// AI Token Page Generation
+// ============================================
+
+export interface GenerateTokenPageRequest {
+  name: string;
+  symbol: string;
+  description: string;
+  category?: string;
+  totalSupply: string;
+  basePrice: string;
+  curveType: number;
+}
+
+export interface GenerateTokenPageResponse {
+  headline: string;
+  tagline: string;
+  fullDescription: string;
+  keyFeatures: string[];
+  riskDisclaimer: string;
+}

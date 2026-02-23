@@ -4,10 +4,10 @@ import { getIPFSUrl } from '@/lib/utils';
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { collection: string; tokenId: string } }
+  { params }: { params: Promise<{ collection: string; tokenId: string }> }
 ) {
   try {
-    const { collection, tokenId } = params;
+    const { collection, tokenId } = await params;
     const nft = await fetchNFTDetails(collection, tokenId);
 
     if (!nft) {
