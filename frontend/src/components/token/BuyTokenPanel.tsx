@@ -12,6 +12,7 @@ import { CheckCircle2 } from 'lucide-react';
 import { useBuyTokens, useApproveAMMUSDC, useCalculateBuyReturn } from '@/hooks/useTokenAMM';
 import { useUSDCBalance } from '@/hooks/useMarketplace';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { InlineError } from '@/components/ui/ErrorDisplay';
 import { parseUSDC } from '@/lib/utils';
 
@@ -75,14 +76,14 @@ export function BuyTokenPanel({ ammAddress, tokenSymbol, onSuccess }: BuyTokenPa
       <div className="space-y-3">
         <div>
           <label className="block text-xs text-neutral-500 mb-1">You pay (USDC)</label>
-          <input
+          <Input
             type="number"
             value={amount}
             onChange={(e) => { setAmount(e.target.value); setStep('input'); }}
             placeholder="0.00"
             min="0"
             step="0.01"
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2.5 text-lg font-medium dark:border-neutral-600 dark:bg-neutral-800 dark:text-white"
+            className="text-lg font-medium"
           />
           <div className="flex justify-between mt-1">
             <span className="text-xs text-neutral-500">Balance: ${balanceFormatted}</span>
