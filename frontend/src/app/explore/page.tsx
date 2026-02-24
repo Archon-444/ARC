@@ -13,6 +13,7 @@ import { Search, SlidersHorizontal, TrendingUp, Package } from 'lucide-react';
 import { NFTGrid } from '@/components/nft/NFTCard';
 import { TokenGrid } from '@/components/token/TokenCard';
 import { useAllTokens } from '@/hooks/useTokenFactory';
+import { StatCard } from '@/components/ui/StatCard';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingPage } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay, EmptyState } from '@/components/ui/ErrorDisplay';
@@ -219,21 +220,21 @@ function ExploreContent() {
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <StatsCard
+            <StatCard
               label="Total Volume"
               value={formatCompactUSDC(stats.totalVolume)}
               icon={TrendingUp}
             />
-            <StatsCard
+            <StatCard
               label="Total Sales"
               value={formatNumber(stats.totalSales)}
               icon={Package}
             />
-            <StatsCard
+            <StatCard
               label="Active Listings"
               value={formatNumber(stats.activeListings)}
             />
-            <StatsCard
+            <StatCard
               label="Active Auctions"
               value={formatNumber(stats.activeAuctions)}
             />
@@ -363,28 +364,6 @@ function ExploreContent() {
 }
 
 // Helper Components
-
-function StatsCard({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  icon?: React.ComponentType<{ className?: string }>;
-}) {
-  return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
-      {Icon && (
-        <div className="mb-2">
-          <Icon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-        </div>
-      )}
-      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-1">{label}</p>
-      <p className="text-2xl font-bold text-neutral-900 dark:text-white">{value}</p>
-    </div>
-  );
-}
 
 function TabButton({
   active,
