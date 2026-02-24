@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Trophy, Star, Gift, Zap, Award, Target, Crown, Sparkles, ChevronRight, Lock } from 'lucide-react';
-import { BADGES, XP_REWARDS, LEVEL_THRESHOLDS, getLevelTier, type BadgeId } from '@/lib/gamification';
+import { BADGES, XP_REWARDS, getLevelTier, type BadgeId } from '@/lib/gamification';
 import { cn } from '@/lib/utils';
 
 type TabType = 'overview' | 'badges' | 'quests' | 'leaderboard';

@@ -13,7 +13,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 import { W3SSdk } from '@circle-fin/w3s-pw-web-sdk';
-import { CIRCLE_APP_ID, CircleWalletError } from '@/lib/circle';
+import { CIRCLE_APP_ID } from '@/lib/circle';
 
 interface CircleWallet {
   address: string;

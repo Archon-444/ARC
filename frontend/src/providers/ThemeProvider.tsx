@@ -20,7 +20,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
     const [theme, setThemeState] = useState<Theme>('light');
-    const [mounted, setMounted] = useState(false);
+    const [_mounted, setMounted] = useState(false);
 
     // Initialize theme from localStorage or system preference
     useEffect(() => {

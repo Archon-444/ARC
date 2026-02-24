@@ -15,7 +15,7 @@ import {
   NoActivity,
   ErrorState,
 } from '../EmptyState';
-import { Search, PackageOpen } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 // Mock next/link
 jest.mock('next/link', () => {

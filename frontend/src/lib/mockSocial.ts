@@ -27,7 +27,7 @@ export interface MockFollow {
 
 // In-memory storage
 let comments: MockComment[] = [];
-let follows: MockFollow[] = [];
+const follows: MockFollow[] = [];
 
 // Generate some initial mock data
 const MOCK_USERS = [

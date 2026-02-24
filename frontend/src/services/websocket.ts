@@ -23,7 +23,7 @@
  * ```
  */
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import type { ActivityEvent } from './api';
 
 // ============================================================================
@@ -49,7 +49,7 @@ export type WebSocketEvent =
   | { type: 'offer_cancelled'; data: { offerId: string; nftId: string } }
   | { type: 'connected'; data: { message: string } }
   | { type: 'error'; data: { message: string } }
-  | { type: 'pong'; data: {} };
+  | { type: 'pong'; data: Record<string, never> };
 
 export type RoomType = 'nft' | 'collection' | 'user';
 

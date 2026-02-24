@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Flame, LineChart, RadioTower, Star } from 'lucide-react';
+import { ArrowRight, Flame, LineChart, RadioTower, Rocket, Star } from 'lucide-react';
 import { fetchListings, fetchMarketplaceStats } from '@/lib/graphql-client';
 import { formatCompactUSDC, formatUSDC } from '@/lib/utils';
 import { Badge, Button, Card } from '@/components/ui';
@@ -49,12 +49,6 @@ const CATEGORY_DATA = [
   { label: 'Fashion', icon: '👗', href: '/explore?category=fashion' },
 ];
 
-const COLLECTORS = [
-  { name: 'Synth Labs', value: '42.5K USDC', avatar: '/avatars/1.png', items: 124 },
-  { name: 'PixelSmith', value: '31.2K USDC', avatar: '/avatars/2.png', items: 98 },
-  { name: 'OrbitDAO', value: '29.8K USDC', avatar: '/avatars/3.png', items: 88 },
-];
-
 export default function HomePage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [stats, setStats] = useState<MarketplaceStats | null>(null);
@@ -95,28 +89,6 @@ export default function HomePage() {
     }
   };
 
-  const trendingCollections = useMemo(() => {
-    const grouped = new Map<string, { volume: bigint; floor: bigint; sample?: Listing }>();
-    listings.forEach((listing) => {
-      const key = listing.nft?.collection?.id ?? listing.collection;
-      if (!grouped.has(key)) {
-        grouped.set(key, {
-          volume: BigInt(listing.price),
-          floor: BigInt(listing.price),
-          sample: listing,
-        });
-      } else {
-        const current = grouped.get(key)!;
-        grouped.set(key, {
-          volume: current.volume + BigInt(listing.price),
-          floor: current.floor < BigInt(listing.price) ? current.floor : BigInt(listing.price),
-          sample: current.sample,
-        });
-      }
-    });
-    return Array.from(grouped.values()).slice(0, 6);
-  }, [listings]);
-
   const notableDrops = useMemo(() => listings.slice(0, 8), [listings]);
 
   const liveActivity = useMemo(() => {
@@ -134,16 +106,16 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       <section className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-accent-50 py-20 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-950">
-        <div className="container-custom grid gap-12 lg:grid-cols-2">
+        <div className="container-custom grid gap-12 md:grid-cols-2">
           <div>
             <Badge variant="primary" size="lg" className="mb-6 inline-flex items-center gap-2">
               <Star className="h-4 w-4" />
-              Zero-Friction NFT Trading
+              NFTs + Token Launchpad
             </Badge>
             <div className="space-y-6">
               <div className="glass-panel p-6">
                 <p className="text-sm uppercase tracking-wide text-neutral-500">Featured drop</p>
-                <h1 className="mt-2 text-4xl font-bold text-neutral-900 dark:text-white">
+                <h1 className="mt-2 text-3xl font-bold text-neutral-900 dark:text-white">
                   {HERO_SLIDES[activeSlide].title}
                 </h1>
                 <p className="mt-4 text-lg text-neutral-600 dark:text-neutral-300">
@@ -157,7 +129,10 @@ export default function HomePage() {
                     </Link>
                   </Button>
                   <Button asChild className="btn-outline">
-                    <Link href="/studio">Create on Arc</Link>
+                    <Link href="/launch">
+                      <Rocket className="h-4 w-4" />
+                      Launch a Token
+                    </Link>
                   </Button>
                 </div>
                 <div className="mt-6 flex items-center gap-3 text-sm text-neutral-500 dark:text-neutral-300">
@@ -216,76 +191,73 @@ export default function HomePage() {
           </div>
         )}
 
+        {/* Zone 2: Dual Product Cards */}
+        <section className="grid gap-6 md:grid-cols-2">
+          <Link
+            href="/explore"
+            className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 p-8 text-white transition-transform hover:scale-[1.02]"
+          >
+            <Star className="absolute right-6 top-6 h-16 w-16 text-white/10" />
+            <h2 className="text-2xl font-bold">NFT Marketplace</h2>
+            <p className="mt-2 text-primary-100">
+              Trade unique digital assets, explore curated collections, and bid on live auctions.
+            </p>
+            <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold">
+              Explore Collections <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </span>
+          </Link>
+
+          <Link
+            href="/launch"
+            className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-accent-500 to-accent-700 p-8 text-white transition-transform hover:scale-[1.02]"
+          >
+            <Rocket className="absolute right-6 top-6 h-16 w-16 text-white/10" />
+            <h2 className="text-2xl font-bold">Token Launchpad</h2>
+            <p className="mt-2 text-accent-100">
+              Launch an ERC-20 token with a bonding curve. Graduate at 80% to unlock creator treasury and staking rewards.
+            </p>
+            <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold">
+              Launch a Token <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </span>
+          </Link>
+        </section>
+
+        {/* Zone 3: Notable Drops + Categories */}
         <section className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-12">
-            <div>
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Trending Collections</h2>
-                <Link href="/explore" className="chip">
-                  View all
-                </Link>
-              </div>
-              <div className="scroll-shadow-x flex gap-4 overflow-x-auto pb-4">
-                {trendingCollections.map((entry, index) => (
-                  <Card key={index} className="min-w-[240px] card-hover">
-                    <p className="text-sm text-neutral-500">Floor</p>
-                    <p className="text-xl font-bold">{formatUSDC(entry.floor)}</p>
-                    <p className="mt-2 text-sm text-neutral-400">
-                      24h Volume {formatUSDC(entry.volume)}
-                    </p>
-                  </Card>
-                ))}
-                {loading && (
-                  <div className="flex gap-4">
-                    <div className="skeleton h-40 w-60" />
-                    <div className="skeleton h-40 w-60" />
-                  </div>
-                )}
-              </div>
-            </div>
-
             <div>
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-2xl font-bold">Notable Drops</h2>
                 <Badge variant="primary" size="sm" icon={<Flame className="h-3 w-3" />}>Live now</Badge>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {notableDrops.map((listing) => (
-                  <Card key={listing.id} className="card-hover">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm uppercase tracking-wide text-neutral-500">
-                          {listing.nft?.collection?.name ?? 'Collection'}
-                        </p>
-                        <p className="text-lg font-semibold">{listing.nft?.name ?? `Token #${listing.tokenId}`}</p>
+              {notableDrops.length > 0 ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {notableDrops.map((listing) => (
+                    <Card key={listing.id} className="card-hover">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm uppercase tracking-wide text-neutral-500">
+                            {listing.nft?.collection?.name ?? 'Collection'}
+                          </p>
+                          <p className="text-lg font-semibold">{listing.nft?.name ?? `Token #${listing.tokenId}`}</p>
+                        </div>
+                        <span className="rounded-full bg-primary-50 px-3 py-1 text-sm font-semibold text-primary-600 dark:bg-primary-500/20 dark:text-primary-300">
+                          {formatUSDC(BigInt(listing.price))}
+                        </span>
                       </div>
-                      <span className="rounded-full bg-primary-50 px-3 py-1 text-sm font-semibold text-primary-600 dark:bg-primary-500/20 dark:text-primary-300">
-                        {formatUSDC(BigInt(listing.price))}
-                      </span>
-                    </div>
-                  </Card>
-                ))}
-                {loading && <div className="skeleton h-32 w-full" />}
-              </div>
-            </div>
-
-            <div>
-              <h2 className="mb-4 text-2xl font-bold">Top Collectors</h2>
-              <div className="grid gap-4 md:grid-cols-3">
-                {COLLECTORS.map((collector) => (
-                  <Card key={collector.name} className="card-hover">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-lg font-semibold">{collector.name}</p>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400">Portfolio {collector.value}</p>
-                      </div>
-                      <Badge variant="neutral" size="sm">
-                        {collector.items} items
-                      </Badge>
-                    </div>
-                  </Card>
-                ))}
-              </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : loading ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="skeleton h-24 w-full" />
+                  <div className="skeleton h-24 w-full" />
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-8 text-center dark:border-neutral-700 dark:bg-neutral-900">
+                  <p className="text-neutral-500">No active listings yet. Check back soon!</p>
+                </div>
+              )}
             </div>
 
             <div>
@@ -302,6 +274,7 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Zone 4: Live Activity — sidebar on desktop, stacked below on mobile */}
           <aside className="glass-panel h-fit p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -337,41 +310,6 @@ export default function HomePage() {
           </aside>
         </section>
 
-        <section className="glass-panel grid gap-6 p-8 lg:grid-cols-2">
-          <div>
-            <h3 className="text-2xl font-bold">Arc Rewards</h3>
-            <p className="mt-2 text-neutral-600 dark:text-neutral-300">
-              Earn XP for every action across Arc—listing NFTs, completing trades, inviting friends, and daily visits unlock fee discounts up to 50%.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Badge variant="primary" size="sm" dot>
-                Bronze · 0%
-              </Badge>
-              <Badge variant="primary" size="sm">
-                Silver · 10%
-              </Badge>
-              <Badge variant="primary" size="sm">
-                Gold · 25%
-              </Badge>
-            </div>
-          </div>
-          <div className="rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900">
-            <p className="text-sm uppercase tracking-wide text-neutral-500">Your progress</p>
-            <p className="mt-2 text-3xl font-bold">2,450 XP</p>
-            <div className="mt-4 h-2 w-full rounded-full bg-neutral-200 dark:bg-neutral-700">
-              <div className="h-full rounded-full bg-gradient-to-r from-primary-500 to-accent-500" style={{ width: '52%' }} />
-            </div>
-            <p className="mt-2 text-xs text-neutral-500">1,050 XP until Gold tier</p>
-            <div className="mt-6 flex gap-3">
-              <Button asChild className="btn-primary">
-                <Link href="/rewards">View leaderboard</Link>
-              </Button>
-              <Button asChild className="btn-outline">
-                <Link href="/studio">Start earning</Link>
-              </Button>
-            </div>
-          </div>
-        </section>
       </div>
     </div>
   );

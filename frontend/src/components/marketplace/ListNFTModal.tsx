@@ -14,7 +14,6 @@ import { useIsPaused } from '@/hooks/useIsPaused';
 import { Modal, ModalSection, ModalFooter } from '@/components/ui/Modal';
 import { NFTApproval } from './USDCApproval';
 import {
-  cn,
   formatUSDC,
   parseUSDC,
   getImageUrl,

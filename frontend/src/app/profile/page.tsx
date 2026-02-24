@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAccount } from 'wagmi';
 import Link from 'next/link';
-import { User, Wallet } from 'lucide-react';
+import { User } from 'lucide-react';
 
 export default function ProfileIndexPage() {
   const router = useRouter();

@@ -15,7 +15,6 @@ import { useCreateToken, useApproveFactoryUSDC, useCreationFee } from '@/hooks/u
 import { useGenerateTokenPage } from '@/hooks/useGenerateTokenPage';
 import { useUSDCBalance } from '@/hooks/useMarketplace';
 import { CurveType, CURVE_TYPE_NAMES } from '@/lib/contracts';
-import { formatUSDC } from '@/lib/utils';
 
 export default function LaunchPage() {
   const { address, isConnected } = useAccount();
@@ -49,7 +48,7 @@ export default function LaunchPage() {
     isLoading: isCreating,
     isSuccess: isCreated,
     error: createError,
-    txHash,
+    _txHash,
   } = useCreateToken();
 
   const hasInsufficientBalance = fee && balance ? balance < fee : false;
@@ -154,7 +153,7 @@ export default function LaunchPage() {
           <div className="rounded-lg border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900">
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">Token Details</h2>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Name *</label>
                   <input
@@ -252,7 +251,7 @@ export default function LaunchPage() {
                 <p className="mt-1 text-xs text-neutral-500">Graduation at 80% supply sold ({(parseFloat(totalSupply || '0') * 0.8).toLocaleString()} tokens)</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Base Price (USDC)</label>
                   <input

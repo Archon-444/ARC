@@ -9,8 +9,6 @@
 
 import { useState, useMemo } from 'react';
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -19,8 +17,8 @@ import {
   Area,
   AreaChart,
 } from 'recharts';
-import { format, subDays, subMonths, subYears } from 'date-fns';
-import { cn, formatUSDC } from '@/lib/utils';
+import { format, subDays, subYears } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export interface PricePoint {
   timestamp: Date;

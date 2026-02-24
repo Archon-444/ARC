@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, gql } from 'urql';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, Sliders, X } from 'lucide-react';

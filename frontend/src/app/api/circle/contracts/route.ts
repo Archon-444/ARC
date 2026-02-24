@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       abiJson,
       bytecode,
       constructorParameters = [],
-      feeLevel = 'MEDIUM',
+      _feeLevel = 'MEDIUM',
     } = await request.json();
 
     // Validate required fields

@@ -4,7 +4,7 @@ import { useQuery, gql } from 'urql';
 import { motion } from 'framer-motion';
 import { formatUSDC, truncateAddress } from '@/lib/utils';
 import Link from 'next/link';
-import { ShoppingCart, Activity } from 'lucide-react';
+import { Activity } from 'lucide-react';
 
 const ACTIVITY_QUERY = gql`
   query GetRecentSales {

@@ -12,6 +12,7 @@ import { useParams } from 'next/navigation';
 import { useAccount } from 'wagmi';
 import { formatEther } from 'viem';
 import { TrendingUp, ArrowUpRight, ArrowDownRight, Award, Lock } from 'lucide-react';
+import { StatCard } from '@/components/ui/StatCard';
 import { useTokenConfig, useTokenAMM } from '@/hooks/useTokenFactory';
 import { useCurrentPrice, useIsGraduated, useGraduationProgress, useAMMStats } from '@/hooks/useTokenAMM';
 import { useTokenRisk } from '@/hooks/useTokenRisk';
@@ -99,10 +100,10 @@ export default function TokenDetailPage() {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <StatCard label="Price" value={`$${priceFormatted}`} icon={TrendingUp} />
-            <StatCard label="Supply Sold" value={Number(currentSupplyFormatted).toLocaleString()} icon={ArrowUpRight} />
-            <StatCard label="Volume" value={`$${Number(totalVolumeFormatted).toLocaleString()}`} icon={ArrowDownRight} />
-            <StatCard label="Reserves" value={`$${Number(reserveFormatted).toLocaleString()}`} icon={Lock} />
+            <StatCard size="sm" label="Price" value={`$${priceFormatted}`} icon={TrendingUp} />
+            <StatCard size="sm" label="Supply Sold" value={Number(currentSupplyFormatted).toLocaleString()} icon={ArrowUpRight} />
+            <StatCard size="sm" label="Volume" value={`$${Number(totalVolumeFormatted).toLocaleString()}`} icon={ArrowDownRight} />
+            <StatCard size="sm" label="Reserves" value={`$${Number(reserveFormatted).toLocaleString()}`} icon={Lock} />
           </div>
 
           {/* Graduation Progress */}
@@ -162,7 +163,7 @@ export default function TokenDetailPage() {
         </div>
 
         {/* Right: Buy/Sell Panel */}
-        <div className="space-y-4">
+        <div className="space-y-6">
           {!isGraduated && ammAddress ? (
             <>
               {/* Tab Switcher */}
@@ -221,20 +222,3 @@ export default function TokenDetailPage() {
   );
 }
 
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  icon: React.ComponentType<{ className?: string }>;
-}) {
-  return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-900">
-      <Icon className="h-4 w-4 text-neutral-400 mb-1" />
-      <p className="text-xs text-neutral-500">{label}</p>
-      <p className="text-lg font-bold text-neutral-900 dark:text-white truncate">{value}</p>
-    </div>
-  );
-}

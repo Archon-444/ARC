@@ -1,14 +1,13 @@
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import NFTMarketplaceABI from './abis/NFTMarketplace.json';
-import FeeVaultABI from './abis/FeeVault.json';
 import ProfileRegistryABI from './abis/ProfileRegistry.json';
 import ERC20ABI from './abis/ERC20.json';
 import ERC721ABI from './abis/ERC721.json';
 
 const MARKETPLACE_ADDRESS = process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS as `0x${string}`;
-const FEE_VAULT_ADDRESS = process.env.NEXT_PUBLIC_FEE_VAULT_ADDRESS as `0x${string}`;
+const _FEE_VAULT_ADDRESS = process.env.NEXT_PUBLIC_FEE_VAULT_ADDRESS as `0x${string}`;
 const PROFILE_REGISTRY_ADDRESS = process.env.NEXT_PUBLIC_PROFILE_REGISTRY_ADDRESS as `0x${string}`;
 const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS as `0x${string}`;
 

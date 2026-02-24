@@ -7,12 +7,10 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Bell, X, Check, ExternalLink } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Bell, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUserNotifications } from '@/services/websocket';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { cn, formatTimeAgo } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';

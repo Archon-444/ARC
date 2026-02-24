@@ -7,16 +7,18 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Search, SlidersHorizontal, TrendingUp, Package, Coins } from 'lucide-react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Search, SlidersHorizontal, TrendingUp, Package } from 'lucide-react';
 import { NFTGrid } from '@/components/nft/NFTCard';
 import { TokenGrid } from '@/components/token/TokenCard';
 import { useAllTokens } from '@/hooks/useTokenFactory';
+import { StatCard } from '@/components/ui/StatCard';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingPage } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay, EmptyState } from '@/components/ui/ErrorDisplay';
 import { fetchListings, fetchAuctions, fetchMarketplaceStats } from '@/lib/graphql-client';
-import { formatUSDC, formatCompactUSDC, formatNumber, debounce } from '@/lib/utils';
+import { formatCompactUSDC, formatNumber, debounce } from '@/lib/utils';
 import type { NFT, Listing, Auction, MarketplaceStats, SortOption } from '@/types';
 
 type ViewMode = 'all' | 'listings' | 'auctions' | 'tokens';
@@ -31,8 +33,23 @@ const SORT_OPTIONS: SortOption[] = [
 ];
 
 export default function ExplorePage() {
+  return (
+    <Suspense fallback={<LoadingPage label="Loading Explore..." />}>
+      <ExploreContent />
+    </Suspense>
+  );
+}
+
+function ExploreContent() {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') as ViewMode | null;
+
   // View state
-  const [viewMode, setViewMode] = useState<ViewMode>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    initialTab && ['all', 'listings', 'auctions', 'tokens'].includes(initialTab)
+      ? initialTab
+      : 'all'
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortOption>(SORT_OPTIONS[0]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,6 +67,14 @@ export default function ExplorePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Sync tab from URL if it changes (e.g. user clicks nav link while on Explore)
+  useEffect(() => {
+    const tab = searchParams.get('tab') as ViewMode | null;
+    if (tab && ['all', 'listings', 'auctions', 'tokens'].includes(tab)) {
+      setViewMode(tab);
+    }
+  }, [searchParams]);
 
   // Debounce search input
   const debouncedSetSearch = useCallback(
@@ -186,7 +211,7 @@ export default function ExplorePage() {
       <div className="space-y-6">
         {/* Header Section */}
         <div>
-          <h1 className="text-4xl font-bold text-neutral-900 dark:text-white mb-2">Explore NFTs</h1>
+          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">Explore NFTs</h1>
           <p className="text-lg text-neutral-600 dark:text-neutral-400">
             Discover unique digital assets on Circle Arc blockchain
           </p>
@@ -195,21 +220,21 @@ export default function ExplorePage() {
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <StatsCard
+            <StatCard
               label="Total Volume"
               value={formatCompactUSDC(stats.totalVolume)}
               icon={TrendingUp}
             />
-            <StatsCard
+            <StatCard
               label="Total Sales"
               value={formatNumber(stats.totalSales)}
               icon={Package}
             />
-            <StatsCard
+            <StatCard
               label="Active Listings"
               value={formatNumber(stats.activeListings)}
             />
-            <StatsCard
+            <StatCard
               label="Active Auctions"
               value={formatNumber(stats.activeAuctions)}
             />
@@ -258,7 +283,7 @@ export default function ExplorePage() {
         </div>
 
         {/* View Mode Tabs */}
-        <div className="flex gap-4 border-b border-neutral-200 dark:border-neutral-700">
+        <div className="flex gap-4 overflow-x-auto whitespace-nowrap border-b border-neutral-200 dark:border-neutral-700">
           <TabButton
             active={viewMode === 'all'}
             onClick={() => {
@@ -339,28 +364,6 @@ export default function ExplorePage() {
 }
 
 // Helper Components
-
-function StatsCard({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  icon?: React.ComponentType<{ className?: string }>;
-}) {
-  return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
-      {Icon && (
-        <div className="mb-2">
-          <Icon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-        </div>
-      )}
-      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-1">{label}</p>
-      <p className="text-2xl font-bold text-neutral-900 dark:text-white">{value}</p>
-    </div>
-  );
-}
 
 function TabButton({
   active,

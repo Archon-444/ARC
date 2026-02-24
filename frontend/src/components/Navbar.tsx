@@ -10,6 +10,7 @@ import {
   CircleDollarSign,
   Compass,
   Menu,
+  Rocket,
   Search,
   ShoppingCart,
   Sparkles,
@@ -18,7 +19,7 @@ import {
   LogOut,
   Settings,
   Trophy,
-  X
+  X,
 } from 'lucide-react';
 import { useCircleWallet } from '@/hooks/useCircleWallet';
 import { WalletManagementModal } from '@/components/circle/WalletManagementModal';
@@ -31,6 +32,7 @@ const primaryNav = [
   { label: 'Explore', href: '/explore', hasDropdown: true },
   { label: 'Stats', href: '/stats' },
   { label: 'Rewards', href: '/rewards' },
+  { label: 'Launch', href: '/launch', launch: true },
   { label: 'Create', href: '/studio', accent: true },
 ];
 
@@ -52,13 +54,20 @@ const exploreSections = [
       { label: 'Photography', href: '/explore?category=photography' },
     ],
   },
+  {
+    title: 'Token Launchpad',
+    links: [
+      { label: 'Browse Tokens', href: '/explore?tab=tokens' },
+      { label: 'Launch a Token', href: '/launch' },
+    ],
+  },
 ];
 
 const mobileNav = [
   { label: 'Home', href: '/', icon: <Compass className="h-5 w-5" /> },
   { label: 'Explore', href: '/explore', icon: <Search className="h-5 w-5" /> },
+  { label: 'Launch', href: '/launch', icon: <Rocket className="h-5 w-5" /> },
   { label: 'Create', href: '/studio', icon: <Sparkles className="h-5 w-5" /> },
-  { label: 'Activity', href: '/activity', icon: <Bell className="h-5 w-5" /> },
   { label: 'Profile', href: '/profile', icon: <User className="h-5 w-5" /> },
 ];
 
@@ -71,11 +80,16 @@ export default function Navbar() {
   const [exploreOpen, setExploreOpen] = useState(false);
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const walletMenuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
-  const loyaltyTier = useMemo(() => ({ tier: 'Silver', progress: 52, xp: 2450 }), []);
-  const cartCount = 2;
+  const loyaltyTier = useMemo(() => {
+    if (!isConnected) return null;
+    // Future: fetch from loyalty API when available
+    return null;
+  }, [isConnected]);
+  const cartCount = 0;
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -176,9 +190,12 @@ export default function Navbar() {
                     ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white'
                     : item.accent
                       ? 'bg-primary-500 text-white hover:bg-primary-600'
-                      : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
+                      : item.launch
+                        ? 'inline-flex items-center gap-1.5 border border-accent-500 text-accent-600 hover:bg-accent-50 dark:text-accent-400 dark:hover:bg-accent-500/10'
+                        : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
                 }`}
               >
+                {item.launch && <Rocket className="h-3.5 w-3.5" />}
                 {item.label}
               </Link>
             ))}
@@ -274,7 +291,7 @@ export default function Navbar() {
                     <div className="[&>div]:w-full [&_button]:w-full [&_button]:justify-center">
                       <ConnectButton.Custom>
                         {({ account, chain, openConnectModal, mounted }) => {
-                          const connected = mounted && account && chain;
+                          const _connected = mounted && account && chain;
                           return (
                             <button
                               onClick={openConnectModal}
@@ -307,20 +324,29 @@ export default function Navbar() {
               <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-neutral-200 bg-white p-2 shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
                 {/* XP Progress */}
                 <div className="px-3 py-2 border-b border-neutral-100 dark:border-neutral-800">
-                  <div className="flex items-center justify-between">
+                  {loyaltyTier ? (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Trophy className="h-4 w-4 text-amber-500" />
+                          <span className="text-sm font-semibold text-neutral-900 dark:text-white">{loyaltyTier.tier}</span>
+                        </div>
+                        <span className="text-xs text-neutral-500">{loyaltyTier.xp} XP</span>
+                      </div>
+                      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-primary-500 to-accent-500"
+                          style={{ width: `${loyaltyTier.progress}%` }}
+                        />
+                      </div>
+                      <p className="mt-1 text-xs text-neutral-400">{loyaltyTier.progress}% to Gold</p>
+                    </>
+                  ) : (
                     <div className="flex items-center gap-2">
-                      <Trophy className="h-4 w-4 text-amber-500" />
-                      <span className="text-sm font-semibold text-neutral-900 dark:text-white">{loyaltyTier.tier}</span>
+                      <Trophy className="h-4 w-4 text-neutral-400" />
+                      <span className="text-xs text-neutral-400">Connect wallet to view rewards</span>
                     </div>
-                    <span className="text-xs text-neutral-500">{loyaltyTier.xp} XP</span>
-                  </div>
-                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-primary-500 to-accent-500"
-                      style={{ width: `${loyaltyTier.progress}%` }}
-                    />
-                  </div>
-                  <p className="mt-1 text-xs text-neutral-400">{loyaltyTier.progress}% to Gold</p>
+                  )}
                 </div>
 
                 {/* Menu Items */}
@@ -370,8 +396,11 @@ export default function Navbar() {
           </div>
 
           {/* Mobile Menu Button */}
-          <button className="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800">
-            <Menu className="h-5 w-5" />
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
@@ -395,6 +424,65 @@ export default function Navbar() {
           ))}
         </div>
       </nav>
+
+      {/* Mobile Slide-out Menu */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div className="absolute right-0 top-0 h-full w-80 overflow-y-auto bg-white shadow-2xl dark:bg-neutral-950">
+            <div className="p-4 space-y-6">
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="ml-auto flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              <nav className="space-y-1">
+                {primaryNav.map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`block rounded-lg px-4 py-3 text-base font-medium transition-colors ${
+                      pathname.startsWith(item.href)
+                        ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white'
+                        : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+
+              <div className="space-y-4">
+                {exploreSections.map((section) => (
+                  <div key={section.title}>
+                    <p className="px-4 text-xs font-medium uppercase tracking-wide text-neutral-400">
+                      {section.title}
+                    </p>
+                    <div className="mt-2 space-y-1">
+                      {section.links.map((link) => (
+                        <Link
+                          key={link.label}
+                          href={link.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="block rounded-lg px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                        >
+                          {link.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       <WalletManagementModal isOpen={showWalletModal} onClose={() => setShowWalletModal(false)} />

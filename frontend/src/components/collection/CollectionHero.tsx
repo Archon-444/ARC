@@ -98,7 +98,7 @@ export function CollectionHero({
           url: window.location.href,
         });
       } catch (err) {
-        console.log('Share failed:', err);
+        console.error('Share failed:', err);
       }
     }
   };

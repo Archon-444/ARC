@@ -12,8 +12,9 @@ import { useCurrentPrice, useGraduationProgress, useIsGraduated, useAMMStats } f
 import { useTokenConfig, useTokenAMM } from '@/hooks/useTokenFactory';
 import { useTokenRisk } from '@/hooks/useTokenRisk';
 import { RiskBadge } from '@/components/token/RiskBadge';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/ErrorDisplay';
 import { CURVE_TYPE_NAMES } from '@/lib/contracts';
-import { truncateAddress } from '@/lib/utils';
 
 interface TokenCardProps {
   tokenAddress: string;
@@ -33,7 +34,7 @@ export function TokenCard({ tokenAddress }: TokenCardProps) {
   return (
     <Link
       href={`/token/${tokenAddress}`}
-      className="group block rounded-lg border border-neutral-200 bg-white p-4 transition-all hover:border-blue-300 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-blue-600"
+      className="card card-hover group block p-4"
     >
       <div className="flex items-start gap-3">
         {config.imageUrl ? (
@@ -90,12 +91,12 @@ export function TokenGrid({ tokens, isLoading }: { tokens: string[]; isLoading?:
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="animate-pulse rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
+          <div key={i} className="card p-4">
             <div className="flex gap-3">
-              <div className="h-12 w-12 rounded-full bg-neutral-200 dark:bg-neutral-700" />
+              <Skeleton variant="circular" className="h-12 w-12" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 w-24 bg-neutral-200 rounded dark:bg-neutral-700" />
-                <div className="h-3 w-16 bg-neutral-200 rounded dark:bg-neutral-700" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-16" />
               </div>
             </div>
           </div>
@@ -106,16 +107,11 @@ export function TokenGrid({ tokens, isLoading }: { tokens: string[]; isLoading?:
 
   if (tokens.length === 0) {
     return (
-      <div className="py-12 text-center">
-        <TrendingUp className="mx-auto h-12 w-12 text-neutral-300 dark:text-neutral-600 mb-3" />
-        <p className="text-neutral-600 dark:text-neutral-400">No tokens launched yet.</p>
-        <Link
-          href="/launch"
-          className="mt-3 inline-block text-blue-600 hover:text-blue-700 text-sm font-medium"
-        >
-          Be the first to launch a token
-        </Link>
-      </div>
+      <EmptyState
+        icon={TrendingUp}
+        title="No tokens launched yet"
+        description="Be the first to launch a token on Arc"
+      />
     );
   }
 

@@ -21,7 +21,6 @@ import {
   truncateAddress,
   getTransactionUrl,
   getTimeRemaining,
-  formatTimeRemaining,
 } from '@/lib/utils';
 import type { NFT, Auction, Address } from '@/types';
 

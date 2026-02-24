@@ -1,11 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, Clock, Flame, Folder, Users, Sparkles, X } from 'lucide-react';
-import { useMemo, useState, useEffect, useRef, type ReactNode } from 'react';
+import { Search, Flame, Folder, Users, Sparkles, X } from 'lucide-react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCommandPalette } from '@/hooks/useCommandPalette';
-import { formatUSDC } from '@/lib/utils';
 import { typesenseClient } from '@/lib/typesense';
 
 type CommandPaletteItem = {

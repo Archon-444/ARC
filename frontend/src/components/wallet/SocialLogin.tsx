@@ -70,7 +70,6 @@ export function SocialLogin({ onSuccess, onError, className = '' }: SocialLoginP
 
       if (challengeId) {
         // Wallet creation initiated successfully
-        console.log('✅ OAuth + Circle wallet creation initiated');
         onSuccess?.(''); // Wallet address will be available after challenge completion
       }
     } catch (err) {
@@ -282,7 +281,6 @@ export function SocialLogin({ onSuccess, onError, className = '' }: SocialLoginP
             className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
             onClick={() => {
               // This would trigger traditional wallet connection
-              console.log('Connect traditional wallet');
             }}
           >
             Connect MetaMask

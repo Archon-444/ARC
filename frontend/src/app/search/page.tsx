@@ -15,7 +15,7 @@ import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, Package, Grid3x3, User, Filter, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Package, Grid3x3, User, Filter, X } from 'lucide-react';
 import { useSearch, useSearchFromURL } from '@/hooks/useSearch';
 import { SearchInput } from '@/components/search/SearchInput';
 import { Button } from '@/components/ui/Button';
@@ -23,12 +23,11 @@ import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { Tabs } from '@/components/ui/Tabs';
+
 import { formatUSDC, truncateAddress, cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
 
 function SearchPageContent() {
-  const router = useRouter();
+  const _router = useRouter();
   const { query: urlQuery, category, setCategory, updateSearchURL } = useSearchFromURL();
   const [isFilterOpen, setIsFilterOpen] = useState(true);
 

@@ -3,9 +3,8 @@
  * Run with: npx ts-node src/lib/test-arc-sdk.ts
  */
 
-import { arcClient, getArcBlockInfo, getUSDCBalance } from './arc-client';
+import { arcClient, getArcBlockInfo } from './arc-client';
 import {
-  getArcTxStatus,
   calculateArcGas,
   getArcNetworkStats,
   formatArcAddress,
@@ -57,7 +56,7 @@ async function testArcSDK() {
     try {
       const balance = await arcClient.getBalance(validAddress);
       console.log(`   ✅ Balance for ${formatArcAddress(validAddress)}: ${balance}\n`);
-    } catch (error) {
+    } catch (_error) {
       console.log(`   ⚠️  Balance query skipped (may require valid address)\n`);
     }
 
@@ -72,7 +71,7 @@ async function testArcSDK() {
       });
       console.log(`   ✅ Gas Limit: ${gasEstimate.gasLimit}`);
       console.log(`   💰 Estimated Cost: ${gasEstimate.gasCostFormatted}\n`);
-    } catch (error) {
+    } catch (_error) {
       console.log(`   ⚠️  Gas estimation skipped (requires valid transaction)\n`);
     }
 

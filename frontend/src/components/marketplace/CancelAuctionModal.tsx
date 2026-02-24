@@ -9,9 +9,9 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { XCircle, AlertCircle, CheckCircle2, ExternalLink, Loader2, Clock } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ExternalLink, Loader2, Clock } from 'lucide-react';
 import { ConfirmModal } from '@/components/ui/Modal';
-import { cn, formatUSDC, getImageUrl, getTransactionUrl, getTimeRemaining } from '@/lib/utils';
+import { formatUSDC, getImageUrl, getTransactionUrl, getTimeRemaining } from '@/lib/utils';
 import type { NFT, Auction, Address } from '@/types';
 
 interface CancelAuctionModalProps {

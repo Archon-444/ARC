@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, BarChart3, Activity, Users, Package, DollarSign, Clock } from 'lucide-react';
 import { fetchMarketplaceStats } from '@/lib/graphql-client';
-import { formatUSDC, formatCompactUSDC, formatNumber } from '@/lib/utils';
+import { formatCompactUSDC, formatNumber } from '@/lib/utils';
 import { LoadingPage } from '@/components/ui/LoadingSpinner';
 import type { MarketplaceStats } from '@/types';
 

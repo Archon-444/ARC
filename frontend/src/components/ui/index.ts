@@ -3,6 +3,7 @@ export { Button, type ButtonProps } from './Button';
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, type CardProps } from './Card';
 export { Input, type InputProps } from './Input';
 export { Badge, type BadgeProps } from './Badge';
+export { StatCard } from './StatCard';
 export { Tabs } from './Tabs';
 export { Modal, ModalSection, ModalFooter, ConfirmModal } from './Modal';
 export { EmptyState } from './EmptyState';

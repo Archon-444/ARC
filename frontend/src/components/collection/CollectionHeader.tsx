@@ -101,7 +101,7 @@ export function CollectionHeader({
           text: description || `Check out ${name} on Arc Marketplace`,
           url,
         });
-      } catch (error) {
+      } catch (_error) {
         // User cancelled or error occurred
       }
     } else {

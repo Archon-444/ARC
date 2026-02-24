@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ShieldCheck, ShieldAlert, AlertTriangle, XOctagon, ChevronDown, ChevronUp } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, AlertTriangle, XOctagon, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import type { TokenRiskAssessment, RiskFactor, RiskLevel } from '@/types';
 
 interface RiskBadgeProps {
@@ -10,10 +10,10 @@ interface RiskBadgeProps {
 }
 
 const RISK_CONFIG = {
-  low: { label: 'LOW RISK', bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-300', border: 'border-green-300 dark:border-green-700', icon: ShieldCheck },
-  medium: { label: 'MODERATE', bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-300', border: 'border-yellow-300 dark:border-yellow-700', icon: ShieldAlert },
-  high: { label: 'HIGH RISK', bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-300', border: 'border-orange-300 dark:border-orange-700', icon: AlertTriangle },
-  critical: { label: 'AVOID', bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-300', border: 'border-red-300 dark:border-red-700', icon: XOctagon },
+  low: { label: 'LOWER RISK', bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-300', border: 'border-green-300 dark:border-green-700', icon: ShieldCheck },
+  medium: { label: 'MODERATE RISK', bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-300', border: 'border-yellow-300 dark:border-yellow-700', icon: ShieldAlert },
+  high: { label: 'ELEVATED RISK', bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-300', border: 'border-orange-300 dark:border-orange-700', icon: AlertTriangle },
+  critical: { label: 'HIGH RISK', bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-300', border: 'border-red-300 dark:border-red-700', icon: XOctagon },
 } as const;
 
 function getOverallConfig(score: number) {
@@ -63,7 +63,7 @@ function RiskBadgeExpanded({ risk }: { risk: TokenRiskAssessment }) {
               Risk Score: {risk.overallScore}/100
             </p>
             <p className={`text-xs ${config.text} opacity-80`}>
-              {config.label} &middot; {risk.recommendation.replace('_', ' ').toUpperCase()}
+              {config.label}
             </p>
           </div>
         </div>
@@ -76,10 +76,10 @@ function RiskBadgeExpanded({ risk }: { risk: TokenRiskAssessment }) {
 
       {isExpanded && (
         <div className="border-t border-inherit px-4 pb-4 space-y-3">
-          <RiskFactorRow label="Creator History" factor={risk.creatorRisk} />
-          <RiskFactorRow label="Contract Health" factor={risk.contractRisk} />
-          <RiskFactorRow label="Trading Patterns" factor={risk.tradingRisk} />
-          <RiskFactorRow label="Liquidity & Progress" factor={risk.liquidityRisk} />
+          <RiskFactorRow label="Creator History" factor={risk.creatorRisk} weight="35%" />
+          <RiskFactorRow label="Contract Health" factor={risk.contractRisk} weight="25%" />
+          <RiskFactorRow label="Trading Patterns" factor={risk.tradingRisk} weight="20%" />
+          <RiskFactorRow label="Liquidity & Progress" factor={risk.liquidityRisk} weight="20%" />
 
           {risk.redFlags.length > 0 && (
             <div className="mt-3 pt-3 border-t border-inherit">
@@ -97,22 +97,33 @@ function RiskBadgeExpanded({ risk }: { risk: TokenRiskAssessment }) {
             </div>
           )}
 
-          <p className="text-[10px] text-neutral-500 mt-2">
-            Analyzed {new Date(risk.analyzedAt).toLocaleString()} &middot; Based on on-chain data
-          </p>
+          {/* Disclaimer — Bug 3 FIX: fallbacks for undefined from old cached data */}
+          <div className="mt-3 pt-3 border-t border-inherit">
+            <div className="flex items-start gap-1.5">
+              <Info className="h-3 w-3 mt-0.5 flex-shrink-0 text-neutral-400" />
+              <p className="text-[10px] text-neutral-500 dark:text-neutral-400">
+                {risk.disclaimer || 'Risk scores are heuristics, not financial advice.'}
+              </p>
+            </div>
+            <p className="text-[10px] text-neutral-400 mt-1">
+              Algorithm {risk.scoringVersion || 'unknown'} &middot; Analyzed {new Date(risk.analyzedAt).toLocaleString()}
+            </p>
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-function RiskFactorRow({ label, factor }: { label: string; factor: RiskFactor }) {
+function RiskFactorRow({ label, factor, weight }: { label: string; factor: RiskFactor; weight: string }) {
   const levelConfig = getLevelConfig(factor.level);
 
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">{label}</span>
+        <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+          {label} <span className="text-neutral-400 font-normal">({weight})</span>
+        </span>
         <span className={`text-xs font-medium ${levelConfig.text}`}>
           {factor.score}/100
         </span>

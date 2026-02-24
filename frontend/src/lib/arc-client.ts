@@ -314,7 +314,7 @@ export { ArcClient };
 
 // Crypto utilities placeholder (will be replaced with official SDK)
 export const arcCrypto = {
-  verifySignature: (message: string, signature: string, address: string): boolean => {
+  verifySignature: (_message: string, _signature: string, _address: string): boolean => {
     // TODO: Implement proper signature verification
     console.warn('arcCrypto.verifySignature not yet implemented');
     return true;
