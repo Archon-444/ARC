@@ -137,7 +137,7 @@ export default function HomePage() {
             <div className="space-y-6">
               <div className="glass-panel p-6">
                 <p className="text-sm uppercase tracking-wide text-neutral-500">Featured drop</p>
-                <h1 className="mt-2 text-4xl font-bold text-neutral-900 dark:text-white">
+                <h1 className="mt-2 text-3xl font-bold text-neutral-900 dark:text-white">
                   {HERO_SLIDES[activeSlide].title}
                 </h1>
                 <p className="mt-4 text-lg text-neutral-600 dark:text-neutral-300">

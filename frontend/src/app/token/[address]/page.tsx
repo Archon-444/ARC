@@ -162,7 +162,7 @@ export default function TokenDetailPage() {
         </div>
 
         {/* Right: Buy/Sell Panel */}
-        <div className="space-y-4">
+        <div className="space-y-6">
           {!isGraduated && ammAddress ? (
             <>
               {/* Tab Switcher */}
