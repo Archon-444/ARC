@@ -7,7 +7,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Award, Coins, Lock, Loader2 } from 'lucide-react';
+import { Award, Coins, Lock } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import {
   useStakeTokens,
   useUnstakeTokens,
@@ -86,14 +87,16 @@ export function GraduationBanner({ ammAddress, creatorAddress, userAddress }: Gr
 
           {/* Claim Button */}
           {parseFloat(claimableFormatted) > 0 && (
-            <button
+            <Button
               onClick={() => claimRewards()}
               disabled={isClaiming}
-              className="mt-3 w-full rounded-lg bg-green-600 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              isLoading={isClaiming}
+              fullWidth
+              size="sm"
+              className="mt-3 bg-green-600 hover:bg-green-700"
             >
-              {isClaiming ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Claim ${claimableFormatted} USDC
-            </button>
+            </Button>
           )}
 
           {/* Stake Input */}
@@ -103,15 +106,16 @@ export function GraduationBanner({ ammAddress, creatorAddress, userAddress }: Gr
               value={stakeAmount}
               onChange={(e) => setStakeAmount(e.target.value)}
               placeholder="Amount to stake"
-              className="flex-1 rounded border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-800 dark:text-white"
+              className="input flex-1 text-sm"
             />
-            <button
+            <Button
               onClick={() => { if (stakeAmount) stakeTokens(stakeAmount); }}
               disabled={isStaking || !stakeAmount}
-              className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+              isLoading={isStaking}
+              size="sm"
             >
-              {isStaking ? '...' : 'Stake'}
-            </button>
+              Stake
+            </Button>
           </div>
 
           {/* Unstake Input */}
@@ -122,15 +126,17 @@ export function GraduationBanner({ ammAddress, creatorAddress, userAddress }: Gr
                 value={unstakeAmount}
                 onChange={(e) => setUnstakeAmount(e.target.value)}
                 placeholder="Amount to unstake"
-                className="flex-1 rounded border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-800 dark:text-white"
+                className="input flex-1 text-sm"
               />
-              <button
+              <Button
                 onClick={() => { if (unstakeAmount) unstakeTokens(unstakeAmount); }}
                 disabled={isUnstaking || !unstakeAmount}
-                className="rounded bg-neutral-600 px-3 py-1.5 text-sm text-white hover:bg-neutral-700 disabled:opacity-50"
+                isLoading={isUnstaking}
+                variant="secondary"
+                size="sm"
               >
-                {isUnstaking ? '...' : 'Unstake'}
-              </button>
+                Unstake
+              </Button>
             </div>
           )}
         </div>
@@ -155,27 +161,29 @@ export function GraduationBanner({ ammAddress, creatorAddress, userAddress }: Gr
                 value={withdrawAmount}
                 onChange={(e) => setWithdrawAmount(e.target.value)}
                 placeholder="USDC amount"
-                className="w-full rounded border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-800 dark:text-white"
+                className="input text-sm"
               />
               <input
                 type="text"
                 value={withdrawReason}
                 onChange={(e) => setWithdrawReason(e.target.value)}
                 placeholder="Reason (e.g., development, marketing)"
-                className="w-full rounded border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-600 dark:bg-neutral-800 dark:text-white"
+                className="input text-sm"
               />
-              <button
+              <Button
                 onClick={() => {
                   if (withdrawAmount && withdrawReason) {
                     withdraw(withdrawAmount, withdrawReason);
                   }
                 }}
                 disabled={isWithdrawing || !withdrawAmount || !withdrawReason}
-                className="w-full rounded bg-amber-600 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                isLoading={isWithdrawing}
+                fullWidth
+                size="sm"
+                className="bg-amber-600 hover:bg-amber-700"
               >
-                {isWithdrawing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Withdraw
-              </button>
+              </Button>
             </div>
           </div>
         )}
