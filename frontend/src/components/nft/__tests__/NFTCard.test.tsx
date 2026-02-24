@@ -27,6 +27,12 @@ jest.mock('next/link', () => ({
   default: ({ children, href }: any) => <a href={href}>{children}</a>,
 }));
 
+// Mock rarity hooks to avoid requiring QueryClientProvider
+jest.mock('@/hooks/useRarityData', () => ({
+  useRarityData: () => ({ data: null, isLoading: false }),
+  useNFTRarity: () => ({ rarity: null, isLoading: false }),
+}));
+
 // Helper to create a complete mock collection
 const createMockCollection = (overrides?: Partial<Collection>): Collection => ({
   id: '0x1234567890123456789012345678901234567890' as `0x${string}`,
