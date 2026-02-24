@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { Award, Coins, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import {
   useStakeTokens,
   useUnstakeTokens,
@@ -101,13 +102,15 @@ export function GraduationBanner({ ammAddress, creatorAddress, userAddress }: Gr
 
           {/* Stake Input */}
           <div className="mt-3 flex gap-2">
-            <input
-              type="number"
-              value={stakeAmount}
-              onChange={(e) => setStakeAmount(e.target.value)}
-              placeholder="Amount to stake"
-              className="input flex-1 text-sm"
-            />
+            <div className="flex-1">
+              <Input
+                type="number"
+                value={stakeAmount}
+                onChange={(e) => setStakeAmount(e.target.value)}
+                placeholder="Amount to stake"
+                className="text-sm"
+              />
+            </div>
             <Button
               onClick={() => { if (stakeAmount) stakeTokens(stakeAmount); }}
               disabled={isStaking || !stakeAmount}
@@ -121,13 +124,15 @@ export function GraduationBanner({ ammAddress, creatorAddress, userAddress }: Gr
           {/* Unstake Input */}
           {parseFloat(stakedFormatted) > 0 && (
             <div className="mt-2 flex gap-2">
-              <input
-                type="number"
-                value={unstakeAmount}
-                onChange={(e) => setUnstakeAmount(e.target.value)}
-                placeholder="Amount to unstake"
-                className="input flex-1 text-sm"
-              />
+              <div className="flex-1">
+                <Input
+                  type="number"
+                  value={unstakeAmount}
+                  onChange={(e) => setUnstakeAmount(e.target.value)}
+                  placeholder="Amount to unstake"
+                  className="text-sm"
+                />
+              </div>
               <Button
                 onClick={() => { if (unstakeAmount) unstakeTokens(unstakeAmount); }}
                 disabled={isUnstaking || !unstakeAmount}
@@ -156,19 +161,19 @@ export function GraduationBanner({ ammAddress, creatorAddress, userAddress }: Gr
             </div>
 
             <div className="space-y-2">
-              <input
+              <Input
                 type="number"
                 value={withdrawAmount}
                 onChange={(e) => setWithdrawAmount(e.target.value)}
                 placeholder="USDC amount"
-                className="input text-sm"
+                className="text-sm"
               />
-              <input
+              <Input
                 type="text"
                 value={withdrawReason}
                 onChange={(e) => setWithdrawReason(e.target.value)}
                 placeholder="Reason (e.g., development, marketing)"
-                className="input text-sm"
+                className="text-sm"
               />
               <Button
                 onClick={() => {

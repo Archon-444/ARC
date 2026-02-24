@@ -55,13 +55,13 @@ describe('Badge', () => {
     it('renders rare rarity variant', () => {
       const { container } = render(<Badge variant="rare">Rare</Badge>);
       const badge = container.firstChild;
-      expect(badge).toHaveClass('bg-blue-100');
+      expect(badge).toHaveClass('bg-primary-50');
     });
 
     it('renders epic rarity variant', () => {
       const { container } = render(<Badge variant="epic">Epic</Badge>);
       const badge = container.firstChild;
-      expect(badge).toHaveClass('bg-purple-100');
+      expect(badge).toHaveClass('bg-accent-50');
     });
 
     it('renders legendary rarity variant', () => {

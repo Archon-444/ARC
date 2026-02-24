@@ -12,6 +12,7 @@ import { parseEther, formatEther } from 'viem';
 import { CheckCircle2 } from 'lucide-react';
 import { useSellTokens, useCalculateSellReturn } from '@/hooks/useTokenAMM';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { InlineError } from '@/components/ui/ErrorDisplay';
 import ERC20ABI from '@/hooks/abis/ERC20.json';
 
@@ -93,14 +94,14 @@ export function SellTokenPanel({ ammAddress, tokenAddress, tokenSymbol, onSucces
       <div className="space-y-3">
         <div>
           <label className="block text-xs text-neutral-500 mb-1">You sell ({tokenSymbol})</label>
-          <input
+          <Input
             type="number"
             value={amount}
             onChange={(e) => { setAmount(e.target.value); setStep('input'); }}
             placeholder="0.00"
             min="0"
             step="0.01"
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2.5 text-lg font-medium dark:border-neutral-600 dark:bg-neutral-800 dark:text-white"
+            className="text-lg font-medium"
           />
           <div className="flex justify-between mt-1">
             <span className="text-xs text-neutral-500">Balance: {Number(balanceFormatted).toLocaleString()} {tokenSymbol}</span>
