@@ -96,8 +96,15 @@ Respond with ONLY the JSON object, no markdown formatting.`,
       return NextResponse.json({ error: 'Failed to generate content' }, { status: 500 });
     }
 
+    // Strip markdown code fences if Claude wraps the response
+    let jsonText = textBlock.text.trim();
+    const fenceMatch = jsonText.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?\s*```$/);
+    if (fenceMatch) {
+      jsonText = fenceMatch[1].trim();
+    }
+
     // Parse the JSON response
-    const generated = JSON.parse(textBlock.text);
+    const generated = JSON.parse(jsonText);
 
     // Validate the response has expected fields
     if (!generated.headline || !generated.fullDescription) {
