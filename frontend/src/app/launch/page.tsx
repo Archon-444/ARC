@@ -15,7 +15,6 @@ import { useCreateToken, useApproveFactoryUSDC, useCreationFee } from '@/hooks/u
 import { useGenerateTokenPage } from '@/hooks/useGenerateTokenPage';
 import { useUSDCBalance } from '@/hooks/useMarketplace';
 import { CurveType, CURVE_TYPE_NAMES } from '@/lib/contracts';
-import { formatUSDC } from '@/lib/utils';
 
 export default function LaunchPage() {
   const { address, isConnected } = useAccount();
@@ -49,7 +48,7 @@ export default function LaunchPage() {
     isLoading: isCreating,
     isSuccess: isCreated,
     error: createError,
-    txHash,
+    _txHash,
   } = useCreateToken();
 
   const hasInsufficientBalance = fee && balance ? balance < fee : false;

@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
-import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Layers, Tag, CheckCircle, ArrowRight, ArrowLeft, Plus, Image as ImageIcon } from 'lucide-react';
+import { Upload, Layers, CheckCircle, ArrowRight, ArrowLeft, Plus, Image as ImageIcon } from 'lucide-react';
 import { fetchGraphQL } from '@/lib/graphql-client';
 import { GET_USER } from '@/graphql/queries';
 import NFTCard from '@/components/NFTCard';
@@ -31,7 +30,7 @@ export default function StudioPage() {
   const { address, isConnected } = useAccount();
   const [view, setView] = useState<StudioView>('overview');
   const [createStep, setCreateStep] = useState<CreateStep>('upload');
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [createdNFTs, setCreatedNFTs] = useState<any[]>([]);
   const [collections, setCollections] = useState<any[]>([]);
 

@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -17,17 +17,15 @@ import {
   RefreshCw,
   Share2,
   MoreHorizontal,
-  ChevronLeft,
   Heart,
-  Flag,
   Maximize2,
 } from 'lucide-react';
-import { cn, formatUSDC, truncateAddress, formatNumber } from '@/lib/utils';
+import { cn, formatUSDC, truncateAddress } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Tabs } from '@/components/ui/Tabs';
 import { PropertyGrid } from '@/components/nft/PropertyBadge';
-import type { NFT, Listing, Auction } from '@/types';
+import type { NFT } from '@/types';
 
 const NFT_QUERY = gql`
   query GetNFTDetails($tokenId: String!) {
@@ -84,7 +82,7 @@ export function NFTDetailLayout({
   const [isLiked, setIsLiked] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
-  const [isImageFullscreen, setIsImageFullscreen] = useState(false);
+  const [_isImageFullscreen, setIsImageFullscreen] = useState(false);
 
   // Fetch real-time data from Subgraph
   const [result] = useQuery({
@@ -93,7 +91,7 @@ export function NFTDetailLayout({
     pause: !contractAddress || !tokenId,
   });
 
-  const { data, fetching, error } = result;
+  const { data, fetching, error: _error } = result;
 
   // Merge initial data with real-time data
   const nftDisplay = {
@@ -124,14 +122,13 @@ export function NFTDetailLayout({
           url: window.location.href,
         });
       } catch (err) {
-        console.log('Share failed:', err);
+        console.error('Share failed:', err);
       }
     }
   };
 
   const handleRefreshMetadata = () => {
     // Trigger metadata refresh
-    console.log('Refreshing metadata...');
   };
 
   return (

@@ -8,7 +8,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Search, SlidersHorizontal, TrendingUp, Package, Coins } from 'lucide-react';
+import { Search, SlidersHorizontal, TrendingUp, Package } from 'lucide-react';
 import { NFTGrid } from '@/components/nft/NFTCard';
 import { TokenGrid } from '@/components/token/TokenCard';
 import { useAllTokens } from '@/hooks/useTokenFactory';
@@ -16,7 +16,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { LoadingPage } from '@/components/ui/LoadingSpinner';
 import { ErrorDisplay, EmptyState } from '@/components/ui/ErrorDisplay';
 import { fetchListings, fetchAuctions, fetchMarketplaceStats } from '@/lib/graphql-client';
-import { formatUSDC, formatCompactUSDC, formatNumber, debounce } from '@/lib/utils';
+import { formatCompactUSDC, formatNumber, debounce } from '@/lib/utils';
 import type { NFT, Listing, Auction, MarketplaceStats, SortOption } from '@/types';
 
 type ViewMode = 'all' | 'listings' | 'auctions' | 'tokens';

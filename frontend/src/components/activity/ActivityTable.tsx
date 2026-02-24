@@ -21,8 +21,6 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { cn, formatUSDC, truncateAddress, formatRelativeTime } from '@/lib/utils';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 
 export type ActivityEvent =
   | 'sale'
@@ -120,7 +118,7 @@ export function ActivityTable({
   activities,
   filters = [],
   showNFT = true,
-  showCollection = false,
+  _showCollection = false,
   isLoading = false,
   emptyMessage = 'No activity yet',
   className,

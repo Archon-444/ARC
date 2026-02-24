@@ -258,7 +258,7 @@ export function observeCoreWebVitals() {
 
   try {
     lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
-  } catch (e) {
+  } catch (_e) {
     console.warn('[Performance] LCP observation not supported');
   }
 
@@ -280,7 +280,7 @@ export function observeCoreWebVitals() {
 
   try {
     clsObserver.observe({ entryTypes: ['layout-shift'] });
-  } catch (e) {
+  } catch (_e) {
     console.warn('[Performance] CLS observation not supported');
   }
 
@@ -298,7 +298,7 @@ export function observeCoreWebVitals() {
 
   try {
     fidObserver.observe({ entryTypes: ['first-input'] });
-  } catch (e) {
+  } catch (_e) {
     console.warn('[Performance] FID observation not supported');
   }
 }

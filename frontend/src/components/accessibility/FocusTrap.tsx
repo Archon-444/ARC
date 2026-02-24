@@ -223,7 +223,7 @@ export function useAriaAnnouncement() {
   const [message, setMessage] = useState('');
   const timeoutRef = useRef<NodeJS.Timeout>(undefined);
 
-  const announce = (text: string, priority: 'polite' | 'assertive' = 'polite') => {
+  const announce = (text: string, _priority: 'polite' | 'assertive' = 'polite') => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }

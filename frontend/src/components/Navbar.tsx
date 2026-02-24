@@ -18,7 +18,6 @@ import {
   LogOut,
   Settings,
   Trophy,
-  X
 } from 'lucide-react';
 import { useCircleWallet } from '@/hooks/useCircleWallet';
 import { WalletManagementModal } from '@/components/circle/WalletManagementModal';
@@ -274,7 +273,7 @@ export default function Navbar() {
                     <div className="[&>div]:w-full [&_button]:w-full [&_button]:justify-center">
                       <ConnectButton.Custom>
                         {({ account, chain, openConnectModal, mounted }) => {
-                          const connected = mounted && account && chain;
+                          const _connected = mounted && account && chain;
                           return (
                             <button
                               onClick={openConnectModal}

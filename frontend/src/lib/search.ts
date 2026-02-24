@@ -7,7 +7,6 @@
  */
 
 import { typesenseClient } from './typesense';
-import type { SearchResponse } from 'typesense/lib/Typesense/Documents';
 
 // Index names
 export const SEARCH_INDEXES = {

@@ -9,9 +9,9 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { XCircle, AlertCircle, CheckCircle2, ExternalLink, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ExternalLink, Loader2 } from 'lucide-react';
 import { ConfirmModal } from '@/components/ui/Modal';
-import { cn, formatUSDC, getImageUrl, getTransactionUrl } from '@/lib/utils';
+import { formatUSDC, getImageUrl, getTransactionUrl } from '@/lib/utils';
 import type { NFT, Listing, Address } from '@/types';
 
 interface CancelListingModalProps {

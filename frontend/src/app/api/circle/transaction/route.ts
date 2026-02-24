@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       return signatureResult.error;
     }
 
-    const { walletId, to, value, data, gasLimit } = await request.json();
+    const { walletId, to, _value, _data, _gasLimit } = await request.json();
 
     // Validate required fields
     if (!walletId || !to) {
@@ -179,7 +179,7 @@ export async function PUT(request: NextRequest) {
       return signatureResult.error;
     }
 
-    const { walletId, to, value, data } = await request.json();
+    const { walletId, to, _value, data } = await request.json();
 
     if (!walletId || !to) {
       return NextResponse.json(

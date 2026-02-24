@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { ShoppingCart, Trash2, ArrowRight, ShoppingBag } from 'lucide-react';
+
 
 // Mock cart data - in production this would come from a cart context/store
 const mockCartItems = [

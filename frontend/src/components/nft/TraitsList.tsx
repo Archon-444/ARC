@@ -9,7 +9,7 @@
 
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp, Sparkles, Award, Star } from 'lucide-react';
+import { ChevronDown, ChevronUp, Sparkles, Award } from 'lucide-react';
 import { fadeInUpVariants, listItemVariants, staggerContainer } from '@/lib/animations';
 
 export interface Trait {

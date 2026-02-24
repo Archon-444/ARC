@@ -13,7 +13,6 @@ import { useTokenConfig, useTokenAMM } from '@/hooks/useTokenFactory';
 import { useTokenRisk } from '@/hooks/useTokenRisk';
 import { RiskBadge } from '@/components/token/RiskBadge';
 import { CURVE_TYPE_NAMES } from '@/lib/contracts';
-import { truncateAddress } from '@/lib/utils';
 
 interface TokenCardProps {
   tokenAddress: string;

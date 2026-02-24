@@ -7,11 +7,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Wallet, Check, Plus, Copy, ExternalLink, AlertCircle } from 'lucide-react';
+import { Wallet, Check, Plus, Copy, AlertCircle } from 'lucide-react';
 import { Modal, ModalSection, ModalFooter } from '@/components/ui/Modal';
 import { useCircleWallet } from '@/hooks/useCircleWallet';
 import { CreateWalletModal } from './CreateWalletModal';
-import { formatCircleWallet, CircleWallet } from '@/lib/circle';
+import { CircleWallet } from '@/lib/circle';
 import { truncateAddress } from '@/lib/utils';
 
 interface WalletManagementModalProps {

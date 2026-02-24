@@ -14,7 +14,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Clock, TrendingUp, Loader2 } from 'lucide-react';
+import { Search, X, Clock, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface SearchSuggestion {
@@ -59,7 +59,7 @@ export function SearchInput({
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [debouncedValue, setDebouncedValue] = useState(value);
+  const [_debouncedValue, setDebouncedValue] = useState(value);
 
   // Debounce the search value
   useEffect(() => {

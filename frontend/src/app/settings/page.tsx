@@ -9,13 +9,6 @@ import {
   Bell,
   Shield,
   Palette,
-  Globe,
-  Wallet,
-  Mail,
-  Eye,
-  EyeOff,
-  Check,
-  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

@@ -10,7 +10,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Check, X, ExternalLink } from 'lucide-react';
+import { Clock, Check, X } from 'lucide-react';
 import { cn, formatUSDC, truncateAddress, formatRelativeTime } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';

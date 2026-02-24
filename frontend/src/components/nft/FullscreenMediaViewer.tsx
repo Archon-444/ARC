@@ -29,7 +29,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { X, ZoomIn, ZoomOut, Maximize2, Minimize2 } from 'lucide-react';
+import { X, ZoomIn, ZoomOut } from 'lucide-react';
 import Image from 'next/image';
 import { FocusTrap } from '../accessibility/FocusTrap';
 
@@ -114,7 +114,7 @@ export function FullscreenMediaViewer({
     }
   };
 
-  const getZoomScale = (): string => {
+  const _getZoomScale = (): string => {
     switch (zoomLevel) {
       case 'fit':
         return 'contain';

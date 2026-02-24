@@ -31,7 +31,7 @@ import { ListNFTModal } from '@/components/marketplace/ListNFTModal';
 import { CreateAuctionModal } from '@/components/marketplace/CreateAuctionModal';
 import { CancelListingModal } from '@/components/marketplace/CancelListingModal';
 import { CancelAuctionModal } from '@/components/marketplace/CancelAuctionModal';
-import { MakeOfferModal, OfferData } from '@/components/marketplace/MakeOfferModal';
+import { MakeOfferModal } from '@/components/marketplace/MakeOfferModal';
 import { createOffer } from '@/lib/api';
 import { useCircleWallet } from '@/providers/CircleWalletProvider';
 import { ActivityTable } from '@/components/collection/ActivityTable';
@@ -86,7 +86,7 @@ export default function NFTDetailPage({ params }: PageProps) {
   const [showCancelListingModal, setShowCancelListingModal] = useState(false);
   const [showCancelAuctionModal, setShowCancelAuctionModal] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
-  const { userToken, currentWallet } = useCircleWallet();
+  const { userToken, currentWallet: _currentWallet } = useCircleWallet();
 
   // Countdown for auctions
   const [timeRemaining, setTimeRemaining] = useState<ReturnType<typeof getTimeRemaining> | null>(null);
