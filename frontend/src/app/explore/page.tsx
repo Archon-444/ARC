@@ -7,7 +7,8 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Search, SlidersHorizontal, TrendingUp, Package } from 'lucide-react';
 import { NFTGrid } from '@/components/nft/NFTCard';
 import { TokenGrid } from '@/components/token/TokenCard';
@@ -31,8 +32,23 @@ const SORT_OPTIONS: SortOption[] = [
 ];
 
 export default function ExplorePage() {
+  return (
+    <Suspense fallback={<LoadingPage label="Loading Explore..." />}>
+      <ExploreContent />
+    </Suspense>
+  );
+}
+
+function ExploreContent() {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') as ViewMode | null;
+
   // View state
-  const [viewMode, setViewMode] = useState<ViewMode>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    initialTab && ['all', 'listings', 'auctions', 'tokens'].includes(initialTab)
+      ? initialTab
+      : 'all'
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortOption>(SORT_OPTIONS[0]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,6 +66,14 @@ export default function ExplorePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Sync tab from URL if it changes (e.g. user clicks nav link while on Explore)
+  useEffect(() => {
+    const tab = searchParams.get('tab') as ViewMode | null;
+    if (tab && ['all', 'listings', 'auctions', 'tokens'].includes(tab)) {
+      setViewMode(tab);
+    }
+  }, [searchParams]);
 
   // Debounce search input
   const debouncedSetSearch = useCallback(

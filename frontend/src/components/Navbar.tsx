@@ -10,6 +10,7 @@ import {
   CircleDollarSign,
   Compass,
   Menu,
+  Rocket,
   Search,
   ShoppingCart,
   Sparkles,
@@ -30,6 +31,7 @@ const primaryNav = [
   { label: 'Explore', href: '/explore', hasDropdown: true },
   { label: 'Stats', href: '/stats' },
   { label: 'Rewards', href: '/rewards' },
+  { label: 'Launch', href: '/launch', launch: true },
   { label: 'Create', href: '/studio', accent: true },
 ];
 
@@ -51,13 +53,20 @@ const exploreSections = [
       { label: 'Photography', href: '/explore?category=photography' },
     ],
   },
+  {
+    title: 'Token Launchpad',
+    links: [
+      { label: 'Browse Tokens', href: '/explore?tab=tokens' },
+      { label: 'Launch a Token', href: '/launch' },
+    ],
+  },
 ];
 
 const mobileNav = [
   { label: 'Home', href: '/', icon: <Compass className="h-5 w-5" /> },
   { label: 'Explore', href: '/explore', icon: <Search className="h-5 w-5" /> },
+  { label: 'Launch', href: '/launch', icon: <Rocket className="h-5 w-5" /> },
   { label: 'Create', href: '/studio', icon: <Sparkles className="h-5 w-5" /> },
-  { label: 'Activity', href: '/activity', icon: <Bell className="h-5 w-5" /> },
   { label: 'Profile', href: '/profile', icon: <User className="h-5 w-5" /> },
 ];
 
@@ -175,9 +184,12 @@ export default function Navbar() {
                     ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white'
                     : item.accent
                       ? 'bg-primary-500 text-white hover:bg-primary-600'
-                      : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
+                      : item.launch
+                        ? 'inline-flex items-center gap-1.5 border border-accent-500 text-accent-600 hover:bg-accent-50 dark:text-accent-400 dark:hover:bg-accent-500/10'
+                        : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
                 }`}
               >
+                {item.launch && <Rocket className="h-3.5 w-3.5" />}
                 {item.label}
               </Link>
             ))}

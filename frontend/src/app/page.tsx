@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Flame, LineChart, RadioTower, Star } from 'lucide-react';
+import { ArrowRight, Flame, LineChart, RadioTower, Rocket, Star, TrendingUp, Percent } from 'lucide-react';
 import { fetchListings, fetchMarketplaceStats } from '@/lib/graphql-client';
 import { formatCompactUSDC, formatUSDC } from '@/lib/utils';
 import { Badge, Button, Card } from '@/components/ui';
@@ -266,6 +266,66 @@ export default function HomePage() {
                   </Card>
                 ))}
                 {loading && <div className="skeleton h-32 w-full" />}
+              </div>
+            </div>
+
+            {/* Token Launchpad Section */}
+            <div className="glass-panel grid gap-6 p-6 lg:grid-cols-2">
+              <div>
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-accent-100 px-3 py-1 text-xs font-semibold text-accent-700 dark:bg-accent-500/20 dark:text-accent-300">
+                  <Rocket className="h-3.5 w-3.5" />
+                  Token Launchpad
+                </div>
+                <h3 className="text-2xl font-bold">Launch a Token on Arc</h3>
+                <p className="mt-2 text-neutral-600 dark:text-neutral-300">
+                  Deploy your own ERC-20 token with a bonding curve in minutes. Price rises algorithmically as supply sells. When 80% is purchased, your token graduates and unlocks creator treasury + staking rewards.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Button asChild className="btn-primary">
+                    <Link href="/launch">
+                      Launch a Token
+                      <Rocket className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button asChild className="btn-outline">
+                    <Link href="/explore?tab=tokens">Browse Tokens</Link>
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-100 dark:bg-accent-500/20">
+                      <TrendingUp className="h-4 w-4 text-accent-600 dark:text-accent-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-neutral-900 dark:text-white">Bonding Curve Pricing</p>
+                      <p className="text-xs text-neutral-500">Price rises automatically as more tokens sell</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-500/20">
+                      <Star className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-neutral-900 dark:text-white">Graduate at 80%</p>
+                      <p className="text-xs text-neutral-500">Creator treasury + staking rewards unlock</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100 dark:bg-green-500/20">
+                      <Percent className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-neutral-900 dark:text-white">Staker Discount</p>
+                      <p className="text-xs text-neutral-500">Up to 50% off creation fee for ARC stakers</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
