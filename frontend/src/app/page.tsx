@@ -49,12 +49,6 @@ const CATEGORY_DATA = [
   { label: 'Fashion', icon: '👗', href: '/explore?category=fashion' },
 ];
 
-const COLLECTORS = [
-  { name: 'Synth Labs', value: '42.5K USDC', avatar: '/avatars/1.png', items: 124 },
-  { name: 'PixelSmith', value: '31.2K USDC', avatar: '/avatars/2.png', items: 98 },
-  { name: 'OrbitDAO', value: '29.8K USDC', avatar: '/avatars/3.png', items: 88 },
-];
-
 export default function HomePage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [stats, setStats] = useState<MarketplaceStats | null>(null);
@@ -330,25 +324,6 @@ export default function HomePage() {
             </div>
 
             <div>
-              <h2 className="mb-4 text-2xl font-bold">Top Collectors</h2>
-              <div className="grid gap-4 md:grid-cols-3">
-                {COLLECTORS.map((collector) => (
-                  <Card key={collector.name} className="card-hover">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-lg font-semibold">{collector.name}</p>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400">Portfolio {collector.value}</p>
-                      </div>
-                      <Badge variant="neutral" size="sm">
-                        {collector.items} items
-                      </Badge>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            <div>
               <h2 className="mb-4 text-2xl font-bold">Browse by Category</h2>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 {CATEGORY_DATA.map((category) => (
@@ -397,41 +372,6 @@ export default function HomePage() {
           </aside>
         </section>
 
-        <section className="glass-panel grid gap-6 p-8 lg:grid-cols-2">
-          <div>
-            <h3 className="text-2xl font-bold">Arc Rewards</h3>
-            <p className="mt-2 text-neutral-600 dark:text-neutral-300">
-              Earn XP for every action across Arc—listing NFTs, completing trades, inviting friends, and daily visits unlock fee discounts up to 50%.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Badge variant="primary" size="sm" dot>
-                Bronze · 0%
-              </Badge>
-              <Badge variant="primary" size="sm">
-                Silver · 10%
-              </Badge>
-              <Badge variant="primary" size="sm">
-                Gold · 25%
-              </Badge>
-            </div>
-          </div>
-          <div className="rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900">
-            <p className="text-sm uppercase tracking-wide text-neutral-500">Your progress</p>
-            <p className="mt-2 text-3xl font-bold">2,450 XP</p>
-            <div className="mt-4 h-2 w-full rounded-full bg-neutral-200 dark:bg-neutral-700">
-              <div className="h-full rounded-full bg-gradient-to-r from-primary-500 to-accent-500" style={{ width: '52%' }} />
-            </div>
-            <p className="mt-2 text-xs text-neutral-500">1,050 XP until Gold tier</p>
-            <div className="mt-6 flex gap-3">
-              <Button asChild className="btn-primary">
-                <Link href="/rewards">View leaderboard</Link>
-              </Button>
-              <Button asChild className="btn-outline">
-                <Link href="/studio">Start earning</Link>
-              </Button>
-            </div>
-          </div>
-        </section>
       </div>
     </div>
   );
