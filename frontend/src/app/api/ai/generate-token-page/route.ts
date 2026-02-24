@@ -106,7 +106,7 @@ Respond with ONLY the JSON object, no markdown formatting.`,
 
     return NextResponse.json(generated);
   } catch (error: any) {
-    console.error('AI generation error:', error);
+    console.error('AI generation error:', error instanceof Error ? error.message : 'Unknown error');
 
     if (error instanceof SyntaxError) {
       return NextResponse.json(

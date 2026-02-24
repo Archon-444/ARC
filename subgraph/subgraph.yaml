@@ -106,6 +106,9 @@ dataSources:
       file: ./src/profile-registry.ts
 
   # ArcTokenFactory contract
+  # TODO: Replace with actual ArcTokenFactory deployment address.
+  # Token launcher indexing is DISABLED until this placeholder is updated.
+  # See DAPPS_ALIGNMENT_REVIEW.md issue SG-1.
   - kind: ethereum
     name: ArcTokenFactory
     network: arc-testnet

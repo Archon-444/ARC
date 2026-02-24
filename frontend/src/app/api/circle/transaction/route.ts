@@ -69,10 +69,7 @@ export async function POST(request: NextRequest) {
     // Mock transaction execution
     const transactionHash = `0x${Math.random().toString(16).substring(2, 66).padStart(64, '0')}`;
 
-    console.log(`📤 Circle transaction executed from wallet ${walletId}`);
-    console.log(`   To: ${to}`);
-    console.log(`   Value: ${value || '0'}`);
-    console.log(`   Tx Hash: ${transactionHash}`);
+    // Transaction details intentionally not logged (SEC-06)
 
     return NextResponse.json({
       success: true,
@@ -82,7 +79,7 @@ export async function POST(request: NextRequest) {
       estimatedConfirmationTime: '< 1 second', // Arc's fast finality
     });
   } catch (error) {
-    console.error('Circle transaction error:', error);
+    console.error('Circle transaction error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { error: 'Transaction failed' },
       { status: 500 }
@@ -142,7 +139,7 @@ export async function GET(request: NextRequest) {
       transaction,
     });
   } catch (error) {
-    console.error('Transaction status check error:', error);
+    console.error('Transaction status check error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { error: 'Failed to get transaction status' },
       { status: 500 }
@@ -210,7 +207,7 @@ export async function PUT(request: NextRequest) {
       estimatedCostUSDC: `${estimatedCostUSDC} USDC`,
     });
   } catch (error) {
-    console.error('Gas estimation error:', error);
+    console.error('Gas estimation error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { error: 'Gas estimation failed' },
       { status: 500 }

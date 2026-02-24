@@ -678,4 +678,89 @@ describe("ArcMarket v0.2 - SimpleGovernance", function () {
       expect(proposalAfter.votesFor).to.equal(votingPower); // Same as before
     });
   });
+
+  describe("Quorum Enforcement", function () {
+    it("Should reject proposal when quorum is not met", async function () {
+      // user1 stakes 1000 USDC (minimum to propose)
+      const stakeAmount = ethers.parseUnits("1000", 6);
+      await usdc.connect(user1).approve(stakingAddress, stakeAmount);
+      await staking.connect(user1).stake(stakeAmount);
+
+      // user2, user3, user4 stake 20000 each (total staked = 61000)
+      const bigStake = ethers.parseUnits("20000", 6);
+      await usdc.connect(user2).approve(stakingAddress, bigStake);
+      await staking.connect(user2).stake(bigStake);
+      await usdc.connect(user3).approve(stakingAddress, bigStake);
+      await staking.connect(user3).stake(bigStake);
+      await usdc.connect(user4).approve(stakingAddress, bigStake);
+      await staking.connect(user4).stake(bigStake);
+
+      // user1 creates proposal and only user1 votes
+      await governance.connect(user1).createProposal(
+        0, // FeaturedCollection
+        "Test quorum",
+        nftAddress,
+        0
+      );
+      await governance.connect(user1).vote(0, true);
+
+      // Fast forward past voting period
+      await time.increase(VOTING_PERIOD + 1);
+
+      // Finalize — only 1000/61000 voted (~1.6%), quorum requires 10%
+      await governance.finalizeProposal(0);
+      const proposal = await governance.getProposal(0);
+      expect(proposal.status).to.equal(2); // Rejected due to quorum not met
+    });
+
+    it("Should pass proposal when quorum is met and votes are in favor", async function () {
+      // user1 and user2 each stake 10000 USDC (total staked = 20000)
+      const stakeAmount = ethers.parseUnits("10000", 6);
+      await usdc.connect(user1).approve(stakingAddress, stakeAmount);
+      await staking.connect(user1).stake(stakeAmount);
+      await usdc.connect(user2).approve(stakingAddress, stakeAmount);
+      await staking.connect(user2).stake(stakeAmount);
+
+      // user1 creates proposal, both vote in favor
+      await governance.connect(user1).createProposal(
+        0,
+        "Quorum met test",
+        nftAddress,
+        0
+      );
+      await governance.connect(user1).vote(0, true);
+      await governance.connect(user2).vote(0, true);
+
+      await time.increase(VOTING_PERIOD + 1);
+
+      // 20000/20000 voted (100%), quorum = 10% → met
+      await governance.finalizeProposal(0);
+      const proposal = await governance.getProposal(0);
+      expect(proposal.status).to.equal(1); // Passed
+    });
+
+    it("Should reject proposal when quorum is met but votes are against", async function () {
+      const stakeAmount = ethers.parseUnits("10000", 6);
+      await usdc.connect(user1).approve(stakingAddress, stakeAmount);
+      await staking.connect(user1).stake(stakeAmount);
+      await usdc.connect(user2).approve(stakingAddress, stakeAmount);
+      await staking.connect(user2).stake(stakeAmount);
+
+      await governance.connect(user1).createProposal(
+        0,
+        "Will be rejected",
+        nftAddress,
+        0
+      );
+      await governance.connect(user1).vote(0, true);
+      await governance.connect(user2).vote(0, false);
+
+      await time.increase(VOTING_PERIOD + 1);
+
+      // Quorum met (100%), but votesFor == votesAgainst → rejected
+      await governance.finalizeProposal(0);
+      const proposal = await governance.getProposal(0);
+      expect(proposal.status).to.equal(2); // Rejected
+    });
+  });
 });

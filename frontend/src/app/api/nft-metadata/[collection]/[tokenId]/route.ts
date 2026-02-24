@@ -22,7 +22,7 @@ export async function GET(
       attributes: nft.attributes || nft.metadata?.attributes || [],
     });
   } catch (error) {
-    console.error('NFT metadata fetch error:', error);
+    console.error('NFT metadata fetch error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { error: 'Failed to fetch metadata' },
       { status: 500 }

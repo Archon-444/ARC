@@ -114,7 +114,7 @@ async function fetchCollections(): Promise<Array<{ id: string; name: string; tot
       totalSupply: Number(collection.totalSupply || 0),
     }));
   } catch (error) {
-    console.error('Failed to fetch collections:', error);
+    console.error('Failed to fetch collections:', error instanceof Error ? error.message : 'Unknown error');
     return [];
   }
 }

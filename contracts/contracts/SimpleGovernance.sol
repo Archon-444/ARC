@@ -177,8 +177,15 @@ contract SimpleGovernance is Ownable, ReentrancyGuard {
         require(proposal.status == ProposalStatus.Active, "Proposal not active");
         require(block.timestamp > proposal.endTime, "Voting not ended");
 
-        // Check if quorum met
         uint256 totalVotes = proposal.votesFor + proposal.votesAgainst;
+
+        // Enforce quorum: require QUORUM_PERCENTAGE of total staked to participate
+        uint256 totalStakedAmount = _getTotalStaked();
+        if (totalStakedAmount > 0 && totalVotes * 100 < totalStakedAmount * QUORUM_PERCENTAGE) {
+            proposal.status = ProposalStatus.Rejected;
+            emit ProposalFinalized(proposalId, proposal.status);
+            return;
+        }
 
         if (proposal.votesFor > proposal.votesAgainst) {
             proposal.status = ProposalStatus.Passed;
@@ -328,5 +335,20 @@ contract SimpleGovernance is Ownable, ReentrancyGuard {
         require(amount <= treasuryAmount, "Exceeds treasury");
         treasuryAmount -= amount;
         USDC.transfer(owner(), amount);
+    }
+
+    /**
+     * @dev Get total staked from staking contract via low-level call
+     */
+    function _getTotalStaked() internal view returns (uint256) {
+        (bool success, bytes memory data) = address(stakingContract).staticcall(
+            abi.encodeWithSignature("totalStaked()")
+        );
+
+        if (success && data.length >= 32) {
+            return abi.decode(data, (uint256));
+        }
+
+        return 0;
     }
 }

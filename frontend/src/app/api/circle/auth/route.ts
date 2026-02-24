@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       vaultMode: false,
     });
   } catch (error: any) {
-    console.error('Circle auth error:', error);
+    console.error('Circle auth error:', error instanceof Error ? error.message : 'Unknown error');
 
     // Handle specific Circle API errors
     if (error.response?.data) {
@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
       vaultMode: false,
     });
   } catch (error: any) {
-    console.error('Token refresh error:', error);
+    console.error('Token refresh error:', error instanceof Error ? error.message : 'Unknown error');
 
     if (error.response?.data) {
       return NextResponse.json(

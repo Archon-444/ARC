@@ -13,8 +13,8 @@ The ARC marketplace has progressed significantly with **Phase 1-3 complete**:
 - ✅ Circle SDK integration (USDC payments, wallet management)
 - ✅ Complete UI structure (Next.js 16, TypeScript, Tailwind CSS)
 - ✅ Web3 infrastructure (Wagmi, Viem, RainbowKit)
-- ✅ Testing infrastructure (Jest, React Testing Library - 112 unit tests passing)
-- ✅ E2E testing infrastructure (Playwright - 37 test cases)
+- ✅ Testing infrastructure (Jest, React Testing Library - 112 unit tests, 1354 contract tests)
+- ✅ E2E testing infrastructure (Playwright - 198 test cases across 7 specs)
 - ✅ Animation system (Framer Motion with comprehensive variants)
 - ✅ Toast notification system with transaction tracking
 - ✅ WebSocket real-time updates with mock mode
@@ -31,14 +31,15 @@ Remaining work:
 
 ## ACHIEVEMENT BREAKDOWN
 
-### 1. Smart Contract Layer (75% Complete) ✅
+### 1. Smart Contract Layer (90% Complete) ✅
 
 **Strengths:**
-- Core marketplace contracts (NFTMarketplace, ArcMarketplace)
-- Fee vault with royalty distribution
-- Staking rewards system (ArcStaking.sol)
-- Governance framework (ArcGovernance.sol)
-- Profile registry
+- Core marketplace contract (ArcMarketplace.sol)
+- Fee vault with royalty distribution (FeeVault.sol)
+- Staking rewards system (StakingRewards.sol)
+- Governance framework (SimpleGovernance.sol) — quorum enforcement added
+- Profile registry (ProfileRegistry.sol)
+- Token launcher (ArcTokenFactory.sol + ArcBondingCurveAMM.sol)
 - USDC-native payments
 - Auction + fixed-price listings
 
@@ -55,61 +56,56 @@ Remaining work:
 
 ---
 
-### 2. Technical Stack (90% Complete) ✅
+### 2. Technical Stack (95% Complete) ✅
 
 **Implemented:**
 - ✅ Next.js 16 + TypeScript
 - ✅ Tailwind CSS configured
-- ✅ Wagmi + Viem for Web3
+- ✅ Wagmi 2 + Viem for Web3
 - ✅ RainbowKit wallet connections
-- ✅ Circle SDK integration
+- ✅ Circle SDK integration (4 packages)
 - ✅ React Query for data fetching
-- ✅ GraphQL client setup
+- ✅ GraphQL client setup (11 query functions)
 - ✅ Framer Motion animations (comprehensive library)
-- ✅ Jest + React Testing Library (18 tests passing)
+- ✅ Jest + React Testing Library (112 tests)
 - ✅ PWA setup (manifest, service worker, offline support)
 - ✅ Typesense search integration
 - ✅ ESLint 9 flat config
+- ✅ react-virtuoso for virtual scrolling
+- ✅ Bundle analysis (ANALYZE=true next build)
 
 **Remaining Gaps:**
-- ⚠️ No virtual scrolling (react-virtuoso) for large lists
-- ⚠️ Bundle analysis not set up
+- ⚠️ Rate limiting is in-memory only (needs Redis for production)
 
 **Priority Actions:**
-1. Add virtual scrolling for large collection pages
-2. Set up bundle analysis for optimization
+1. Migrate rate limiting to Redis/Upstash for distributed deployments
 
 ---
 
-### 3. Design System (40% Complete) ❌
+### 3. Design System (85% Complete) ✅
 
 **Current State:**
 - ✅ OpenSea blue primary color (#2081E2)
-- ✅ Basic color scales (50-900)
+- ✅ Color scales (50-900) with semantic tokens
 - ✅ Semantic colors (success, error, warning)
 - ✅ Typography scale (xs to 6xl)
 - ✅ Spacing system (1-24)
-- ✅ Basic animations (fade, slide, shimmer)
+- ✅ Comprehensive animations (fade, slide, shimmer via Framer Motion)
+- ✅ Dark mode with ThemeProvider + system preference detection
+- ✅ Enhanced globals.css with proper tokens
+- ✅ Card hover animations via animation library
 
-**Critical Issues:**
-- ❌ Mixing CSS variables with Tailwind classes
-- ❌ No comprehensive design token system
-- ❌ Missing semantic component tokens (--card-bg, --card-shadow-hover)
-- ❌ Incomplete dark mode implementation
-- ❌ No glassmorphism effects properly defined
-- ❌ Missing hover/focus state standards
-- ❌ No card lift animations standardized
-- ❌ Incomplete shadow/elevation system
+**Remaining Gaps:**
+- ⚠️ Glassmorphism effects not standardized
+- ⚠️ Shadow/elevation system could be more comprehensive
 
 **Priority Actions:**
-1. ✅ Enhanced globals.css with proper tokens (COMPLETED)
-2. Create component-level tokens
-3. Implement dark mode toggle
-4. Add animation utilities
+1. Standardize glassmorphism effects
+2. Document design token usage
 
 ---
 
-### 4. Homepage UI (50% Complete) ⚠️
+### 4. Homepage UI (80% Complete) ✅
 
 **Working Features:**
 - ✅ Hero section with slides
@@ -117,151 +113,146 @@ Remaining work:
 - ✅ Trending collections section
 - ✅ Notable drops grid
 - ✅ Category navigation
-- ✅ Live activity sidebar
+- ✅ Live activity sidebar (polling-based)
 - ✅ XP/Rewards teaser
+- ✅ Image optimization configured
+- ✅ EmptyState component
+- ✅ NFTCard component with hover animations
 
-**Major UX Issues:**
-- ❌ No proper image optimization (using placeholders)
-- ❌ Poor loading states (skeleton screens not polished)
-- ❌ No real NFT thumbnails (missing media viewer)
-- ❌ Static hero carousel (not interactive/swipeable)
-- ❌ No hover effects on cards (spec requires lift + shadow)
-- ❌ Missing standardized NFT card component
-- ❌ No infinite scroll on collections
-- ❌ Activity feed not real-time (no WebSocket)
-- ❌ No empty states with friendly messaging
+**Remaining Gaps:**
+- ⚠️ Static hero carousel (not interactive/swipeable)
+- ⚠️ Infinite scroll partially implemented
+- ⚠️ Real-time feed uses polling (15s interval), not true WebSocket
 
 **Priority Actions:**
-1. ✅ Fix image optimization in next.config.js (COMPLETED)
-2. Create proper Skeleton components
-3. Create EmptyState components
-4. Add card hover animations
-5. Implement real-time activity feed
+1. Implement swipeable hero carousel
+2. Complete infinite scroll on collections
+3. Upgrade polling to true WebSocket when backend integrated
 
 ---
 
-### 5. Collection & Item Pages (15% Complete) ❌
+### 5. Collection & Item Pages (85% Complete) ✅
 
 **Current State:**
-- ✅ `/collection/[address]` route exists
-- ✅ `/nft/[contract]/[tokenId]` route exists
+- ✅ `/collection/[address]` route with full page
+- ✅ `/nft/[contract]/[tokenId]` route with detail page
+- ✅ FilterPanel component with trait filtering
+- ✅ Price history charts (Recharts)
+- ✅ Activity table via activity API
+- ✅ Rarity calculation API (`/api/rarity/[address]`)
+- ✅ NFT metadata API (`/api/nft-metadata/[collection]/[tokenId]`)
 
-**Critical Gaps:**
-- ❌ No advanced filtering UI (traits, price ranges, rarity)
-- ❌ No NFT detail page implementation
-- ❌ Missing media viewer (zoom, fullscreen, 3D support)
-- ❌ No price history charts
-- ❌ No activity table (sales, transfers, bids)
-- ❌ No trait display with rarity percentages
-- ❌ Missing similar items carousel
+**Remaining Gaps:**
+- ⚠️ No 3D model viewer support
+- ⚠️ Similar items carousel not implemented
+- ⚠️ Dutch auction support limited
 
 **Priority Actions:**
-1. Build FilterPanel component
-2. Implement collection page with filtering
-3. Create NFT detail page
-4. Add media viewer
-5. Implement activity table
+1. Add 3D model support in media viewer
+2. Implement similar items carousel
+3. Add Dutch auction listing type
 
 ---
 
-### 6. Search & Discovery (10% Complete) ❌
+### 6. Search & Discovery (90% Complete) ✅
 
-**Critical Gap - Not Implemented:**
-- ❌ No search functionality
-- ❌ No instant search modal (cmd+K)
-- ❌ No Algolia integration
-- ❌ No autocomplete
-- ❌ No recent searches
-- ❌ No trending searches
+**Implemented:**
+- ✅ Typesense search integration
+- ✅ Command palette (Cmd+K) via CommandPalette component
+- ✅ Autocomplete search results
+- ✅ Search across collections, NFTs, users
+
+**Remaining Gaps:**
+- ⚠️ No recent searches history
+- ⚠️ No trending searches
 
 **Priority Actions:**
-1. Install Algolia
-2. Create SearchModal component
-3. Add command palette (cmd+K)
-4. Implement autocomplete
+1. Add recent searches persistence
+2. Implement trending searches from analytics
 
 ---
 
-### 7. User Profiles (20% Complete) ❌
+### 7. User Profiles (60% Complete) ⚠️
 
 **Current State:**
-- ✅ `/profile` route exists
-- ✅ Basic profile registry contract
+- ✅ `/profile` route with page
+- ✅ ProfileRegistry contract on-chain
+- ✅ FollowButton component exists
+- ✅ Profile hooks for read/write
 
-**Missing Features:**
-- ❌ No portfolio analytics
-- ❌ No collection management
-- ❌ No activity feed
-- ❌ No edit profile UI
+**Remaining Gaps:**
+- ❌ No portfolio analytics dashboard
+- ❌ No collection management UI
 - ❌ No ENS resolution
-- ❌ No social features (follow/followers)
+- ⚠️ Social features (follow/followers) — component exists but limited integration
 
 **Priority Actions:**
-1. Build profile page UI
-2. Add portfolio analytics
-3. Implement collection management
-4. Add activity feed
+1. Build portfolio analytics dashboard
+2. Add collection management UI
+3. Integrate follow system end-to-end
 
 ---
 
-### 8. Mobile Experience (25% Complete) ❌
+### 8. Mobile Experience (90% Complete) ✅
 
 **Current State:**
 - ✅ Tailwind breakpoints configured
-- ✅ Basic responsive grid
+- ✅ Responsive grid
+- ✅ PWA manifest (manifest.json with icons, categories)
+- ✅ Service worker (cache-first static, network-first API, offline fallback)
+- ✅ Install prompt component
+- ✅ Mobile navigation embedded in Navbar
+- ✅ Mobile-responsive cards and layouts
+- ✅ BottomNavigation component exists
 
-**Critical Gaps:**
-- ❌ No PWA manifest
-- ❌ No service worker
-- ❌ No bottom navigation for mobile
-- ❌ No touch gestures (swipe, pull-to-refresh)
-- ❌ No mobile-optimized cards
-- ❌ Missing mobile menu
+**Remaining Gaps:**
+- ⚠️ No touch gestures (swipe, pull-to-refresh)
+- ⚠️ Offline page may need verification
 
 **Priority Actions:**
-1. Add PWA manifest
-2. Create service worker
-3. Build bottom navigation
-4. Optimize for mobile viewports
+1. Add swipe gestures for card carousels
+2. Verify offline fallback page exists
 
 ---
 
-### 9. Performance Optimization (20% Complete) ❌
+### 9. Performance Optimization (85% Complete) ✅
 
-**Critical Issues:**
-- ✅ Image optimization configured (COMPLETED)
-- ❌ No code splitting visible
-- ❌ No prefetching strategy
-- ❌ No virtual scrolling for long lists
-- ❌ No Core Web Vitals monitoring
-- ❌ No bundle analysis
-- ❌ No caching strategy beyond React Query
+**Implemented:**
+- ✅ Image optimization configured
+- ✅ react-virtuoso installed for virtual scrolling
+- ✅ WebVitalsReporter component for Core Web Vitals monitoring
+- ✅ Bundle analysis (ANALYZE=true next build)
+- ✅ React Query caching with retry logic
+- ✅ Service worker caching strategy (static + API)
+- ✅ Next.js automatic code splitting
+
+**Remaining Gaps:**
+- ⚠️ No explicit prefetching strategy
+- ⚠️ Virtual scrolling installed but integration coverage unknown
 
 **Priority Actions:**
-1. Implement virtual scrolling (react-virtuoso)
-2. Add code splitting with dynamic imports
-3. Set up Web Vitals monitoring
-4. Run bundle analysis
-5. Implement prefetching
+1. Audit virtual scrolling usage on long list pages
+2. Add prefetch hints for common navigation paths
 
 ---
 
-### 10. Accessibility (15% Complete) ❌
+### 10. Accessibility (85% Complete) ✅
 
-**Critical Issues:**
-- ❌ No ARIA labels on interactive elements
-- ❌ No keyboard navigation
-- ❌ No focus management
-- ❌ No screen reader announcements
-- ❌ No skip links
-- ❌ Color contrast not verified
+**Implemented:**
+- ✅ SkipLink component for keyboard navigation
+- ✅ LiveRegion for screen reader announcements
+- ✅ ARIA utilities in accessibility library
+- ✅ Keyboard navigation support
+- ✅ Focus-visible states
+- ✅ E2E accessibility tests (accessibility.spec.ts)
+
+**Remaining Gaps:**
+- ⚠️ Full WCAG 2.1 AA color contrast audit not completed
+- ⚠️ ARIA label coverage may not be 100%
 
 **Priority Actions:**
-1. Add ARIA labels to all components
-2. Implement keyboard navigation
-3. Add focus-visible states
-4. Create skip links
-5. Verify color contrast (WCAG 2.1 AA)
+1. Run automated color contrast audit
+2. Audit all interactive elements for ARIA labels
 
 ---
 
@@ -270,10 +261,11 @@ Remaining work:
 **Current State:**
 - ✅ Contract tests exist (NFTMarketplace, StakingRewards, etc.)
 - ✅ Jest + React Testing Library configured
-- ✅ 112 component tests passing (NFTCard, NFTGrid, Button, Modal, Badge, EmptyState, etc.)
+- ✅ 112 component tests (NFTCard, NFTGrid, Button, Modal, Badge, EmptyState, etc.)
+- ✅ 1,354 contract test cases across 5 files
 - ✅ Test coverage reporting enabled
-- ✅ E2E testing infrastructure (Playwright with 37 test cases)
-- ✅ GitHub Actions CI workflow for E2E tests
+- ✅ E2E testing infrastructure (Playwright with 198 test cases across 7 specs)
+- ✅ GitHub Actions CI workflows (ci.yml, e2e.yml, deploy.yml)
 - ⚠️ Integration tests (partial)
 
 **Priority Actions:**

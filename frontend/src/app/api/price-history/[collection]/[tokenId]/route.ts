@@ -26,7 +26,7 @@ export async function GET(
 
     return NextResponse.json({ sales });
   } catch (error) {
-    console.error('Price history error:', error);
+    console.error('Price history error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json({ error: 'Failed to fetch price history' }, { status: 500 });
   }
 }

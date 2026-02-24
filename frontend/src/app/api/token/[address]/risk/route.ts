@@ -56,7 +56,7 @@ export async function GET(
 
     return NextResponse.json(assessment);
   } catch (error) {
-    console.error('Risk assessment error:', error);
+    console.error('Risk assessment error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { error: 'Failed to compute risk assessment' },
       { status: 500 }

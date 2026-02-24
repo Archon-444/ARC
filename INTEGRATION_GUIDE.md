@@ -76,20 +76,20 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 
 // Accessibility
-import { SkipLinks } from '@/components/accessibility/SkipLinks';
+import { SkipLink } from '@/components/accessibility/SkipLink';
 
 // Error Handling
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 
 // PWA
-import { PWAInstallPrompt } from '@/components/pwa/PWAInstallPrompt';
+import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 
-// Providers
+// Providers — NOTE: actual code uses wagmi + RainbowKit + Circle SDK, not raw WalletContext
 import { WalletProvider } from '@/contexts/WalletContext';
 import { ToastProvider } from '@/components/ui/Toast';
 
-// Performance Monitoring
-import { PerformanceMonitor } from '@/components/PerformanceMonitor';
+// Performance Monitoring — NOTE: actual component is WebVitalsReporter
+import { WebVitalsReporter } from '@/components/analytics/WebVitalsReporter';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -110,13 +110,8 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         {/* Skip Links for Accessibility */}
-        <SkipLinks
-          links={[
-            { href: '#main-content', label: 'Skip to main content' },
-            { href: '#footer', label: 'Skip to footer' },
-            { href: '#navigation', label: 'Skip to navigation' },
-          ]}
-        />
+        {/* NOTE: Actual implementation uses <SkipLink /> (singular) */}
+        <SkipLink />
 
         {/* Error Boundary */}
         <ErrorBoundary
@@ -130,10 +125,10 @@ export default function RootLayout({
           <WalletProvider>
             <ToastProvider>
               {/* PWA Install Prompt */}
-              <PWAInstallPrompt />
+              <InstallPrompt />
 
               {/* Performance Monitoring */}
-              <PerformanceMonitor />
+              <WebVitalsReporter />
 
               {/* Main Content */}
               {children}
@@ -150,7 +145,10 @@ export default function RootLayout({
 
 ### Step 2: Create Performance Monitor Component
 
-**File:** `frontend/src/components/PerformanceMonitor.tsx`
+**File:** `frontend/src/components/analytics/WebVitalsReporter.tsx`
+
+> **Note:** The original guide referenced `PerformanceMonitor`. The actual implementation
+> uses `WebVitalsReporter` which reports Core Web Vitals metrics.
 
 ```typescript
 'use client';
@@ -158,13 +156,11 @@ export default function RootLayout({
 import { useEffect } from 'react';
 import { initPerformanceMonitoring } from '@/lib/performance';
 
-export function PerformanceMonitor() {
+export function WebVitalsReporter() {
   useEffect(() => {
-    // Initialize performance monitoring on mount
     initPerformanceMonitoring();
   }, []);
 
-  // This component doesn't render anything
   return null;
 }
 ```
@@ -987,7 +983,7 @@ export default async function CollectionPage({
 
 **File:** `frontend/src/app/page.tsx`
 
-Update to include SearchInput in header:
+Update to include search in header (actual implementation uses CommandPalette with Cmd+K):
 
 ```typescript
 import { Header } from '@/components/layout/Header';
@@ -1032,10 +1028,10 @@ export default function HomePage() {
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { SearchInput } from '@/components/search/SearchInput';
+// NOTE: Actual implementation uses CommandPalette (Cmd+K) for search, not SearchInput
 import { CommandPalette } from '@/components/navigation/CommandPalette';
 import { useWallet } from '@/contexts/WalletContext';
-import { useKeyboardShortcuts } from '@/components/accessibility/SkipLinks';
+import { useKeyboardShortcuts } from '@/components/accessibility/SkipLink';
 import { searchAutocomplete } from '@/lib/api/search';
 
 export function Header() {
@@ -1493,10 +1489,10 @@ test('user can make offer on NFT', async ({ page }) => {
 After completing all integrations, verify:
 
 ### Root Layout
-- [ ] SkipLinks appear on Tab focus
+- [ ] SkipLink appears on Tab focus
 - [ ] ErrorBoundary catches errors without crashing
-- [ ] PWAInstallPrompt shows on mobile
-- [ ] Performance monitoring initializes
+- [ ] InstallPrompt shows on mobile
+- [ ] WebVitalsReporter initializes
 
 ### API Layer
 - [ ] All API functions return expected data shape

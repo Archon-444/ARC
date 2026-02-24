@@ -27,7 +27,8 @@ See [GAP_ANALYSIS.md](./GAP_ANALYSIS.md) for detailed progress and [SECURITY_AUD
 - **Instant Finality**: Sub-second transaction confirmation
 - **Transparent Royalties**: Automatic creator royalty distribution via FeeVault
 - **User Profiles**: On-chain profile registry with off-chain metadata
-- **Staking & Governance**: ArcStaking and ArcGovernance contracts
+- **Staking & Governance**: StakingRewards and SimpleGovernance contracts
+- **Token Launcher**: ArcTokenFactory with bonding curve AMM
 
 ### Frontend
 - **Advanced Filtering**: FilterPanel with trait filtering and rarity percentages
@@ -40,8 +41,8 @@ See [GAP_ANALYSIS.md](./GAP_ANALYSIS.md) for detailed progress and [SECURITY_AUD
 - **Dark Mode**: Theme toggle with system preference detection
 
 ### Quality & Testing
-- **Unit Tests**: 112 tests passing (Jest + React Testing Library)
-- **E2E Tests**: Playwright infrastructure with 37 test cases
+- **Unit Tests**: 112 frontend tests (Jest + React Testing Library), 1,354 contract tests
+- **E2E Tests**: Playwright with 198 test cases across 7 specs
 - **Accessibility**: Skip links, LiveRegion, keyboard navigation, ARIA utilities
 - **Performance**: Core Web Vitals monitoring, bundle analysis
 - **SEO**: Sitemap, robots.txt, JSON-LD structured data
@@ -52,27 +53,53 @@ See [GAP_ANALYSIS.md](./GAP_ANALYSIS.md) for detailed progress and [SECURITY_AUD
 ArcMarket/
 ├── contracts/              # Smart contracts (Solidity 0.8.24)
 │   ├── contracts/
-│   │   ├── NFTMarketplace.sol      # Core marketplace logic
+│   │   ├── ArcMarketplace.sol      # Core marketplace logic
 │   │   ├── FeeVault.sol            # Royalty & fee distribution
 │   │   ├── ProfileRegistry.sol     # User profiles
-│   │   ├── ArcStaking.sol          # Staking rewards
-│   │   └── ArcGovernance.sol       # DAO governance
-│   └── test/                       # Contract tests
+│   │   ├── StakingRewards.sol      # Staking rewards
+│   │   ├── SimpleGovernance.sol    # DAO governance
+│   │   ├── ArcTokenFactory.sol     # Token launcher
+│   │   ├── ArcBondingCurveAMM.sol  # Bonding curve AMM
+│   │   └── archive/                # Deprecated v0.1 contracts
+│   └── test/                       # Contract tests (1,354 cases)
 │
 ├── frontend/               # Next.js 16 + TypeScript + Tailwind v4
 │   ├── src/
-│   │   ├── app/            # App router pages + API routes
+│   │   ├── app/            # App router pages + 15 API routes
 │   │   ├── components/     # React components (ui, nft, navigation)
-│   │   ├── hooks/          # Custom React hooks
+│   │   ├── hooks/          # Custom React hooks (marketplace, token, staking)
 │   │   ├── lib/            # Utilities (wagmi, animations, accessibility)
 │   │   └── services/       # API and WebSocket services
-│   ├── e2e/                # Playwright E2E tests
-│   └── public/             # Static assets, PWA manifest
+│   ├── e2e/                # Playwright E2E tests (198 cases)
+│   └── public/             # Static assets, PWA manifest, service worker
 │
-├── .github/workflows/      # CI/CD (E2E tests)
+├── subgraph/               # The Graph subgraph for indexing
+│   ├── schema.graphql      # GraphQL schema
+│   ├── subgraph.yaml       # Data source config
+│   └── src/                # AssemblyScript event handlers
+│
+├── backend/                # Express REST API (standalone, not yet integrated)
+│   └── src/                # Routes, WebSocket server, auth
+│
+├── .github/workflows/      # CI/CD (ci.yml, e2e.yml, deploy.yml)
 ├── GAP_ANALYSIS.md         # Progress tracking
 └── SECURITY_AUDIT.md       # Security findings
 ```
+
+## Production Readiness
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Smart contracts | Production-ready | All contracts tested, quorum fix applied |
+| Frontend UI | Production-ready | Full marketplace, collection, NFT detail pages |
+| Circle SDK | Production-ready | Social login, wallet management, transactions |
+| Subgraph | Partially ready | ArcTokenFactory address needs deployment update |
+| Backend API | Not integrated | Express server exists but frontend uses GraphQL + Next.js API routes |
+| Real-time feed | Polling (15s) | Not true WebSocket; backend WS exists but is disconnected |
+| Rate limiting | Dev only | In-memory; needs Redis/Upstash for production |
+| Token launcher | Contracts only | Smart contracts exist; frontend UI and subgraph indexing incomplete |
+
+See [DAPPS_ALIGNMENT_REVIEW.md](./DAPPS_ALIGNMENT_REVIEW.md) for the full alignment audit.
 
 ## Getting Started
 
