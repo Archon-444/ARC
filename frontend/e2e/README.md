@@ -39,13 +39,15 @@ npm run test:e2e:report
 
 ```
 e2e/
-├── homepage.spec.ts      # Homepage tests
-├── navigation.spec.ts    # Navigation and routing tests
-├── search.spec.ts        # Search functionality tests
-├── explore.spec.ts       # Explore page tests
-├── accessibility.spec.ts # Accessibility tests
-├── pwa.spec.ts          # PWA and SEO tests
-└── README.md            # This file
+├── homepage.spec.ts             # Homepage tests
+├── navigation.spec.ts           # Navigation and routing tests
+├── search.spec.ts               # Search functionality tests
+├── explore.spec.ts              # Explore page tests
+├── marketplace.spec.ts          # Marketplace tests
+├── accessibility.spec.ts        # Accessibility tests
+├── pwa.spec.ts                  # PWA and SEO tests
+├── visual-regression.spec.ts    # Screenshot-based visual regression
+└── README.md                    # This file
 ```
 
 ## Test Categories
@@ -123,6 +125,48 @@ jobs:
         with:
           name: playwright-report
           path: frontend/playwright-report/
+```
+
+### Visual Regression (`visual-regression.spec.ts`)
+- Full-page screenshots at desktop (1440×900) and mobile (375×667)
+- Routes: `/`, `/explore`, `/explore?tab=tokens`, `/launch`
+- Mobile nav open state
+- Dark mode variant for homepage
+
+```bash
+# Generate/update baseline screenshots
+npx playwright test visual-regression --update-snapshots --project=chromium
+
+# Compare against baselines
+npx playwright test visual-regression --project=chromium
+```
+
+Screenshot baselines are committed to the repo so CI can diff against them.
+
+## Known Unit Test Failures
+
+The following 16 unit test failures exist on `main` and are **not** caused by any feature branch:
+
+### Badge test (`src/components/ui/__tests__/Badge.test.tsx`) — 2 failures
+| Test | Root cause |
+|------|-----------|
+| `renders rare rarity variant` | Test expects `bg-blue-100` but Badge uses design-token classes (`bg-primary-50`) |
+| `renders epic rarity variant` | Test expects `bg-purple-100` but Badge uses design-token classes (`bg-accent-50`) |
+
+**Fix**: Update test assertions to match the design-token class names the Badge component actually emits.
+
+### NFTCard test (`src/components/nft/__tests__/NFTCard.test.tsx`) — 14 failures
+| Tests | Root cause |
+|-------|-----------|
+| All 13 NFTCard rendering/interaction tests + 1 NFTGrid test | `No QueryClient set, use QueryClientProvider to set one` — NFTCard calls `useRarityData` which uses `useQuery`, but the test renders without a `QueryClientProvider` wrapper |
+
+**Fix**: Wrap the test render calls in a `QueryClientProvider`:
+```tsx
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+const wrapper = ({ children }) => (
+  <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+);
+render(<NFTCard {...props} />, { wrapper });
 ```
 
 ## Writing New Tests
