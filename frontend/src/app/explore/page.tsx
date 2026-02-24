@@ -282,7 +282,7 @@ function ExploreContent() {
         </div>
 
         {/* View Mode Tabs */}
-        <div className="flex gap-4 border-b border-neutral-200 dark:border-neutral-700">
+        <div className="flex gap-4 overflow-x-auto whitespace-nowrap border-b border-neutral-200 dark:border-neutral-700">
           <TabButton
             active={viewMode === 'all'}
             onClick={() => {

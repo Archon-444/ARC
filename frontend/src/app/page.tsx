@@ -128,7 +128,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       <section className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-accent-50 py-20 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-950">
-        <div className="container-custom grid gap-12 lg:grid-cols-2">
+        <div className="container-custom grid gap-12 md:grid-cols-2">
           <div>
             <Badge variant="primary" size="lg" className="mb-6 inline-flex items-center gap-2">
               <Star className="h-4 w-4" />
