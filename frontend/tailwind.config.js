@@ -9,31 +9,44 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Primary (OpenSea Blue - Trust, Premium)
+        // Primary (Indigo - Modern, Immersive)
         primary: {
-          50: '#E6F2FF',
-          100: '#BAE0FF',
-          200: '#7DCCFF',
-          300: '#4DB8FF',
-          400: '#2DA4FF',
-          500: '#2081E2', // OpenSea signature blue
-          600: '#1868B7',
-          700: '#0D4F8C',
-          800: '#083A6A',
-          900: '#052847',
+          50: '#eef2ff',
+          100: '#e0e7ff',
+          200: '#c7d2fe',
+          300: '#a5b4fc',
+          400: '#818cf8',
+          500: '#6366f1', // Indigo 500
+          600: '#4f46e5',
+          700: '#4338ca',
+          800: '#3730a3',
+          900: '#312e81',
         },
-        // Accent (Purple - Creativity)
+        // Accent (Cyan - Energy)
         accent: {
-          50: '#F5F3FF',
-          100: '#EDE9FE',
-          200: '#DDD6FE',
-          300: '#C4B5FD',
-          400: '#A78BFA',
-          500: '#8B5CF6',
-          600: '#7C3AED',
-          700: '#6D28D9',
-          800: '#5B21B6',
-          900: '#4C1D95',
+          50: '#ecfeff',
+          100: '#cffafe',
+          200: '#a5f3fc',
+          300: '#67e8f9',
+          400: '#22d3ee',
+          500: '#06b6d4', // Cyan 500
+          600: '#0891b2',
+          700: '#0e7490',
+          800: '#155e75',
+          900: '#164e63',
+        },
+        // Secondary (Violet - Creativity)
+        secondary: {
+          50: '#f5f3ff',
+          100: '#ede9fe',
+          200: '#ddd6fe',
+          300: '#c4b5fd',
+          400: '#a78bfa',
+          500: '#8b5cf6', // Violet 500
+          600: '#7c3aed',
+          700: '#6d28d9',
+          800: '#5b21b6',
+          900: '#4c1d95',
         },
         // Neutrals (Modern, Clean)
         neutral: {
@@ -49,6 +62,9 @@ module.exports = {
           800: '#1F2937',
           900: '#111827',
         },
+        // Dark theme surfaces (Slate-based)
+        'background-dark': '#0f172a',
+        'surface-dark': '#1e293b',
         // Semantic colors
         success: {
           50: '#ECFDF5',
@@ -133,6 +149,7 @@ module.exports = {
         'lg': '1rem',       // 16px
         'xl': '1.5rem',     // 24px
         '2xl': '2rem',      // 32px
+        '3xl': '1.5rem',    // 24px
         'full': '9999px',
       },
       boxShadow: {
@@ -143,7 +160,7 @@ module.exports = {
         'lg': '0 12px 24px rgba(0, 0, 0, 0.1)',
         'xl': '0 20px 40px rgba(0, 0, 0, 0.12)',
         '2xl': '0 24px 48px rgba(0, 0, 0, 0.16)',
-        'primary': '0 4px 12px rgba(32, 129, 226, 0.3)',
+        'primary': '0 4px 12px rgba(99, 102, 241, 0.3)',
         'accent': '0 4px 12px rgba(139, 92, 246, 0.3)',
       },
       animation: {

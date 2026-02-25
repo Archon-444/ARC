@@ -9,15 +9,16 @@ import {
   ChevronDown,
   CircleDollarSign,
   Compass,
+  Hexagon,
   Menu,
   Rocket,
   Search,
   ShoppingCart,
-  Sparkles,
   User,
   Wallet,
   LogOut,
   Settings,
+  Sparkles,
   Trophy,
   X,
 } from 'lucide-react';
@@ -32,8 +33,6 @@ const primaryNav = [
   { label: 'Explore', href: '/explore', hasDropdown: true },
   { label: 'Stats', href: '/stats' },
   { label: 'Rewards', href: '/rewards' },
-  { label: 'Launch', href: '/launch', launch: true },
-  { label: 'Create', href: '/studio', accent: true },
 ];
 
 const exploreSections = [
@@ -124,14 +123,14 @@ export default function Navbar() {
   const isWalletConnected = isConnected && activeWallet;
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-neutral-200/60 bg-white/95 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-950/95">
+    <header className="sticky top-0 z-40 w-full border-b border-neutral-200/60 bg-white/95 backdrop-blur-xl dark:border-neutral-800 dark:bg-background-dark/95">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-6">
         {/* Left: Logo + Navigation */}
         <div className="flex items-center gap-10">
-          {/* Logo - Simplified */}
+          {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 text-white shadow-sm">
-              <Sparkles className="h-4.5 w-4.5" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-secondary-500 text-white shadow-lg shadow-primary-500/30">
+              <Hexagon className="h-4 w-4 fill-white" />
             </div>
             <span className="text-lg font-bold text-neutral-900 dark:text-white">ArcMarket</span>
           </Link>
@@ -188,43 +187,58 @@ export default function Navbar() {
                 className={`rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
                   pathname.startsWith(item.href)
                     ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white'
-                    : item.accent
-                      ? 'bg-primary-500 text-white hover:bg-primary-600'
-                      : item.launch
-                        ? 'inline-flex items-center gap-1.5 border border-accent-500 text-accent-600 hover:bg-accent-50 dark:text-accent-400 dark:hover:bg-accent-500/10'
-                        : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
+                    : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
                 }`}
               >
-                {item.launch && <Rocket className="h-3.5 w-3.5" />}
                 {item.label}
               </Link>
             ))}
           </nav>
+
+          {/* CTA Buttons */}
+          <div className="hidden md:flex items-center gap-3">
+            <Link
+              href="/launch"
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-purple-500/50 text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 text-sm font-medium transition-all"
+            >
+              <Rocket className="h-3.5 w-3.5" /> Launch
+            </Link>
+            <Link
+              href="/studio"
+              className="px-5 py-1.5 rounded-full bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium shadow-lg shadow-primary-500/25 transition-all"
+            >
+              Create
+            </Link>
+          </div>
         </div>
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
-          {/* Search Button - Icon style */}
-          <button
-            onClick={open}
-            className="hidden md:flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-500 transition-colors hover:border-neutral-300 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:bg-neutral-800"
-          >
-            <Search className="h-4 w-4" />
-            <span className="hidden lg:inline">Search</span>
-            <kbd className="hidden lg:inline-flex h-5 items-center rounded border border-neutral-300 bg-white px-1.5 text-[10px] font-medium text-neutral-400 dark:border-neutral-600 dark:bg-neutral-700">⌘K</kbd>
-          </button>
+          {/* Inline Search Input (lg+) */}
+          <div className="hidden lg:flex items-center relative">
+            <Search className="absolute left-3 h-4 w-4 text-gray-400" />
+            <input
+              onClick={open}
+              onFocus={open}
+              readOnly
+              className="pl-10 pr-16 py-2 w-64 bg-gray-100 dark:bg-surface-dark rounded-full text-sm focus:ring-2 focus:ring-primary-500 placeholder-gray-500 dark:text-gray-200 cursor-pointer outline-none"
+              placeholder="Search collections..."
+            />
+            <kbd className="absolute right-3 px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-xs text-gray-500 font-mono">⌘K</kbd>
+          </div>
 
           {/* Mobile Search */}
           <button
             onClick={open}
-            className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+            className="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
           >
             <Search className="h-5 w-5" />
           </button>
 
-          {/* Notification Bell */}
-          <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800">
+          {/* Notification Bell with red dot */}
+          <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:text-primary-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800">
             <Bell className="h-5 w-5" />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full" />
           </button>
 
           {/* Theme Toggle */}
@@ -234,10 +248,10 @@ export default function Navbar() {
           <div className="relative hidden lg:block" ref={walletMenuRef}>
             <button
               onClick={() => setWalletMenuOpen(!walletMenuOpen)}
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 isWalletConnected
-                  ? 'bg-primary-500 text-white hover:bg-primary-600'
-                  : 'border border-primary-500 text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-500/10'
+                  ? 'bg-primary-500 text-white hover:bg-primary-600 shadow-lg shadow-primary-500/25'
+                  : 'border border-gray-300 dark:border-gray-700 hover:border-primary-500 bg-white dark:bg-surface-dark'
               }`}
             >
               <Wallet className="h-4 w-4" />
@@ -314,10 +328,9 @@ export default function Navbar() {
           <div className="relative hidden lg:block" ref={profileMenuRef}>
             <button
               onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
-            >
-              <User className="h-5 w-5" />
-            </button>
+              className="w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 ring-2 ring-transparent hover:ring-primary-500 transition-all"
+              aria-label="Profile"
+            />
 
             {/* Profile Dropdown */}
             {profileMenuOpen && (
@@ -406,7 +419,7 @@ export default function Navbar() {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white/95 backdrop-blur-xl shadow-lg dark:border-neutral-800 dark:bg-neutral-950/95 lg:hidden safe-area-inset-bottom">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white/95 backdrop-blur-xl shadow-lg dark:border-neutral-800 dark:bg-background-dark/95 lg:hidden safe-area-inset-bottom">
         <div className="grid grid-cols-5">
           {mobileNav.map((item) => (
             <Link
@@ -432,7 +445,7 @@ export default function Navbar() {
             className="absolute inset-0 bg-black/50"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="absolute right-0 top-0 h-full w-80 overflow-y-auto bg-white shadow-2xl dark:bg-neutral-950">
+          <div className="absolute right-0 top-0 h-full w-80 overflow-y-auto bg-white shadow-2xl dark:bg-background-dark">
             <div className="p-4 space-y-6">
               <button
                 onClick={() => setMobileMenuOpen(false)}
