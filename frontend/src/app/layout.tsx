@@ -8,6 +8,7 @@ import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { SessionProvider } from 'next-auth/react';
 import { config } from '@/lib/wagmi';
 import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 import { ToastProvider } from '@/hooks/useToast';
 import { CircleWalletProvider } from '@/hooks/useCircleWallet';
 import CommandPalette from '@/components/navigation/CommandPalette';
@@ -38,7 +39,7 @@ export default function RootLayout({
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#2081E2" />
+        <meta name="theme-color" content="#6366f1" />
         <meta name="description" content="Premier NFT marketplace on Circle Arc blockchain with instant USDC settlements" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/favicon.ico" />
@@ -56,12 +57,13 @@ export default function RootLayout({
                       <ToastProvider>
                         <CommandPaletteProvider>
                           <SkipLink />
-                          <div className="min-h-screen bg-neutral-50 text-neutral-900 transition-colors dark:bg-neutral-900 dark:text-neutral-100">
+                          <div className="min-h-screen bg-neutral-50 text-neutral-900 transition-colors dark:bg-background-dark dark:text-neutral-100">
                             <Navbar />
                             <CommandPalette />
                             <main id="main-content" className="pb-24">
                               {children}
                             </main>
+                            <Footer />
                             <InstallPrompt />
                             <WebVitalsReporter />
                             <OrganizationSchema />
