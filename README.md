@@ -41,7 +41,7 @@ See [GAP_ANALYSIS.md](./GAP_ANALYSIS.md) for detailed progress and [SECURITY_AUD
 - **Dark Mode**: Theme toggle with system preference detection
 
 ### Quality & Testing
-- **Unit Tests**: 112 frontend tests (Jest + React Testing Library), 1,354 contract tests
+- **Unit Tests**: 160 frontend tests (Jest + React Testing Library), 1,354 contract tests
 - **E2E Tests**: Playwright with 198 test cases across 7 specs
 - **Accessibility**: Skip links, LiveRegion, keyboard navigation, ARIA utilities
 - **Performance**: Core Web Vitals monitoring, bundle analysis
