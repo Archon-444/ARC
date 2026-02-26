@@ -58,7 +58,7 @@ export default function RootLayout({
                       <ToastProvider>
                         <CommandPaletteProvider>
                           <SkipLink />
-                          <div className="min-h-screen bg-neutral-50 text-neutral-900 transition-colors dark:bg-background-dark dark:text-neutral-100">
+                          <div className="animated-page-bg min-h-screen text-neutral-900 transition-colors dark:text-neutral-100">
                             <Navbar />
                             <CommandPalette />
                             <main id="main-content" className="pb-24">

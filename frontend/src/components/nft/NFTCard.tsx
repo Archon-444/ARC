@@ -67,7 +67,7 @@ export function NFTCard({
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all hover:shadow-lg',
+        'group relative overflow-hidden rounded-lg border border-gray-200/60 bg-white/55 shadow-sm backdrop-blur-md transition-all hover:shadow-lg',
         onClick && 'cursor-pointer',
         className
       )}
