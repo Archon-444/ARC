@@ -74,7 +74,7 @@ export async function callCircleAPI<T>(
       throw error;
     }
 
-    console.error('Circle API call failed:', error);
+    console.error('Circle API call failed:', error instanceof Error ? error.message : 'Unknown error');
     throw new CircleAPIError(
       error instanceof Error ? error.message : 'Unknown error occurred'
     );
