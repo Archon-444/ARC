@@ -2,11 +2,11 @@
 
 A full-stack NFT marketplace built on Circle's Arc blockchain, leveraging USDC as gas and native payment currency with instant sub-second finality.
 
-## Version 0.4 - Production Ready
+## Version 0.4 - Core Complete, Production Hardening in Progress
 
-**Current Status:** 90% Complete towards world-class marketplace standards
+**Current Status:** 75-80% Production Ready
 
-All core phases completed. Ready for user acceptance testing and production deployment.
+All core phases completed with comprehensive testing. Requires security remediation, infrastructure setup, and integration completion before production deployment.
 
 ### Completed Features (November 2025)
 
@@ -41,7 +41,7 @@ See [GAP_ANALYSIS.md](./GAP_ANALYSIS.md) for detailed progress and [SECURITY_AUD
 - **Dark Mode**: Theme toggle with system preference detection
 
 ### Quality & Testing
-- **Unit Tests**: 112 frontend tests (Jest + React Testing Library), 1,354 contract tests
+- **Unit Tests**: 160 frontend tests (Jest + React Testing Library), 1,354 contract tests
 - **E2E Tests**: Playwright with 198 test cases across 7 specs
 - **Accessibility**: Skip links, LiveRegion, keyboard navigation, ARIA utilities
 - **Performance**: Core Web Vitals monitoring, bundle analysis
@@ -90,12 +90,12 @@ ArcMarket/
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Smart contracts | Production-ready | All contracts tested, quorum fix applied |
+| Smart contracts | Production-ready | All contracts tested, quorum enforcement verified |
 | Frontend UI | Production-ready | Full marketplace, collection, NFT detail pages |
 | Circle SDK | Production-ready | Social login, wallet management, transactions |
 | Subgraph | Partially ready | ArcTokenFactory address needs deployment update |
 | Backend API | Not integrated | Express server exists but frontend uses GraphQL + Next.js API routes |
-| Real-time feed | Polling (15s) | Not true WebSocket; backend WS exists but is disconnected |
+| Real-time feed | Partial | WebSocket client exists, needs NEXT_PUBLIC_WS_URL env var |
 | Rate limiting | Dev only | In-memory; needs Redis/Upstash for production |
 | Token launcher | Contracts only | Smart contracts exist; frontend UI and subgraph indexing incomplete |
 
@@ -170,7 +170,7 @@ npm run analyze
 
 ## Testing
 
-### Unit Tests (112 tests)
+### Unit Tests (160 tests)
 
 ```bash
 npm test                    # Run all tests
@@ -178,7 +178,7 @@ npm run test:watch          # Watch mode
 npm run test:coverage       # Coverage report
 ```
 
-### E2E Tests (37 tests)
+### E2E Tests (198 test cases)
 
 ```bash
 npm run test:e2e            # Run all E2E tests
@@ -195,7 +195,7 @@ Test coverage:
 
 ## Smart Contracts
 
-### NFTMarketplace.sol
+### ArcMarketplace.sol
 
 ```solidity
 // Listings
@@ -226,7 +226,7 @@ See [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) for the full security audit report.
 - Session validation on API endpoints
 - IDOR protection on token refresh
 - No sensitive data exposure in error responses
-- Security headers (HSTS, X-Frame-Options, etc.)
+- Security headers (HSTS, X-Frame-Options, CSP, etc.)
 
 ## Roadmap
 
@@ -238,6 +238,9 @@ See [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) for the full security audit report.
 - [x] Security Audit
 
 ### Pre-Launch
+- [ ] Security remediation (IDOR fixes, rate limiting)
+- [ ] Infrastructure setup (Redis, PostgreSQL, monitoring)
+- [ ] WebSocket integration completion
 - [ ] User acceptance testing
 - [ ] Production deployment configuration
 - [ ] Beta launch
