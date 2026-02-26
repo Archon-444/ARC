@@ -100,7 +100,7 @@ export async function optionalWalletSignature(
     }
   } catch (error) {
     // Silently fail for optional auth
-    console.warn('Optional wallet validation failed:', error);
+    console.warn('Optional wallet validation failed:', error instanceof Error ? error.message : 'Validation error');
   }
 
   next();
