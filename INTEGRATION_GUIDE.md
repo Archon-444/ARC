@@ -143,7 +143,7 @@ export default function RootLayout({
 
 ---
 
-### Step 2: Create Performance Monitor Component
+### Step 2: Create WebVitalsReporter Component
 
 **File:** `frontend/src/components/analytics/WebVitalsReporter.tsx`
 
@@ -1556,5 +1556,5 @@ For questions or issues:
 ---
 
 **Document Version:** 1.0
-**Last Updated:** 2025-11-20
+**Last Updated:** 2026-02-26
 **Status:** Ready for implementation
