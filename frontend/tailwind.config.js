@@ -62,9 +62,9 @@ module.exports = {
           800: '#1F2937',
           900: '#111827',
         },
-        // Dark theme surfaces (Slate-based)
-        'background-dark': '#0f172a',
-        'surface-dark': '#1e293b',
+        // Dark theme surfaces (Made translucent for glass effect)
+        'background-dark': 'rgba(15, 23, 42, 0.4)', // #0f172a at 40%
+        'surface-dark': 'rgba(30, 41, 59, 0.4)', // #1e293b at 40%
         // Semantic colors
         success: {
           50: '#ECFDF5',
@@ -93,19 +93,6 @@ module.exports = {
           500: '#3B82F6',
           600: '#2563EB',
           700: '#1D4ED8',
-        },
-        // Keep secondary for backward compatibility
-        secondary: {
-          50: '#F9FAFB',
-          100: '#F3F4F6',
-          200: '#E5E7EB',
-          300: '#D1D5DB',
-          400: '#9CA3AF',
-          500: '#6B7280',
-          600: '#4B5563',
-          700: '#374151',
-          800: '#1F2937',
-          900: '#111827',
         },
       },
       fontSize: {
