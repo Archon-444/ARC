@@ -47,7 +47,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <title>ArcMarket - NFT Marketplace</title>
       </head>
-      <body className="antialiased animated-page-bg">
+      <body>
         <ThemeProvider>
           <ErrorBoundary>
             <SessionProvider>
