@@ -150,7 +150,7 @@ export default function LaunchPage() {
       {step !== 'success' && (
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Token Details */}
-          <div className="rounded-lg border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900">
+          <div className="rounded-lg border border-neutral-200/60 bg-white/60 p-6 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/50">
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">Token Details</h2>
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -234,7 +234,7 @@ export default function LaunchPage() {
           </div>
 
           {/* Tokenomics */}
-          <div className="rounded-lg border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900">
+          <div className="rounded-lg border border-neutral-200/60 bg-white/60 p-6 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/50">
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">Tokenomics</h2>
             <div className="space-y-4">
               <div>

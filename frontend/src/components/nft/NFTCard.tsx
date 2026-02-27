@@ -67,14 +67,14 @@ export function NFTCard({
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-lg border border-gray-200/60 dark:border-white/10 bg-white/55 dark:bg-slate-900/50 backdrop-blur-md shadow-sm transition-all hover:shadow-lg',
+        'group relative overflow-hidden rounded-lg border border-gray-200/60 bg-white/55 backdrop-blur-md shadow-sm transition-all hover:shadow-lg dark:border-white/10 dark:bg-slate-900/50',
         onClick && 'cursor-pointer',
         className
       )}
       onClick={handleClick}
     >
       {/* Image Container */}
-      <Link href={nftUrl} className="block aspect-square relative overflow-hidden bg-gray-100 dark:bg-gray-800">
+      <Link href={nftUrl} className="block aspect-square relative overflow-hidden bg-gray-100">
         {!imageError ? (
           <Image
             src={imageUrl}
@@ -85,15 +85,15 @@ export function NFTCard({
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
-            <span className="text-4xl font-bold text-gray-400 dark:text-gray-600">#{nft.tokenId}</span>
+          <div className="flex h-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+            <span className="text-4xl font-bold text-gray-400">#{nft.tokenId}</span>
           </div>
         )}
 
         {/* Auction Badge */}
         {auction && (
           <div className="absolute top-3 left-3">
-            <div className="flex items-center gap-1 rounded-full bg-purple-600/90 backdrop-blur px-3 py-1 text-xs font-medium text-white shadow-lg">
+            <div className="flex items-center gap-1 rounded-full bg-purple-600 px-3 py-1 text-xs font-medium text-white shadow-lg">
               <Clock className="h-3 w-3" />
               Auction
             </div>
@@ -113,11 +113,11 @@ export function NFTCard({
             e.stopPropagation();
             setIsLiked(!isLiked);
           }}
-          className="absolute top-3 right-3 rounded-full bg-white/90 dark:bg-slate-900/90 p-2 backdrop-blur-sm transition-all hover:bg-white dark:hover:bg-slate-800 hover:scale-110"
+          className="absolute top-3 right-3 rounded-full bg-white/90 p-2 backdrop-blur-sm transition-all hover:bg-white hover:scale-110"
           aria-label={isLiked ? 'Unlike' : 'Like'}
         >
           <Heart
-            className={cn('h-4 w-4', isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600 dark:text-gray-300')}
+            className={cn('h-4 w-4', isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600')}
           />
         </button>
 
@@ -142,31 +142,31 @@ export function NFTCard({
       <div className="p-4">
         {/* Collection Name */}
         {showCollection && nft.collection?.name && (
-          <p className="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400 truncate">
+          <p className="mb-1 text-xs font-medium text-gray-500 truncate">
             {nft.collection.name}
           </p>
         )}
 
         {/* NFT Name */}
         <Link href={nftUrl}>
-          <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100 truncate hover:text-blue-600 dark:hover:text-blue-400">
+          <h3 className="mb-2 text-lg font-semibold text-gray-900 truncate hover:text-blue-600">
             {nft.name || `#${nft.tokenId}`}
           </h3>
         </Link>
 
         {/* Owner */}
         {showOwner && (
-          <p className="mb-3 text-sm text-gray-600 dark:text-gray-400">
-            Owner: <span className="font-medium text-gray-900 dark:text-gray-200">{truncateAddress(nft.owner)}</span>
+          <p className="mb-3 text-sm text-gray-600">
+            Owner: <span className="font-medium">{truncateAddress(nft.owner)}</span>
           </p>
         )}
 
         {/* Price Section */}
         {price && (
-          <div className="flex items-center justify-between border-t border-gray-100 dark:border-white/10 pt-3">
+          <div className="flex items-center justify-between border-t border-gray-100 pt-3">
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{priceLabel}</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{formatUSDC(price)}</p>
+              <p className="text-xs text-gray-500">{priceLabel}</p>
+              <p className="text-lg font-bold text-gray-900">{formatUSDC(price)}</p>
             </div>
             {listing && (
               <Link
@@ -191,8 +191,8 @@ export function NFTCard({
 
         {/* No Listing State */}
         {!price && (
-          <div className="border-t border-gray-100 dark:border-white/10 pt-3">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Not listed</p>
+          <div className="border-t border-gray-100 pt-3">
+            <p className="text-sm text-gray-500">Not listed</p>
           </div>
         )}
       </div>
@@ -211,10 +211,10 @@ export function NFTCardCompact({ nft, listing, auction }: NFTCardProps) {
   return (
     <Link
       href={nftUrl}
-      className="flex items-center gap-3 rounded-lg border border-gray-200/60 dark:border-white/10 bg-white/55 dark:bg-slate-900/50 backdrop-blur-md p-3 transition-all hover:shadow-md"
+      className="flex items-center gap-3 rounded-lg border border-gray-200/60 bg-white/55 backdrop-blur-md p-3 transition-all hover:shadow-md dark:border-white/10 dark:bg-slate-900/50"
     >
       {/* Image */}
-      <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-gray-800">
+      <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-gray-100">
         <Image
           src={imageUrl}
           alt={nft.name || `NFT #${nft.tokenId}`}
@@ -226,15 +226,15 @@ export function NFTCardCompact({ nft, listing, auction }: NFTCardProps) {
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{nft.collection.name}</p>
-        <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{nft.name || `#${nft.tokenId}`}</p>
-        {price && <p className="text-sm text-gray-600 dark:text-gray-300">{formatUSDC(price)}</p>}
+        <p className="text-xs text-gray-500 truncate">{nft.collection.name}</p>
+        <p className="font-semibold text-gray-900 truncate">{nft.name || `#${nft.tokenId}`}</p>
+        {price && <p className="text-sm text-gray-600">{formatUSDC(price)}</p>}
       </div>
 
       {/* Badge */}
       {auction && (
         <div className="flex-shrink-0">
-          <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 dark:bg-purple-900/50 px-2 py-1 text-xs font-medium text-purple-700 dark:text-purple-300">
+          <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700">
             <Clock className="h-3 w-3" />
             Auction
           </span>
@@ -249,13 +249,13 @@ export function NFTCardCompact({ nft, listing, auction }: NFTCardProps) {
  */
 export function NFTCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200/60 dark:border-white/10 bg-white/55 dark:bg-slate-900/50 backdrop-blur-md shadow-sm">
+    <div className="overflow-hidden rounded-lg border border-gray-200/60 bg-white/55 backdrop-blur-md shadow-sm dark:border-white/10 dark:bg-slate-900/50">
       <Skeleton className="aspect-square w-full" />
       <div className="p-4 space-y-3">
         <Skeleton className="h-3 w-1/2" />
         <Skeleton className="h-5 w-3/4" />
         <Skeleton className="h-4 w-1/2" />
-        <div className="border-t border-gray-100 dark:border-white/10 pt-3">
+        <div className="border-t border-gray-100 pt-3">
           <Skeleton className="h-3 w-1/3 mb-1" />
           <Skeleton className="h-6 w-1/2" />
         </div>
@@ -295,7 +295,7 @@ export function NFTGrid({
   if (!nfts || nfts.length === 0) {
     return (
       <div className="flex min-h-[300px] items-center justify-center text-center">
-        <p className="text-gray-500 dark:text-gray-400">{emptyMessage}</p>
+        <p className="text-gray-500">{emptyMessage}</p>
       </div>
     );
   }
