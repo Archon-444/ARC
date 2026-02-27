@@ -445,7 +445,7 @@ export default function Navbar() {
             className="absolute inset-0 bg-black/50"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="absolute right-0 top-0 h-full w-80 overflow-y-auto bg-white shadow-2xl dark:bg-background-dark">
+          <div className="absolute right-0 top-0 h-full w-80 overflow-y-auto bg-white/95 shadow-2xl backdrop-blur-xl dark:bg-background-dark/95">
             <div className="p-4 space-y-6">
               <button
                 onClick={() => setMobileMenuOpen(false)}

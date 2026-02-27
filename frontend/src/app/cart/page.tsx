@@ -39,7 +39,7 @@ export default function CartPage() {
   const total = subtotal + platformFee;
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+    <div className="min-h-screen">
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
@@ -80,7 +80,7 @@ export default function CartPage() {
               {cartItems.map((item) => (
                 <div
                   key={item.id}
-                  className="flex gap-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
+                  className="flex gap-4 rounded-xl border border-gray-200/60 dark:border-white/10 bg-white/60 dark:bg-slate-900/50 backdrop-blur-md shadow-sm p-4"
                 >
                   {/* NFT Image */}
                   <div className="w-24 h-24 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex-shrink-0 overflow-hidden">
@@ -117,7 +117,7 @@ export default function CartPage() {
 
             {/* Order Summary */}
             <div className="lg:col-span-1">
-              <div className="sticky top-24 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
+              <div className="sticky top-24 rounded-xl border border-gray-200/60 dark:border-white/10 bg-white/60 dark:bg-slate-900/50 backdrop-blur-md shadow-sm p-6">
                 <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
                   Order Summary
                 </h2>

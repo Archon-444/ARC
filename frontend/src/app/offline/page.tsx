@@ -9,7 +9,7 @@ import Link from 'next/link';
 
 export default function OfflinePage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-50 dark:bg-neutral-900">
+    <div className="flex min-h-screen items-center justify-center">
       <div className="text-center">
         <div className="mb-6 flex justify-center">
           <div className="rounded-full bg-neutral-200 p-6 dark:bg-neutral-800">

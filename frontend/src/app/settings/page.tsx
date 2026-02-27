@@ -65,7 +65,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+    <div className="min-h-screen">
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
@@ -97,7 +97,7 @@ export default function SettingsPage() {
 
           {/* Main Content */}
           <div className="lg:col-span-3">
-            <div className="rounded-xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+            <div className="rounded-xl border border-neutral-200/60 bg-white/60 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/50">
               {/* Profile Settings */}
               {activeTab === 'profile' && (
                 <div className="p-6">
