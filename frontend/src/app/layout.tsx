@@ -36,15 +36,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang=\"en\" suppressHydrationWarning>
       <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#6366f1" />
-        <meta name="description" content="Premier NFT marketplace on Circle Arc blockchain with instant USDC settlements" />
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <meta charSet=\"utf-8\" />
+        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\" />
+        <meta name=\"theme-color\" content=\"#6366f1\" />
+        <meta name=\"description\" content=\"Premier NFT marketplace on Circle Arc blockchain with instant USDC settlements\" />
+        <link rel=\"manifest\" href=\"/manifest.json\" />
+        <link rel=\"icon\" href=\"/favicon.ico\" />
+        <link rel=\"apple-touch-icon\" href=\"/icon-192.png\" />
         <title>ArcMarket - NFT Marketplace</title>
       </head>
       <body>
@@ -58,10 +58,10 @@ export default function RootLayout({
                       <ToastProvider>
                         <CommandPaletteProvider>
                           <SkipLink />
-                          <div className="min-h-screen">
+                          <div className=\"min-h-screen bg-transparent\">
                             <Navbar />
                             <CommandPalette />
-                            <main id="main-content" className="pb-24">
+                            <main id=\"main-content\" className=\"relative z-10 pb-24\">
                               {children}
                             </main>
                             <BottomNavigation />
