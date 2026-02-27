@@ -36,18 +36,32 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang=\"en\" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <meta charSet=\"utf-8\" />
-        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\" />
-        <meta name=\"theme-color\" content=\"#6366f1\" />
-        <meta name=\"description\" content=\"Premier NFT marketplace on Circle Arc blockchain with instant USDC settlements\" />
-        <link rel=\"manifest\" href=\"/manifest.json\" />
-        <link rel=\"icon\" href=\"/favicon.ico\" />
-        <link rel=\"apple-touch-icon\" href=\"/icon-192.png\" />
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#6366f1" />
+        <meta name="description" content="Premier NFT marketplace on Circle Arc blockchain with instant USDC settlements" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
         <title>ArcMarket - NFT Marketplace</title>
       </head>
       <body>
+        {/* ===== ANIMATED BACKGROUND — fixed layer, always behind all content ===== */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 0,
+            backgroundImage:
+              'linear-gradient(-45deg, #eef2ff 0%, #f5f3ff 25%, #ecfeff 50%, #f0f9ff 75%, #eef2ff 100%)',
+            backgroundSize: '300% 300%',
+            animation: 'gradient-shift 18s ease infinite',
+          }}
+          className="dark:![background-image:linear-gradient(-45deg,#0f172a_0%,#2e1065_25%,#0c2d48_50%,#1a0533_75%,#0f172a_100%)]"
+        />
         <ThemeProvider>
           <ErrorBoundary>
             <SessionProvider>
@@ -58,10 +72,10 @@ export default function RootLayout({
                       <ToastProvider>
                         <CommandPaletteProvider>
                           <SkipLink />
-                          <div className=\"min-h-screen bg-transparent\">
+                          <div className="relative z-10 min-h-screen bg-transparent">
                             <Navbar />
                             <CommandPalette />
-                            <main id=\"main-content\" className=\"relative z-10 pb-24\">
+                            <main id="main-content" className="relative pb-24">
                               {children}
                             </main>
                             <BottomNavigation />
