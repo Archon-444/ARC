@@ -39,11 +39,11 @@ export default function RewardsPage() {
   const tier = getLevelTier(mockUserData.level);
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+    <div className="min-h-screen">
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
         {/* Header with Level Display */}
         <div className={cn(
-          "relative overflow-hidden rounded-2xl bg-gradient-to-r p-8 text-white",
+          "relative overflow-hidden rounded-2xl bg-gradient-to-r p-8 text-white shadow-lg",
           tier.gradient
         )}>
           <div className="relative z-10">
@@ -73,7 +73,7 @@ export default function RewardsPage() {
               </div>
               <div className="mt-2 h-3 overflow-hidden rounded-full bg-white/20">
                 <div
-                  className="h-full rounded-full bg-white transition-all duration-500"
+                  className="h-full rounded-full bg-white transition-all duration-500 shadow-[0_0_10px_rgba(255,255,255,0.5)]"
                   style={{ width: `${mockUserData.progress}%` }}
                 />
               </div>
@@ -85,7 +85,7 @@ export default function RewardsPage() {
         </div>
 
         {/* Tabs */}
-        <div className="mt-8 flex gap-2 border-b border-neutral-200 dark:border-neutral-800">
+        <div className="mt-8 flex gap-2 border-b border-gray-200/50 dark:border-white/10">
           {([
             { id: 'overview', label: 'Overview', icon: Sparkles },
             { id: 'badges', label: 'Badges', icon: Award },
@@ -98,8 +98,8 @@ export default function RewardsPage() {
               className={cn(
                 "flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors",
                 activeTab === tab.id
-                  ? 'border-primary-500 text-primary-500'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
               )}
             >
               <tab.icon className="h-4 w-4" />
@@ -113,18 +113,18 @@ export default function RewardsPage() {
           {activeTab === 'overview' && (
             <div className="grid gap-6 lg:grid-cols-2">
               {/* XP Rewards Info */}
-              <div className="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
-                <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">How to Earn XP</h3>
+              <div className="rounded-xl border border-gray-200/60 dark:border-white/10 bg-white/60 dark:bg-slate-900/50 backdrop-blur-md shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">How to Earn XP</h3>
                 <div className="mt-4 space-y-3">
                   {Object.entries(XP_REWARDS).map(([action, xp]) => (
                     <div
                       key={action}
-                      className="flex items-center justify-between rounded-lg bg-neutral-50 p-3 dark:bg-neutral-800"
+                      className="flex items-center justify-between rounded-lg bg-gray-50/50 p-3 dark:bg-gray-800/50 border border-gray-100 dark:border-white/5"
                     >
-                      <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
                         {action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())}
                       </span>
-                      <span className="rounded-full bg-primary-100 px-2.5 py-0.5 text-sm font-semibold text-primary-600 dark:bg-primary-500/20 dark:text-primary-400">
+                      <span className="rounded-full bg-primary-100/80 px-2.5 py-0.5 text-sm font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">
                         +{xp} XP
                       </span>
                     </div>
@@ -133,11 +133,11 @@ export default function RewardsPage() {
               </div>
 
               {/* Level Tiers */}
-              <div className="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
-                <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">Level Tiers</h3>
+              <div className="rounded-xl border border-gray-200/60 dark:border-white/10 bg-white/60 dark:bg-slate-900/50 backdrop-blur-md shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Level Tiers</h3>
                 <div className="mt-4 space-y-3">
                   {[
-                    { name: 'Common', levels: '1-4', gradient: 'from-neutral-400 to-neutral-500' },
+                    { name: 'Common', levels: '1-4', gradient: 'from-gray-400 to-gray-500' },
                     { name: 'Rare', levels: '5-9', gradient: 'from-blue-400 to-cyan-500' },
                     { name: 'Epic', levels: '10-14', gradient: 'from-purple-400 to-pink-500' },
                     { name: 'Legendary', levels: '15+', gradient: 'from-yellow-400 to-orange-500' },
@@ -145,10 +145,10 @@ export default function RewardsPage() {
                     <div
                       key={tierInfo.name}
                       className={cn(
-                        "flex items-center justify-between rounded-lg p-3",
+                        "flex items-center justify-between rounded-lg p-3 border",
                         mockUserData.level >= parseInt(tierInfo.levels) || tierInfo.name === tier.name
-                          ? `bg-gradient-to-r ${tierInfo.gradient} text-white`
-                          : 'bg-neutral-50 dark:bg-neutral-800'
+                          ? `bg-gradient-to-r ${tierInfo.gradient} text-white border-transparent`
+                          : 'bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-white/5 text-gray-500 dark:text-gray-400'
                       )}
                     >
                       <span className="font-medium">{tierInfo.name}</span>
@@ -159,12 +159,12 @@ export default function RewardsPage() {
               </div>
 
               {/* Recent Badges */}
-              <div className="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900 lg:col-span-2">
+              <div className="rounded-xl border border-gray-200/60 dark:border-white/10 bg-white/60 dark:bg-slate-900/50 backdrop-blur-md shadow-sm p-6 lg:col-span-2">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">Your Badges</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Your Badges</h3>
                   <button
                     onClick={() => setActiveTab('badges')}
-                    className="flex items-center gap-1 text-sm text-primary-500 hover:text-primary-600"
+                    className="flex items-center gap-1 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
                   >
                     View all <ChevronRight className="h-4 w-4" />
                   </button>
@@ -175,12 +175,12 @@ export default function RewardsPage() {
                     return (
                       <div
                         key={badgeId}
-                        className="flex items-center gap-3 rounded-xl bg-neutral-50 p-3 dark:bg-neutral-800"
+                        className="flex items-center gap-3 rounded-xl bg-gray-50/80 p-3 dark:bg-gray-800/80 border border-gray-100 dark:border-white/5 hover:scale-105 transition-transform"
                       >
                         <span className="text-2xl">{badge.icon}</span>
                         <div>
-                          <p className="font-medium text-neutral-900 dark:text-white">{badge.name}</p>
-                          <p className="text-xs text-neutral-500">{badge.description}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{badge.name}</p>
+                          <p className="text-xs text-gray-500">{badge.description}</p>
                         </div>
                       </div>
                     );
@@ -198,29 +198,31 @@ export default function RewardsPage() {
                   <div
                     key={badge.id}
                     className={cn(
-                      "relative rounded-xl border p-5 transition-all",
+                      "relative rounded-xl border p-5 transition-all backdrop-blur-md",
                       isUnlocked
-                        ? 'border-primary-200 bg-white dark:border-primary-800 dark:bg-neutral-900'
-                        : 'border-neutral-200 bg-neutral-50 opacity-60 dark:border-neutral-800 dark:bg-neutral-900/50'
+                        ? 'border-primary-200 bg-white/60 dark:border-primary-900/50 dark:bg-slate-900/50 shadow-sm hover:shadow-md'
+                        : 'border-gray-200/50 bg-white/30 dark:border-white/5 dark:bg-slate-900/30 opacity-70 grayscale-[30%]'
                     )}
                   >
                     {!isUnlocked && (
-                      <Lock className="absolute right-3 top-3 h-4 w-4 text-neutral-400" />
+                      <Lock className="absolute right-3 top-3 h-4 w-4 text-gray-400 dark:text-gray-500" />
                     )}
                     <div className="flex items-start gap-4">
                       <div className={cn(
                         "flex h-14 w-14 items-center justify-center rounded-xl text-3xl",
                         isUnlocked
-                          ? 'bg-primary-100 dark:bg-primary-500/20'
-                          : 'bg-neutral-200 dark:bg-neutral-800'
+                          ? 'bg-primary-100/80 dark:bg-primary-900/30'
+                          : 'bg-gray-100/80 dark:bg-gray-800/50'
                       )}>
                         {badge.icon}
                       </div>
                       <div>
-                        <h4 className="font-semibold text-neutral-900 dark:text-white">{badge.name}</h4>
-                        <p className="mt-1 text-sm text-neutral-500">{badge.description}</p>
+                        <h4 className={cn("font-semibold", isUnlocked ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400")}>
+                          {badge.name}
+                        </h4>
+                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{badge.description}</p>
                         {isUnlocked && (
-                          <p className="mt-2 text-xs font-medium text-green-500">Unlocked</p>
+                          <p className="mt-2 text-xs font-medium text-green-600 dark:text-green-400">Unlocked</p>
                         )}
                       </div>
                     </div>
@@ -236,10 +238,10 @@ export default function RewardsPage() {
                 <div
                   key={quest.id}
                   className={cn(
-                    "rounded-xl border p-5",
+                    "rounded-xl border p-5 backdrop-blur-md transition-all hover:shadow-md",
                     quest.completed
-                      ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
-                      : 'border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900'
+                      ? 'border-green-200/60 bg-green-50/60 dark:border-green-900/30 dark:bg-green-900/10'
+                      : 'border-gray-200/60 bg-white/60 dark:border-white/10 dark:bg-slate-900/50'
                   )}
                 >
                   <div className="flex items-center justify-between">
@@ -247,23 +249,23 @@ export default function RewardsPage() {
                       <div className={cn(
                         "flex h-12 w-12 items-center justify-center rounded-xl",
                         quest.completed
-                          ? 'bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400'
-                          : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400'
+                          ? 'bg-green-100/80 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-gray-100/80 text-gray-600 dark:bg-gray-800/80 dark:text-gray-400'
                       )}>
                         <quest.icon className="h-6 w-6" />
                       </div>
                       <div>
-                        <h4 className="font-semibold text-neutral-900 dark:text-white">{quest.title}</h4>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">{quest.title}</h4>
                         {quest.progress !== undefined && !quest.completed && (
                           <div className="mt-2">
                             <div className="flex items-center gap-2">
-                              <div className="h-2 w-32 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
+                              <div className="h-2 w-32 overflow-hidden rounded-full bg-gray-200/80 dark:bg-gray-700/80">
                                 <div
                                   className="h-full rounded-full bg-primary-500"
                                   style={{ width: `${(quest.progress / quest.total!) * 100}%` }}
                                 />
                               </div>
-                              <span className="text-xs text-neutral-500">{quest.progress}/{quest.total}</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">{quest.progress}/{quest.total}</span>
                             </div>
                           </div>
                         )}
@@ -271,10 +273,10 @@ export default function RewardsPage() {
                     </div>
                     <div className="text-right">
                       <span className={cn(
-                        "rounded-full px-3 py-1 text-sm font-semibold",
+                        "rounded-full px-3 py-1 text-sm font-semibold border",
                         quest.completed
-                          ? 'bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400'
-                          : 'bg-primary-100 text-primary-600 dark:bg-primary-500/20 dark:text-primary-400'
+                          ? 'bg-green-100/80 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800/50'
+                          : 'bg-primary-50/80 text-primary-700 border-primary-100 dark:bg-primary-900/20 dark:text-primary-400 dark:border-primary-800/30'
                       )}>
                         {quest.completed ? 'Completed' : `+${quest.xp} XP`}
                       </span>
@@ -286,34 +288,34 @@ export default function RewardsPage() {
           )}
 
           {activeTab === 'leaderboard' && (
-            <div className="rounded-xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
-              <div className="border-b border-neutral-200 p-4 dark:border-neutral-800">
-                <h3 className="font-semibold text-neutral-900 dark:text-white">Top Players</h3>
+            <div className="rounded-xl border border-gray-200/60 dark:border-white/10 bg-white/60 dark:bg-slate-900/50 backdrop-blur-md shadow-sm overflow-hidden">
+              <div className="border-b border-gray-200/50 p-4 dark:border-white/5 bg-gray-50/30 dark:bg-slate-800/30">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Top Players</h3>
               </div>
-              <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+              <div className="divide-y divide-gray-100/50 dark:divide-white/5">
                 {LEADERBOARD.map((player) => {
                   const playerTier = getLevelTier(player.level);
                   const badge = BADGES[player.badge as BadgeId];
                   return (
                     <div
                       key={player.rank}
-                      className="flex items-center justify-between p-4"
+                      className="flex items-center justify-between p-4 hover:bg-white/40 dark:hover:bg-slate-800/40 transition-colors"
                     >
                       <div className="flex items-center gap-4">
                         <div className={cn(
                           "flex h-10 w-10 items-center justify-center rounded-full font-bold",
                           player.rank === 1
-                            ? 'bg-yellow-100 text-yellow-600'
+                            ? 'bg-yellow-100/80 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-500'
                             : player.rank === 2
-                              ? 'bg-neutral-200 text-neutral-600'
+                              ? 'bg-gray-200/80 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300'
                               : player.rank === 3
-                                ? 'bg-amber-100 text-amber-700'
-                                : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400'
+                                ? 'bg-amber-100/80 text-amber-800 dark:bg-amber-900/30 dark:text-amber-500'
+                                : 'bg-gray-100/50 text-gray-500 dark:bg-gray-800/50 dark:text-gray-400'
                         )}>
                           {player.rank}
                         </div>
                         <div>
-                          <p className="font-medium text-neutral-900 dark:text-white">{player.address}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{player.address}</p>
                           <div className="flex items-center gap-2">
                             <span className={cn("text-xs font-medium", playerTier.color)}>
                               Level {player.level}
@@ -323,7 +325,7 @@ export default function RewardsPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-neutral-900 dark:text-white">
+                        <p className="font-semibold text-gray-900 dark:text-white">
                           {player.xp.toLocaleString()} XP
                         </p>
                       </div>
@@ -333,21 +335,21 @@ export default function RewardsPage() {
               </div>
 
               {/* Current User Position */}
-              <div className="border-t-2 border-primary-200 bg-primary-50 p-4 dark:border-primary-800 dark:bg-primary-900/20">
+              <div className="border-t border-primary-200/50 bg-primary-50/50 p-4 dark:border-primary-900/30 dark:bg-primary-900/10 backdrop-blur-md">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 font-bold text-primary-600 dark:bg-primary-500/20 dark:text-primary-400">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100/80 font-bold text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">
                       {mockUserData.rank}
                     </div>
                     <div>
-                      <p className="font-medium text-neutral-900 dark:text-white">You</p>
+                      <p className="font-medium text-gray-900 dark:text-white">You</p>
                       <span className={cn("text-xs font-medium", tier.color)}>
                         Level {mockUserData.level}
                       </span>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-neutral-900 dark:text-white">
+                    <p className="font-semibold text-gray-900 dark:text-white">
                       {mockUserData.xp.toLocaleString()} XP
                     </p>
                   </div>
