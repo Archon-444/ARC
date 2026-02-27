@@ -439,16 +439,30 @@
     }
   }
 
-  /* Animated page background */
+  /* Animated page background — pairs with glass cards */
   .animated-page-bg {
-    background: linear-gradient(-45deg, #eef2ff, #f5f3ff, #ecfeff, #e0f2fe);
-    background-size: 400% 400%;
+    background: linear-gradient(
+      -45deg,
+      #eef2ff 0%,
+      #f5f3ff 25%,
+      #ecfeff 50%,
+      #f0f9ff 75%,
+      #eef2ff 100%
+    );
+    background-size: 300% 300%;
     animation: gradient-shift 18s ease infinite;
   }
 
   .dark .animated-page-bg {
-    background: linear-gradient(-45deg, #0f172a, #1e1b4b, #0c1a3d, #0f172a);
-    background-size: 400% 400%;
+    background: linear-gradient(
+      -45deg,
+      #0f172a 0%,
+      #1e1b4b 25%,
+      #0d1b2e 50%,
+      #111827 75%,
+      #0f172a 100%
+    );
+    background-size: 300% 300%;
     animation: gradient-shift 18s ease infinite;
   }
 
