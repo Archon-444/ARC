@@ -130,28 +130,28 @@ export default function HomePage() {
       <section className="relative overflow-hidden py-20">
         <div className="container-custom grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left 8 cols — Featured Drop */}
-          <div className="lg:col-span-8 relative overflow-hidden rounded-3xl bg-surface-dark border border-gray-800 shadow-2xl group min-h-[400px]">
+          <div className="lg:col-span-8 relative overflow-hidden rounded-3xl bg-white/5 dark:bg-slate-900/40 backdrop-blur-md border border-gray-200/50 dark:border-white/10 shadow-2xl group min-h-[400px]">
             {/* Decorative blur circles */}
-            <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary-500/20 rounded-full blur-3xl opacity-50 group-hover:opacity-70 transition-opacity duration-700" />
-            <div className="absolute top-1/2 -left-24 w-72 h-72 bg-secondary-500/20 rounded-full blur-3xl opacity-30 group-hover:opacity-50 transition-opacity duration-700" />
+            <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary-500/20 rounded-full blur-3xl opacity-50 group-hover:opacity-70 transition-opacity duration-700 pointer-events-none" />
+            <div className="absolute top-1/2 -left-24 w-72 h-72 bg-secondary-500/20 rounded-full blur-3xl opacity-30 group-hover:opacity-50 transition-opacity duration-700 pointer-events-none" />
 
             <div className="relative z-10 p-8 md:p-12 flex flex-col justify-center h-full">
               {/* Featured Drop badge */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 w-fit mb-6">
-                <Star className="h-3 w-3 text-yellow-400" />
-                <span className="text-xs font-semibold tracking-wide uppercase text-white/90">Featured Drop</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/50 dark:bg-white/10 border border-gray-200/50 dark:border-white/10 w-fit mb-6 backdrop-blur-sm">
+                <Star className="h-3 w-3 text-yellow-500 dark:text-yellow-400" />
+                <span className="text-xs font-semibold tracking-wide uppercase text-gray-800 dark:text-white/90">Featured Drop</span>
               </div>
 
               {/* Title with gradient animated text */}
-              <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-4 leading-tight tracking-tight">
+              <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 leading-tight tracking-tight drop-shadow-sm">
                 {currentSlide.titleLine1}
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-primary-400 to-purple-400">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-primary-500 to-purple-500 dark:from-blue-400 dark:via-primary-400 dark:to-purple-400">
                   {currentSlide.titleLine2}
                 </span>
               </h1>
 
-              <p className="text-gray-400 text-lg max-w-lg mb-8">
+              <p className="text-gray-600 dark:text-gray-300 text-lg max-w-lg mb-8 font-medium">
                 {currentSlide.description}
               </p>
 
@@ -172,7 +172,7 @@ export default function HomePage() {
               </div>
 
               {/* Live indicator */}
-              <div className="mt-8 flex items-center gap-3 text-sm font-medium text-gray-400">
+              <div className="mt-8 flex items-center gap-3 text-sm font-medium text-gray-600 dark:text-gray-400">
                 <span className="relative flex h-3 w-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500" />
@@ -188,7 +188,7 @@ export default function HomePage() {
                   key={i}
                   onClick={() => setActiveSlide(i)}
                   className={`w-2 h-2 rounded-full transition-all ${
-                    i === activeSlide ? 'bg-primary-400 w-6' : 'bg-gray-600 hover:bg-gray-500'
+                    i === activeSlide ? 'bg-primary-500 dark:bg-primary-400 w-6' : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
                   }`}
                   aria-label={`Slide ${i + 1}`}
                 />
@@ -198,31 +198,31 @@ export default function HomePage() {
 
           {/* Right 4 cols — Live Stats */}
           <div className="lg:col-span-4">
-            <div className="bg-surface-dark border border-gray-800 rounded-3xl p-6 h-full shadow-xl">
-              <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+            <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-gray-200/50 dark:border-white/10 rounded-3xl p-6 h-full shadow-xl">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                 Live Stats
-                <span className="px-2 py-0.5 rounded text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 uppercase tracking-wide font-semibold">Real-time</span>
+                <span className="px-2 py-0.5 rounded text-[10px] bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30 uppercase tracking-wide font-semibold">Real-time</span>
               </h3>
 
               {/* Recent sale items */}
               <div className="space-y-3">
                 {[
                   { name: 'Cyber Punk #882', label: 'Just sold', price: '4.2 ETH', sub: '$12,402', subColor: 'text-gray-500' },
-                  { name: 'Ape Club #102', label: 'New offer', price: '12.5 ETH', sub: '+5% floor', subColor: 'text-green-400' },
+                  { name: 'Ape Club #102', label: 'New offer', price: '12.5 ETH', sub: '+5% floor', subColor: 'text-green-500 dark:text-green-400' },
                 ].map((item) => (
-                  <div key={item.name} className="group/item p-4 rounded-2xl bg-background-dark/50 border border-gray-700/50 hover:border-gray-600 transition-all cursor-pointer">
+                  <div key={item.name} className="group/item p-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-gray-100 dark:border-white/5 hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gray-700 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                           <ImageIcon className="h-5 w-5 text-gray-500" />
                         </div>
                         <div>
-                          <p className="font-semibold text-white text-sm">{item.name}</p>
+                          <p className="font-semibold text-gray-900 dark:text-white text-sm">{item.name}</p>
                           <p className="text-xs text-gray-500">{item.label}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-white text-sm">{item.price}</p>
+                        <p className="font-bold text-gray-900 dark:text-white text-sm">{item.price}</p>
                         <p className={`text-xs ${item.subColor}`}>{item.sub}</p>
                       </div>
                     </div>
@@ -231,13 +231,13 @@ export default function HomePage() {
               </div>
 
               {/* Volume mini-chart */}
-              <div className="relative h-32 w-full mt-4 bg-gradient-to-b from-transparent to-primary-500/5 rounded-xl border border-gray-800 overflow-hidden">
-                <svg className="absolute bottom-0 w-full h-full text-primary-500 opacity-30" preserveAspectRatio="none" viewBox="0 0 100 50">
+              <div className="relative h-32 w-full mt-4 bg-gradient-to-b from-transparent to-primary-500/10 dark:to-primary-500/5 rounded-xl border border-gray-200/50 dark:border-white/10 overflow-hidden backdrop-blur-sm">
+                <svg className="absolute bottom-0 w-full h-full text-primary-500 opacity-20 dark:opacity-30" preserveAspectRatio="none" viewBox="0 0 100 50">
                   <path d="M0 40 Q 20 20 40 30 T 100 10 V 50 H 0 Z" fill="currentColor" />
                   <path d="M0 40 Q 20 20 40 30 T 100 10" fill="none" stroke="currentColor" strokeWidth="2" />
                 </svg>
-                <div className="absolute top-2 left-4 text-xs font-mono text-gray-500">Volume (24h)</div>
-                <div className="absolute bottom-2 right-4 text-xl font-bold text-white">
+                <div className="absolute top-2 left-4 text-xs font-mono text-gray-600 dark:text-gray-400 font-medium">Volume (24h)</div>
+                <div className="absolute bottom-2 right-4 text-xl font-bold text-gray-900 dark:text-white">
                   {stats ? formatCompactUSDC(stats.dailyVolume) : '—'}
                 </div>
               </div>
@@ -245,13 +245,13 @@ export default function HomePage() {
               {/* Stats grid */}
               {stats && (
                 <div className="grid grid-cols-2 gap-3 mt-4">
-                  <div className="p-3 rounded-xl bg-background-dark/50 border border-gray-800">
-                    <p className="text-[10px] uppercase tracking-wide text-gray-500">Listings</p>
-                    <p className="text-lg font-bold text-white">{stats.activeListings.toLocaleString()}</p>
+                  <div className="p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-white/5">
+                    <p className="text-[10px] uppercase tracking-wide text-gray-500 font-semibold">Listings</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">{stats.activeListings.toLocaleString()}</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-background-dark/50 border border-gray-800">
-                    <p className="text-[10px] uppercase tracking-wide text-gray-500">Auctions</p>
-                    <p className="text-lg font-bold text-white">{stats.activeAuctions.toLocaleString()}</p>
+                  <div className="p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-white/5">
+                    <p className="text-[10px] uppercase tracking-wide text-gray-500 font-semibold">Auctions</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">{stats.activeAuctions.toLocaleString()}</p>
                   </div>
                 </div>
               )}
@@ -263,7 +263,7 @@ export default function HomePage() {
       {/* ======================== MAIN CONTENT ======================== */}
       <div className="container-custom space-y-12 py-16">
         {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200">
+          <div className="rounded-2xl border border-red-200 bg-red-50/80 backdrop-blur-sm px-4 py-3 text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200 shadow-sm">
             {error}
           </div>
         )}
@@ -271,34 +271,34 @@ export default function HomePage() {
         {/* ======================== PRODUCT CARDS ======================== */}
         <section className="grid gap-6 md:grid-cols-2">
           {/* NFT Marketplace */}
-          <div className="relative group rounded-3xl p-8 overflow-hidden bg-[#0f3460]/80 backdrop-blur-lg border border-blue-500/20 hover:border-blue-400/50 transition-all duration-300">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
-            <div className="absolute -right-10 -top-10 opacity-10 group-hover:scale-110 transition-transform duration-500">
+          <div className="relative group rounded-3xl p-8 overflow-hidden bg-blue-50/60 dark:bg-blue-950/30 backdrop-blur-md border border-blue-200/50 dark:border-blue-500/20 hover:border-blue-300 dark:hover:border-blue-400/50 transition-all duration-300 shadow-lg">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent dark:from-blue-600/20 opacity-50 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            <div className="absolute -right-10 -top-10 opacity-5 dark:opacity-10 group-hover:scale-110 transition-transform duration-500 pointer-events-none text-blue-900 dark:text-white">
               <Store size={160} />
             </div>
             <div className="relative z-10">
-              <h2 className="text-3xl font-bold text-white mb-3">NFT Marketplace</h2>
-              <p className="text-blue-100/80 mb-8 max-w-sm text-lg">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">NFT Marketplace</h2>
+              <p className="text-gray-700 dark:text-blue-100/80 mb-8 max-w-sm text-lg font-medium">
                 Trade unique digital assets, explore curated collections, and bid on live auctions.
               </p>
-              <Link href="/explore" className="inline-flex items-center gap-2 font-semibold text-white hover:text-blue-200 transition-colors">
+              <Link href="/explore" className="inline-flex items-center gap-2 font-bold text-blue-600 dark:text-white hover:text-blue-700 dark:hover:text-blue-200 transition-colors">
                 Explore Collections <ArrowRight className="h-5 w-5" />
               </Link>
             </div>
           </div>
 
           {/* Token Launchpad */}
-          <div className="relative group rounded-3xl p-8 overflow-hidden bg-[#2e1065]/80 backdrop-blur-lg border border-purple-500/20 hover:border-purple-400/50 transition-all duration-300">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
-            <div className="absolute -right-10 -top-10 opacity-10 group-hover:scale-110 transition-transform duration-500">
+          <div className="relative group rounded-3xl p-8 overflow-hidden bg-purple-50/60 dark:bg-purple-950/30 backdrop-blur-md border border-purple-200/50 dark:border-purple-500/20 hover:border-purple-300 dark:hover:border-purple-400/50 transition-all duration-300 shadow-lg">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 to-transparent dark:from-purple-600/20 opacity-50 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            <div className="absolute -right-10 -top-10 opacity-5 dark:opacity-10 group-hover:scale-110 transition-transform duration-500 pointer-events-none text-purple-900 dark:text-white">
               <Rocket size={160} />
             </div>
             <div className="relative z-10">
-              <h2 className="text-3xl font-bold text-white mb-3">Token Launchpad</h2>
-              <p className="text-purple-100/80 mb-8 max-w-md text-lg">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">Token Launchpad</h2>
+              <p className="text-gray-700 dark:text-purple-100/80 mb-8 max-w-md text-lg font-medium">
                 Launch an ERC-20 token with a bonding curve. Graduate at 80% to unlock creator treasury.
               </p>
-              <Link href="/launch" className="inline-flex items-center gap-2 font-semibold text-white hover:text-purple-200 transition-colors">
+              <Link href="/launch" className="inline-flex items-center gap-2 font-bold text-purple-600 dark:text-white hover:text-purple-700 dark:hover:text-purple-200 transition-colors">
                 Launch a Token <ArrowRight className="h-5 w-5" />
               </Link>
             </div>
@@ -311,8 +311,8 @@ export default function HomePage() {
           <div className="lg:col-span-8 space-y-12">
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold dark:text-white">Notable Drops</h2>
-                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-semibold">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Notable Drops</h2>
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 text-xs font-bold">
                   <Flame className="h-3 w-3" /> Live now
                 </span>
               </div>
@@ -320,28 +320,28 @@ export default function HomePage() {
               {notableDrops.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {notableDrops.slice(0, 4).map((listing, i) => (
-                    <div key={listing.id} className="group relative rounded-2xl bg-surface-dark border border-gray-800 overflow-hidden hover:border-primary-500/50 transition-all duration-300">
-                      <div className="h-48 bg-gray-700 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                    <div key={listing.id} className="group relative rounded-2xl bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-gray-200/50 dark:border-white/10 shadow-md overflow-hidden hover:border-primary-400 dark:hover:border-primary-500/50 transition-all duration-300">
+                      <div className="h-48 bg-gray-100 dark:bg-gray-800 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center">
                           {i % 2 === 0
-                            ? <Diamond className="h-16 w-16 text-gray-600 group-hover:scale-110 transition-transform duration-500" />
-                            : <Palette className="h-16 w-16 text-gray-600 group-hover:scale-110 transition-transform duration-500" />
+                            ? <Diamond className="h-16 w-16 text-gray-400 dark:text-gray-600 group-hover:scale-110 transition-transform duration-500" />
+                            : <Palette className="h-16 w-16 text-gray-400 dark:text-gray-600 group-hover:scale-110 transition-transform duration-500" />
                           }
                         </div>
-                        <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-xs font-mono text-white">
+                        <div className="absolute top-3 right-3 bg-white/80 dark:bg-black/60 backdrop-blur-md px-2 py-1 rounded text-xs font-mono font-bold text-gray-900 dark:text-white shadow-sm border border-gray-200/50 dark:border-white/10">
                           {formatUSDC(BigInt(listing.price))}
                         </div>
                       </div>
                       <div className="p-5">
-                        <h3 className="text-lg font-bold text-white mb-1 group-hover:text-primary-400 transition-colors">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                           {listing.nft?.name ?? `Token #${listing.tokenId}`}
                         </h3>
-                        <p className="text-sm text-gray-400 mb-4">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">
                           {listing.nft?.collection?.name ?? 'Collection'}
                         </p>
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500">Live now</span>
-                          <button className="px-4 py-1.5 rounded-lg bg-gray-700 hover:bg-white hover:text-black text-white text-sm font-medium transition-colors">
+                          <span className="text-xs font-semibold text-gray-500">Live now</span>
+                          <button className="px-4 py-1.5 rounded-lg bg-gray-900 dark:bg-gray-700 hover:bg-primary-500 dark:hover:bg-white text-white dark:hover:text-black text-sm font-semibold transition-colors shadow-sm">
                             Bid
                           </button>
                         </div>
@@ -352,31 +352,31 @@ export default function HomePage() {
               ) : loading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {[0, 1].map((i) => (
-                    <div key={i} className="rounded-2xl bg-surface-dark border border-gray-800 overflow-hidden">
-                      <div className="h-48 skeleton" />
+                    <div key={i} className="rounded-2xl bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-gray-200/50 dark:border-white/10 overflow-hidden">
+                      <div className="h-48 skeleton opacity-50" />
                       <div className="p-5 space-y-3">
-                        <div className="skeleton h-5 w-3/4" />
-                        <div className="skeleton h-4 w-1/2" />
+                        <div className="skeleton h-5 w-3/4 opacity-50" />
+                        <div className="skeleton h-4 w-1/2 opacity-50" />
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-gray-800 bg-surface-dark p-8 text-center">
-                  <p className="text-gray-500">No active listings yet. Check back soon!</p>
+                <div className="rounded-2xl border border-gray-200/50 dark:border-white/10 bg-white/60 dark:bg-slate-900/40 backdrop-blur-md p-8 text-center shadow-sm">
+                  <p className="text-gray-600 dark:text-gray-400 font-medium">No active listings yet. Check back soon!</p>
                 </div>
               )}
             </div>
 
             {/* ======================== CATEGORIES ======================== */}
             <div>
-              <h2 className="mb-6 text-2xl font-bold dark:text-white">Browse by Category</h2>
+              <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-white">Browse by Category</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {CATEGORY_DATA.map((cat) => (
                   <Link
                     key={cat.label}
                     href={cat.href}
-                    className="group p-4 bg-surface-dark border border-gray-800 rounded-2xl hover:border-primary-500/50 hover:bg-gray-800 transition-all card-hover"
+                    className="group p-4 bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-gray-200/50 dark:border-white/10 shadow-sm rounded-2xl hover:border-primary-300 dark:hover:border-primary-500/50 hover:bg-white/80 dark:hover:bg-slate-800/60 transition-all card-hover"
                   >
                     <div className={`w-10 h-10 rounded-lg ${cat.iconBg} flex items-center justify-center mb-3 transition-colors`}>
                       {cat.icon
@@ -384,8 +384,8 @@ export default function HomePage() {
                         : cat.lucide && <cat.lucide className={`h-5 w-5 ${cat.iconColor}`} />
                       }
                     </div>
-                    <p className="font-bold text-white mb-1">{cat.label}</p>
-                    <p className="text-xs text-gray-500">{cat.sub}</p>
+                    <p className="font-bold text-gray-900 dark:text-white mb-1">{cat.label}</p>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{cat.sub}</p>
                   </Link>
                 ))}
               </div>
@@ -394,13 +394,13 @@ export default function HomePage() {
 
           {/* Live Activity (4 cols) */}
           <div className="lg:col-span-4">
-            <div className="bg-surface-dark rounded-3xl p-6 border border-gray-800 h-full">
+            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-md rounded-3xl p-6 border border-gray-200/50 dark:border-white/10 h-full shadow-lg">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Live Activity</p>
-                  <h3 className="text-xl font-bold text-white">Real-time trades</h3>
+                  <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Live Activity</p>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Real-time trades</h3>
                 </div>
-                <TrendingUp className="h-6 w-6 text-primary-500 cursor-pointer hover:bg-gray-800 rounded p-1 transition-colors" />
+                <TrendingUp className="h-6 w-6 text-primary-500 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded p-1 transition-colors" />
               </div>
 
               {/* Filter buttons */}
@@ -410,8 +410,8 @@ export default function HomePage() {
                     key={f}
                     onClick={() => setActivityFilter(f)}
                     className={activityFilter === f
-                      ? 'px-3 py-1 rounded-full bg-white text-black text-xs font-bold shadow-sm'
-                      : 'px-3 py-1 rounded-full bg-gray-800 text-gray-400 hover:text-white text-xs font-medium border border-gray-700 transition-colors'
+                      ? 'px-3 py-1 rounded-full bg-gray-900 dark:bg-white text-white dark:text-black text-xs font-bold shadow-md'
+                      : 'px-3 py-1 rounded-full bg-white/50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-xs font-semibold border border-gray-200 dark:border-white/10 transition-colors backdrop-blur-sm'
                     }
                   >
                     {f === 'all' ? 'All' : f === 'sales' ? 'Sales' : 'Listings'}
@@ -421,22 +421,22 @@ export default function HomePage() {
 
               {/* Activity feed */}
               {filteredActivity.length > 0 ? (
-                <div className="space-y-3 max-h-[400px] overflow-y-auto scrollbar-thin">
+                <div className="space-y-3 max-h-[400px] overflow-y-auto scrollbar-thin pr-2">
                   {filteredActivity.map((event, index) => (
-                    <div key={`${event.name}-${index}`} className="p-3 rounded-xl bg-background-dark/50 border border-gray-700/50 hover:border-gray-600 transition-all">
-                      <p className="text-sm font-semibold text-white">{event.label}</p>
-                      <p className="text-sm text-gray-400">{event.name}</p>
-                      <div className="mt-2 flex items-center justify-between text-xs">
+                    <div key={`${event.name}-${index}`} className="p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-gray-100 dark:border-white/5 hover:border-gray-300 dark:hover:border-gray-600 transition-all shadow-sm">
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">{event.label}</p>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{event.name}</p>
+                      <div className="mt-2 flex items-center justify-between text-xs font-semibold">
                         <span className="text-gray-500">{event.timestamp}</span>
-                        <span className="font-semibold text-primary-400">{event.price}</span>
+                        <span className="text-primary-600 dark:text-primary-400">{event.price}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="bg-background-dark/50 rounded-xl border border-gray-800 p-4 h-64 flex flex-col justify-center items-center text-center">
-                  <BarChart2 className="h-10 w-10 text-gray-700 mb-2" />
-                  <p className="text-gray-500 text-sm">Activity feed visualization loading...</p>
+                <div className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-white/5 p-4 h-64 flex flex-col justify-center items-center text-center shadow-sm">
+                  <BarChart2 className="h-10 w-10 text-gray-400 dark:text-gray-600 mb-2" />
+                  <p className="text-gray-500 font-medium text-sm">Activity feed visualization loading...</p>
                 </div>
               )}
             </div>
