@@ -14,13 +14,13 @@
   --color-accent-500: #06b6d4;
   --color-accent-600: #0891b2;
   --color-neutral-0: #FFFFFF;
-  --color-neutral-50: #F9FAFB;
+  --color-neutral-50: transparent;
   --color-neutral-100: #F3F4F6;
   --color-neutral-200: #E5E7EB;
   --color-neutral-400: #9CA3AF;
   --color-neutral-600: #4B5563;
   --color-neutral-800: #1F2937;
-  --color-neutral-900: #111827;
+  --color-neutral-900: transparent;
   --color-success: #10B981;
   --color-warning: #F59E0B;
   --color-error: #EF4444;
@@ -29,7 +29,7 @@
   /* ========================================
      SEMANTIC TOKENS (Application Colors)
      ======================================== */
-  --color-bg-primary: #F9FAFB;
+  --color-bg-primary: transparent;
   --color-bg-secondary: #FFFFFF;
   --color-bg-tertiary: #F3F4F6;
   --color-surface: #FFFFFF;
@@ -123,17 +123,17 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /* Override primitive tokens */
-    --color-neutral-0: #0f172a;
-    --color-neutral-50: #1e293b;
+    --color-neutral-0: transparent;
+    --color-neutral-50: transparent;
     --color-neutral-100: #334155;
     --color-neutral-200: #475569;
     --color-neutral-400: #94a3b8;
     --color-neutral-600: #cbd5e1;
     --color-neutral-800: #e2e8f0;
-    --color-neutral-900: #f8fafc;
+    --color-neutral-900: transparent;
 
     /* Override semantic tokens */
-    --color-bg-primary: #0f172a;
+    --color-bg-primary: transparent;
     --color-bg-secondary: #1e293b;
     --color-bg-tertiary: #334155;
     --color-surface: #1e293b;
@@ -157,16 +157,16 @@
 [data-theme="dark"],
 .dark {
   /* Same as dark mode media query, but manually triggered */
-  --color-neutral-0: #0f172a;
-  --color-neutral-50: #1e293b;
+  --color-neutral-0: transparent;
+  --color-neutral-50: transparent;
   --color-neutral-100: #334155;
   --color-neutral-200: #475569;
   --color-neutral-400: #94a3b8;
   --color-neutral-600: #cbd5e1;
   --color-neutral-800: #e2e8f0;
-  --color-neutral-900: #f8fafc;
+  --color-neutral-900: transparent;
 
-  --color-bg-primary: #0f172a;
+  --color-bg-primary: transparent;
   --color-bg-secondary: #1e293b;
   --color-bg-tertiary: #334155;
   --color-surface: #1e293b;
@@ -196,7 +196,8 @@
   }
 
   body {
-    @apply bg-transparent text-neutral-900 dark:text-neutral-50 antialiased;
+    @apply text-neutral-900 dark:text-neutral-50 antialiased;
+    background-color: transparent !important;
   }
 
   a {
@@ -448,9 +449,10 @@
       #ecfeff 50%,
       #f0f9ff 75%,
       #eef2ff 100%
-    );
-    background-size: 300% 300%;
-    animation: gradient-shift 18s ease infinite;
+    ) !important;
+    background-size: 300% 300% !important;
+    animation: gradient-shift 18s ease infinite !important;
+    background-attachment: fixed !important;
   }
 
   .dark .animated-page-bg {
@@ -461,9 +463,10 @@
       #0c2d48 50%,
       #1a0533 75%,
       #0f172a 100%
-    );
-    background-size: 300% 300%;
-    animation: gradient-shift 18s ease infinite;
+    ) !important;
+    background-size: 300% 300% !important;
+    animation: gradient-shift 18s ease infinite !important;
+    background-attachment: fixed !important;
   }
 
   /* Button glass effect */
