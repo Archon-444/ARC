@@ -50,17 +50,14 @@ export default function RootLayout({
       <body>
         {/* ===== ANIMATED BACKGROUND — fixed layer, always behind all content ===== */}
         <div
+          id="animated-bg"
           aria-hidden="true"
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 0,
-            backgroundImage:
-              'linear-gradient(-45deg, #eef2ff 0%, #f5f3ff 25%, #ecfeff 50%, #f0f9ff 75%, #eef2ff 100%)',
-            backgroundSize: '300% 300%',
-            animation: 'gradient-shift 18s ease infinite',
+            pointerEvents: 'none',
           }}
-          className="dark:![background-image:linear-gradient(-45deg,#0f172a_0%,#2e1065_25%,#0c2d48_50%,#1a0533_75%,#0f172a_100%)]"
         />
         <ThemeProvider>
           <ErrorBoundary>
