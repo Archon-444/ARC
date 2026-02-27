@@ -67,7 +67,7 @@ export function NFTCard({
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all hover:shadow-lg',
+        'group relative overflow-hidden rounded-lg border border-gray-200/60 bg-white/55 backdrop-blur-md shadow-sm transition-all hover:shadow-lg',
         onClick && 'cursor-pointer',
         className
       )}
@@ -211,7 +211,7 @@ export function NFTCardCompact({ nft, listing, auction }: NFTCardProps) {
   return (
     <Link
       href={nftUrl}
-      className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 transition-all hover:shadow-md"
+      className="flex items-center gap-3 rounded-lg border border-gray-200/60 bg-white/55 backdrop-blur-md p-3 transition-all hover:shadow-md"
     >
       {/* Image */}
       <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-gray-100">
@@ -249,7 +249,7 @@ export function NFTCardCompact({ nft, listing, auction }: NFTCardProps) {
  */
 export function NFTCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-lg border border-gray-200/60 bg-white/55 backdrop-blur-md shadow-sm">
       <Skeleton className="aspect-square w-full" />
       <div className="p-4 space-y-3">
         <Skeleton className="h-3 w-1/2" />

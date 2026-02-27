@@ -226,11 +226,17 @@
      CARD COMPONENTS
      ======================================== */
   .card {
-    background: var(--card-bg);
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
     border: var(--card-border);
     border-radius: var(--card-border-radius);
     box-shadow: var(--card-shadow);
     transition: all var(--transition-base);
+  }
+
+  .dark .card {
+    background: rgba(30, 41, 59, 0.55);
   }
 
   .card-hover {
@@ -431,6 +437,19 @@
       background: rgba(0, 0, 0, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
+  }
+
+  /* Animated page background */
+  .animated-page-bg {
+    background: linear-gradient(-45deg, #eef2ff, #f5f3ff, #ecfeff, #e0f2fe);
+    background-size: 400% 400%;
+    animation: gradient-shift 18s ease infinite;
+  }
+
+  .dark .animated-page-bg {
+    background: linear-gradient(-45deg, #0f172a, #1e1b4b, #0c1a3d, #0f172a);
+    background-size: 400% 400%;
+    animation: gradient-shift 18s ease infinite;
   }
 
   /* Button glass effect */
