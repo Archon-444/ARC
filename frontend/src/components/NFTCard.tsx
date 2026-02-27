@@ -40,13 +40,10 @@ export default function NFTCard({ nft }: NFTCardProps) {
     const end = parseInt(endTime) * 1000;
     const now = Date.now();
     const remaining = end - now;
-
     if (remaining <= 0) return 'Ended';
-
     const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
     const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-
     if (days > 0) return `${days}d ${hours}h`;
     if (hours > 0) return `${hours}h ${minutes}m`;
     return `${minutes}m`;
@@ -55,28 +52,29 @@ export default function NFTCard({ nft }: NFTCardProps) {
   return (
     <Link
       href={`/nft/${collection.address}/${tokenId}`}
-      className="block bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden"
+      className="group block rounded-2xl bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-gray-200/50 dark:border-white/10 shadow-md hover:shadow-xl hover:border-primary-400 dark:hover:border-primary-500/50 transition-all duration-300 overflow-hidden"
     >
-      <div className="relative aspect-square">
+      <div className="relative aspect-square overflow-hidden">
         <Image
           src={imageUrl}
           alt={`${collection.name} #${tokenId}`}
           fill
-          className="object-cover"
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
+        {/* Subtle gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         {auction && !auction.settled && (
-          <div className="absolute top-2 right-2 bg-purple-600 text-white px-2 py-1 rounded-md text-xs font-semibold">
+          <div className="absolute top-2 right-2 bg-purple-600/90 backdrop-blur-sm text-white px-2 py-1 rounded-md text-xs font-semibold">
             Auction
           </div>
         )}
         {listing && listing.active && (
-          <div className="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded-md text-xs font-semibold">
+          <div className="absolute top-2 right-2 bg-blue-600/90 backdrop-blur-sm text-white px-2 py-1 rounded-md text-xs font-semibold">
             Listed
           </div>
         )}
       </div>
-
       <div className="p-4">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
@@ -86,7 +84,6 @@ export default function NFTCard({ nft }: NFTCardProps) {
             #{tokenId}
           </span>
         </div>
-
         {listing && listing.active && (
           <div className="mt-2">
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Price</p>
@@ -95,7 +92,6 @@ export default function NFTCard({ nft }: NFTCardProps) {
             </p>
           </div>
         )}
-
         {auction && !auction.settled && (
           <div className="mt-2 space-y-1">
             <div className="flex justify-between items-center">
@@ -114,10 +110,17 @@ export default function NFTCard({ nft }: NFTCardProps) {
             </p>
           </div>
         )}
-
         {!listing && !auction && (
           <div className="mt-2">
             <p className="text-sm text-gray-500 dark:text-gray-400">Not for sale</p>
+          </div>
+        )}
+        {/* Bid button on hover */}
+        {(listing?.active || (auction && !auction.settled)) && (
+          <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <button className="w-full py-1.5 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-black text-xs font-semibold hover:bg-primary-500 dark:hover:bg-primary-400 dark:hover:text-white transition-colors">
+              {auction && !auction.settled ? 'Place Bid' : 'Buy Now'}
+            </button>
           </div>
         )}
       </div>
