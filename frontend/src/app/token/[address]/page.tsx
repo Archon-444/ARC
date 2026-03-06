@@ -33,6 +33,7 @@ import {
   useGraduationProgress,
   useSellTokens,
 } from '@/hooks/useTokenAMM';
+import { useTokenConfig } from '@/hooks/useTokenFactory';
 import ArcTokenFactoryABI from '@/hooks/abis/ArcTokenFactory.json';
 import ERC20ABI from '@/hooks/abis/ERC20.json';
 
@@ -43,13 +44,6 @@ const demoTrades = [
   { wallet: '0x13aa…42bc', side: 'Buy', amount: '$640', tokens: '6,155', age: '44s ago' },
   { wallet: '0x2c71…d111', side: 'Sell', amount: '$310', tokens: '2,420', age: '2m ago' },
   { wallet: '0xf9b4…7710', side: 'Buy', amount: '$2,480', tokens: '21,005', age: '4m ago' },
-];
-
-const holderBands = [
-  { label: 'Top holder', value: '6.4%' },
-  { label: 'Top 10 holders', value: '28.7%' },
-  { label: 'Creator allocation', value: '5.0%' },
-  { label: 'Graduation target', value: '80.0%' },
 ];
 
 const QUICK_AMOUNTS = [50, 250, 1000] as const;
@@ -66,6 +60,62 @@ function shortenHash(hash?: string) {
 
 function isHexAddress(value?: string): value is `0x${string}` {
   return /^0x[a-fA-F0-9]{40}$/.test(value ?? '');
+}
+
+type CreatorLinks = {
+  website?: string;
+  x?: string;
+  telegram?: string;
+};
+
+function parseDescriptionAndLinks(description?: string): { summary: string; links: CreatorLinks } {
+  if (!description) {
+    return { summary: '', links: {} };
+  }
+
+  const lines = description
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const links: CreatorLinks = {};
+  const summaryLines: string[] = [];
+
+  for (const line of lines) {
+    if (line.startsWith('Website: ')) {
+      links.website = line.replace('Website: ', '').trim();
+      continue;
+    }
+    if (line.startsWith('X: ')) {
+      links.x = line.replace('X: ', '').trim();
+      continue;
+    }
+    if (line.startsWith('Telegram: ')) {
+      links.telegram = line.replace('Telegram: ', '').trim();
+      continue;
+    }
+    summaryLines.push(line);
+  }
+
+  return {
+    summary: summaryLines.join(' '),
+    links,
+  };
+}
+
+function formatLaunchDate(timestamp?: bigint) {
+  if (!timestamp) return 'Unavailable';
+
+  const milliseconds = Number(timestamp) * 1000;
+  if (!Number.isFinite(milliseconds)) return 'Unavailable';
+
+  return new Date(milliseconds).toLocaleString();
+}
+
+function normalizeUrl(value?: string) {
+  if (!value) return null;
+  if (value.startsWith('http://') || value.startsWith('https://')) return value;
+  return `https://${value}`;
 }
 
 export default function TokenDetailPage({ params }: { params: { address: string } }) {
@@ -98,6 +148,8 @@ export default function TokenDetailPage({ params }: { params: { address: string 
 
   const isTokenRoute = Boolean(isArcTokenData);
   const tokenAddress = isTokenRoute ? routeContractAddress : undefined;
+  const tokenConfigState = useTokenConfig(tokenAddress || '');
+  const tokenConfig = tokenConfigState.config;
 
   const { data: tokenAmmData, isLoading: isResolvingAmm } = useReadContract({
     address: tokenFactoryAddress,
@@ -122,8 +174,20 @@ export default function TokenDetailPage({ params }: { params: { address: string 
 
   const shortAddress = routeAddress ? `${routeAddress.slice(0, 6)}…${routeAddress.slice(-4)}` : 'Unknown market';
   const marketShortAddress = marketAddress ? `${marketAddress.slice(0, 6)}…${marketAddress.slice(-4)}` : 'Resolving...';
-  const symbolSeed = routeAddress ? routeAddress.slice(2, 6).toUpperCase() || 'ARC' : 'ARC';
-  const projectName = `ARC ${symbolSeed}`;
+  const symbolSeed = tokenConfig?.symbol || (routeAddress ? routeAddress.slice(2, 6).toUpperCase() || 'ARC' : 'ARC');
+  const projectName = tokenConfig?.name || `ARC ${symbolSeed}`;
+
+  const tokenMetadata = useMemo(() => parseDescriptionAndLinks(tokenConfig?.description), [tokenConfig?.description]);
+  const heroDescription = tokenMetadata.summary || 'A trader-facing token page designed for immediate action: live price reads, resolved AMM routing, exact approval checks, and buy or sell execution from one surface.';
+  const communityLinks = [
+    { label: 'Website', value: tokenMetadata.links.website, href: normalizeUrl(tokenMetadata.links.website) },
+    { label: 'X', value: tokenMetadata.links.x, href: normalizeUrl(tokenMetadata.links.x) },
+    { label: 'Telegram', value: tokenMetadata.links.telegram, href: normalizeUrl(tokenMetadata.links.telegram) },
+  ].filter((item) => item.value && item.href);
+
+  const totalSupplyFormatted = tokenConfig ? formatUnits(tokenConfig.totalSupply, 18) : null;
+  const graduationThresholdFormatted = tokenConfig ? formatUnits(tokenConfig.graduationThreshold, 18) : null;
+  const basePriceFormatted = tokenConfig ? formatUnits(tokenConfig.basePrice, 6) : null;
 
   const buyAmount = selectedAmount.toString();
   const sellAmount = selectedAmount.toString();
@@ -360,8 +424,13 @@ export default function TokenDetailPage({ params }: { params: { address: string 
               Live launch market
             </div>
             <div className="mb-4 flex items-start gap-4">
-              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-600 to-cyan-400 text-2xl font-bold text-white shadow-lg shadow-blue-500/20">
-                {symbolSeed.slice(0, 2)}
+              <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 to-cyan-400 text-2xl font-bold text-white shadow-lg shadow-blue-500/20">
+                {tokenConfig?.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={tokenConfig.imageUrl} alt={projectName} className="h-full w-full object-cover" />
+                ) : (
+                  symbolSeed.slice(0, 2)
+                )}
               </div>
               <div className="min-w-0">
                 <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -373,13 +442,12 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                     {graduation.progressPercent >= 100 ? 'Graduated' : 'Bonding curve active'}
                   </span>
                 </div>
-                <p className="max-w-2xl text-neutral-600 dark:text-neutral-400">
-                  A trader-facing token page designed for immediate action: live price reads, resolved AMM routing, exact approval checks, and buy or sell execution from one surface.
-                </p>
+                <p className="max-w-2xl text-neutral-600 dark:text-neutral-400">{heroDescription}</p>
                 <div className="mt-4 flex flex-wrap gap-2 text-sm text-neutral-500 dark:text-neutral-400">
-                  <Badge icon={<Wallet className="h-3.5 w-3.5" />}>{shortAddress}</Badge>
+                  <Badge icon={<Wallet className="h-3.5 w-3.5" />}>{tokenConfig?.creator ? `Creator ${formatAddress(tokenConfig.creator)}` : shortAddress}</Badge>
                   <Badge icon={<Shield className="h-3.5 w-3.5" />}>{routeResolved ? routeMode : 'Resolving route'}</Badge>
                   <Badge icon={<Globe className="h-3.5 w-3.5" />}>{marketShortAddress}</Badge>
+                  <Badge icon={<Clock3 className="h-3.5 w-3.5" />}>{tokenConfig ? formatLaunchDate(tokenConfig.createdAt) : 'Launch metadata loading'}</Badge>
                   <Badge icon={<TrendingUp className="h-3.5 w-3.5" />}>{isConnected ? `Wallet ${formatAddress(walletAddress)}` : 'Connect wallet for trading'}</Badge>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-3">
@@ -409,7 +477,7 @@ export default function TokenDetailPage({ params }: { params: { address: string 
             <div className="grid gap-3 sm:grid-cols-2">
               <HeroMetric label="Current price" value={currentPrice.isLoading ? 'Loading...' : `$${currentPrice.priceFormatted}`} hint="Live AMM read" />
               <HeroMetric label="Resolved market" value={marketShortAddress} hint={routeResolved ? routeMode : 'Waiting on route resolution'} />
-              <HeroMetric label="Trade mode" value={tradeIntent === 'buy' ? 'Buy path' : 'Sell path'} hint="Switches execution and quotes" />
+              <HeroMetric label="Base price" value={basePriceFormatted ? `$${basePriceFormatted}` : 'Loading...'} hint="Factory launch config" />
               <HeroMetric label="Connected wallet" value={isConnected ? formatAddress(walletAddress) : 'Not connected'} hint="Required for writes" />
             </div>
           </div>
@@ -472,24 +540,25 @@ export default function TokenDetailPage({ params }: { params: { address: string 
               <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Creator and trust signals</h2>
               <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-500 dark:border-white/10 dark:text-neutral-400">
                 <Shield className="h-3.5 w-3.5" />
-                Social-first launch
+                Factory-backed metadata
               </span>
             </div>
             <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
               <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
                 <div className="mb-2 text-sm font-semibold text-neutral-900 dark:text-white">Creator profile</div>
-                <div className="text-sm text-neutral-600 dark:text-neutral-400">0xA9d3…be27</div>
+                <div className="text-sm text-neutral-600 dark:text-neutral-400">{tokenConfig?.creator ? formatAddress(tokenConfig.creator) : 'Loading creator...'}</div>
                 <div className="mt-3 space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
-                  <div className="flex items-center justify-between"><span>Past launches</span><span className="font-medium text-neutral-900 dark:text-white">4</span></div>
-                  <div className="flex items-center justify-between"><span>Graduated</span><span className="font-medium text-neutral-900 dark:text-white">3</span></div>
-                  <div className="flex items-center justify-between"><span>Repeat traders</span><span className="font-medium text-neutral-900 dark:text-white">38%</span></div>
+                  <div className="flex items-center justify-between"><span>Launch time</span><span className="font-medium text-neutral-900 dark:text-white">{tokenConfig ? formatLaunchDate(tokenConfig.createdAt) : 'Loading...'}</span></div>
+                  <div className="flex items-center justify-between"><span>Total supply</span><span className="font-medium text-neutral-900 dark:text-white">{totalSupplyFormatted ? Number(totalSupplyFormatted).toLocaleString() : 'Loading...'}</span></div>
+                  <div className="flex items-center justify-between"><span>Graduation target</span><span className="font-medium text-neutral-900 dark:text-white">{graduationThresholdFormatted ? Number(graduationThresholdFormatted).toLocaleString() : 'Loading...'}</span></div>
                 </div>
               </div>
               <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
                 <div className="mb-3 text-sm font-semibold text-neutral-900 dark:text-white">Execution path</div>
                 <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
-                  <p>Buy flow now resolves token routes into AMM routes, checks live USDC allowance, then gates approval only when it is actually needed.</p>
-                  <p>Sell flow now also reads token allowance when the route is token-native and asks for approval before execution only when the position requires it.</p>
+                  <p>Buy flow resolves token routes into AMM routes, checks live USDC allowance, then gates approval only when it is actually needed.</p>
+                  <p>Sell flow reads token allowance when the route is token-native and asks for approval before execution only when the position requires it.</p>
+                  <p>{tokenConfig ? 'Header and creator details are now hydrated from the token factory config for token-native routes.' : 'Open this page from a token route to hydrate launch metadata directly from the token factory.'}</p>
                 </div>
               </div>
             </div>
@@ -627,29 +696,43 @@ export default function TokenDetailPage({ params }: { params: { address: string 
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
             <h2 className="mb-4 text-xl font-semibold text-neutral-900 dark:text-white">Distribution risk view</h2>
             <div className="space-y-3">
-              {holderBands.map((row) => (
-                <div key={row.label} className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-white/10 dark:bg-slate-950/60">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-neutral-500 dark:text-neutral-400">{row.label}</span>
-                    <span className="font-semibold text-neutral-900 dark:text-white">{row.value}</span>
-                  </div>
-                </div>
-              ))}
+              <RiskRow label="Creator allocation" value="Config-driven launches" />
+              <RiskRow label="Total supply" value={totalSupplyFormatted ? Number(totalSupplyFormatted).toLocaleString() : 'Loading...'} />
+              <RiskRow label="Graduation target" value={graduationThresholdFormatted ? Number(graduationThresholdFormatted).toLocaleString() : 'Loading...'} />
+              <RiskRow label="Base price" value={basePriceFormatted ? `$${basePriceFormatted}` : 'Loading...'} />
             </div>
           </section>
 
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Community pulse</h2>
+              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Community links</h2>
               <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-500 dark:border-white/10 dark:text-neutral-400">
                 <MessageSquare className="h-3.5 w-3.5" />
-                Social hooks next
+                Embedded from launch metadata
               </span>
             </div>
             <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
-              <CommunityRow author="0x22aa…71d0" text="Clean launch, curve feels fair so far." />
-              <CommunityRow author="0x7b19…c014" text="Watching for graduation tonight." />
-              <CommunityRow author="0x0f44…90c9" text="Creator shipped links and docs fast, bullish." />
+              {communityLinks.length ? (
+                communityLinks.map((link) => (
+                  <a
+                    key={link.label}
+                    href={link.href || '#'}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-neutral-50 p-4 transition hover:border-blue-300 hover:text-blue-700 dark:border-white/10 dark:bg-slate-950/60 dark:hover:text-blue-300"
+                  >
+                    <div>
+                      <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">{link.label}</div>
+                      <div className="break-all">{link.value}</div>
+                    </div>
+                    <ArrowUpRight className="h-4 w-4 flex-shrink-0" />
+                  </a>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
+                  Community links are not embedded for this route yet. Launch metadata will appear here automatically for token-native routes with website, X, or Telegram fields.
+                </div>
+              )}
             </div>
           </section>
 
@@ -659,10 +742,10 @@ export default function TokenDetailPage({ params }: { params: { address: string 
               Build sequence
             </div>
             <ol className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
-              <li>1. Replace community placeholders with real comments and creator updates.</li>
-              <li>2. Route post-launch success screens directly into this market execution path.</li>
-              <li>3. Backfill live feed data and token metadata from indexed entities.</li>
-              <li>4. Add reverse lookup support for direct AMM routes so sell-side token approvals can always be resolved.</li>
+              <li>1. Replace placeholder trading activity with indexed market events.</li>
+              <li>2. Backfill live feed data and creator history from indexed entities.</li>
+              <li>3. Add reverse lookup support for direct AMM routes so sell-side token approvals can always be resolved.</li>
+              <li>4. Extend metadata hydration to all stats and analytics surfaces.</li>
             </ol>
           </section>
         </aside>
@@ -709,11 +792,13 @@ function WalletMetric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function CommunityRow({ author, text }: { author: string; text: string }) {
+function RiskRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
-      <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">{author}</div>
-      <div>{text}</div>
+    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-white/10 dark:bg-slate-950/60">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-neutral-500 dark:text-neutral-400">{label}</span>
+        <span className="font-semibold text-neutral-900 dark:text-white">{value}</span>
+      </div>
     </div>
   );
 }
