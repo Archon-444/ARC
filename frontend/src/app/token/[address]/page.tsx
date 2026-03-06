@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { useAccount, useConnect } from 'wagmi';
 import {
   ArrowUpRight,
   BarChart3,
@@ -21,16 +22,15 @@ import {
   useArcSufficientBalance,
   useArcUSDCBalance,
 } from '@/hooks/useArcBalance';
-
-declare global {
-  interface Window {
-    ethereum?: {
-      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-      on?: (event: string, listener: (...args: unknown[]) => void) => void;
-      removeListener?: (event: string, listener: (...args: unknown[]) => void) => void;
-    };
-  }
-}
+import {
+  useApproveAMMUSDC,
+  useBuyTokens,
+  useCalculateBuyReturn,
+  useCalculateSellReturn,
+  useCurrentPrice,
+  useGraduationProgress,
+  useSellTokens,
+} from '@/hooks/useTokenAMM';
 
 const demoTrades = [
   { wallet: '0x8f2c…91d4', side: 'Buy', amount: '$1,280', tokens: '12,840', age: '18s ago' },
@@ -53,107 +53,148 @@ function formatAddress(address?: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
+function shortenHash(hash?: string) {
+  if (!hash) return null;
+  return `${hash.slice(0, 10)}…${hash.slice(-6)}`;
+}
+
 export default function TokenDetailPage({ params }: { params: { address: string } }) {
-  const address = params?.address;
-  const [walletAddress, setWalletAddress] = useState<string>('');
+  const marketAddress = params?.address;
   const [selectedAmount, setSelectedAmount] = useState<number>(250);
   const [tradeIntent, setTradeIntent] = useState<'buy' | 'sell'>('buy');
-  const [walletError, setWalletError] = useState<string | null>(null);
   const [tradeStatus, setTradeStatus] = useState<string | null>(null);
+  const [walletError, setWalletError] = useState<string | null>(null);
+  const [approvalReady, setApprovalReady] = useState(false);
 
-  const shortAddress = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : 'Unknown token';
-  const symbolSeed = address ? address.slice(2, 6).toUpperCase() || 'ARC' : 'ARC';
+  const { address: walletAddress, isConnected } = useAccount();
+  const { connectAsync, connectors, isPending: isConnecting } = useConnect();
+
+  const shortAddress = marketAddress ? `${marketAddress.slice(0, 6)}…${marketAddress.slice(-4)}` : 'Unknown market';
+  const symbolSeed = marketAddress ? marketAddress.slice(2, 6).toUpperCase() || 'ARC' : 'ARC';
   const projectName = `ARC ${symbolSeed}`;
+
+  const tradeAmount = selectedAmount.toString();
   const requiredAmount = BigInt(selectedAmount * 1_000_000);
-  const estimatedReceived = Math.floor((selectedAmount / 0.0148) * 1000) / 1000;
+  const projectedBuy = useCalculateBuyReturn(marketAddress || '', tradeAmount);
+  const projectedSell = useCalculateSellReturn(marketAddress || '', tradeAmount);
+  const currentPrice = useCurrentPrice(marketAddress || '');
+  const graduation = useGraduationProgress(marketAddress || '');
 
   const transactionData = useMemo(
     () => ({
       from: walletAddress || '0x0000000000000000000000000000000000000000',
-      to: address || '0x0000000000000000000000000000000000000000',
+      to: marketAddress || '0x0000000000000000000000000000000000000000',
       value: '0x0',
-      data: tradeIntent === 'buy' ? '0xbuy' : '0xsell',
+      data: tradeIntent === 'buy' ? '0xbuytokens' : '0xselltokens',
     }),
-    [address, tradeIntent, walletAddress]
+    [marketAddress, tradeIntent, walletAddress]
   );
 
-  const usdcBalance = useArcUSDCBalance(walletAddress || undefined, {
+  const usdcBalance = useArcUSDCBalance(walletAddress, {
     enabled: Boolean(walletAddress),
     refreshInterval: 15000,
   });
-  const nativeBalance = useArcNativeBalance(walletAddress || undefined, {
+  const nativeBalance = useArcNativeBalance(walletAddress, {
     enabled: Boolean(walletAddress),
     refreshInterval: 15000,
   });
-  const sufficientBalance = useArcSufficientBalance(walletAddress || undefined, requiredAmount);
+  const sufficientBalance = useArcSufficientBalance(walletAddress, requiredAmount);
   const gasWithBuffer = useArcGasWithBuffer(transactionData, 20);
 
+  const approval = useApproveAMMUSDC(marketAddress || '');
+  const buy = useBuyTokens(marketAddress || '');
+  const sell = useSellTokens(marketAddress || '');
+
   useEffect(() => {
-    if (!window?.ethereum) {
-      return;
+    setApprovalReady(false);
+    setTradeStatus(null);
+  }, [selectedAmount, tradeIntent, walletAddress, marketAddress]);
+
+  useEffect(() => {
+    if (approval.isSuccess) {
+      setApprovalReady(true);
+      setTradeStatus(`USDC approval confirmed for ${tradeAmount} on ${formatAddress(marketAddress)}.`);
     }
+  }, [approval.isSuccess, marketAddress, tradeAmount]);
 
-    const handleAccountsChanged = (accounts: unknown) => {
-      const next = Array.isArray(accounts) && typeof accounts[0] === 'string' ? accounts[0] : '';
-      setWalletAddress(next);
-      setTradeStatus(null);
-    };
+  useEffect(() => {
+    if (buy.isSuccess) {
+      setTradeStatus(`Buy transaction submitted: ${shortenHash(buy.txHash) || 'pending confirmation'}.`);
+    }
+  }, [buy.isSuccess, buy.txHash]);
 
-    window.ethereum
-      .request({ method: 'eth_accounts' })
-      .then((accounts) => handleAccountsChanged(accounts))
-      .catch(() => undefined);
-
-    window.ethereum.on?.('accountsChanged', handleAccountsChanged);
-    return () => {
-      window.ethereum?.removeListener?.('accountsChanged', handleAccountsChanged);
-    };
-  }, []);
+  useEffect(() => {
+    if (sell.isSuccess) {
+      setTradeStatus(`Sell transaction submitted: ${shortenHash(sell.txHash) || 'pending confirmation'}.`);
+    }
+  }, [sell.isSuccess, sell.txHash]);
 
   const connectWallet = async () => {
-    if (!window?.ethereum) {
-      setWalletError('No injected wallet found. Open this page in a wallet-enabled browser.');
+    if (!connectors.length) {
+      setWalletError('No wallet connector is available in this environment.');
       return;
     }
 
     setWalletError(null);
-    setTradeStatus(null);
-
     try {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const next = Array.isArray(accounts) && typeof accounts[0] === 'string' ? accounts[0] : '';
-      setWalletAddress(next);
+      await connectAsync({ connector: connectors[0] });
     } catch (error) {
       console.error('Failed to connect wallet:', error);
       setWalletError(error instanceof Error ? error.message : 'Wallet connection failed.');
     }
   };
 
-  const handlePrepareTrade = async (intent: 'buy' | 'sell') => {
-    setTradeIntent(intent);
-    setWalletError(null);
-
-    if (!walletAddress) {
+  const handleApprove = async () => {
+    if (!isConnected) {
       await connectWallet();
       return;
     }
 
-    if (intent === 'buy' && !sufficientBalance.hasSufficientBalance) {
-      setTradeStatus(`Insufficient USDC. Add ${sufficientBalance.shortfallFormatted} more to continue.`);
+    setTradeIntent('buy');
+    approval.approve(tradeAmount);
+    setTradeStatus(`Approval requested for ${tradeAmount} USDC.`);
+  };
+
+  const handleExecute = async (intent: 'buy' | 'sell') => {
+    setTradeIntent(intent);
+    setWalletError(null);
+
+    if (!isConnected) {
+      await connectWallet();
       return;
     }
 
-    setTradeStatus(
-      `${intent === 'buy' ? 'Buy' : 'Sell'} flow primed for ${formatAddress(walletAddress)}. Contract execution is the next wallet task after this stateful preview.`
-    );
+    if (intent === 'buy') {
+      if (!sufficientBalance.hasSufficientBalance) {
+        setTradeStatus(`Insufficient USDC. Add ${sufficientBalance.shortfallFormatted} more to continue.`);
+        return;
+      }
+      if (!approvalReady) {
+        setTradeStatus('Approve USDC first, then execute the buy transaction.');
+        return;
+      }
+      buy.buyTokens(tradeAmount, 0n);
+      setTradeStatus(`Submitting buy for ${tradeAmount} USDC.`);
+      return;
+    }
+
+    sell.sellTokens(tradeAmount, 0n);
+    setTradeStatus(`Submitting sell for ${tradeAmount} ${symbolSeed}.`);
   };
 
-  if (!address) {
+  const projectedReceive = tradeIntent === 'buy'
+    ? projectedBuy.tokensOutFormatted || '0'
+    : projectedSell.usdcOutFormatted || '0';
+  const projectedFee = tradeIntent === 'buy'
+    ? projectedBuy.feeFormatted || '0'
+    : projectedSell.feeFormatted || '0';
+
+  if (!marketAddress) {
     return (
       <div className="container mx-auto max-w-4xl px-4 py-16">
         <div className="rounded-3xl border border-neutral-200 bg-white p-8 text-center shadow-sm dark:border-white/10 dark:bg-slate-900/70">
-          <div className="text-xl font-semibold text-neutral-900 dark:text-white">Token address missing</div>
-          <p className="mt-2 text-neutral-500 dark:text-neutral-400">Open this page from the launch feed or explore page with a valid token route.</p>
+          <div className="text-xl font-semibold text-neutral-900 dark:text-white">Token market missing</div>
+          <p className="mt-2 text-neutral-500 dark:text-neutral-400">Open this page from the launch feed or explore page with a valid market route.</p>
           <div className="mt-6 flex justify-center gap-3">
             <Link href="/explore" className="rounded-2xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700">
               Explore tokens
@@ -187,17 +228,17 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                     ${symbolSeed}
                   </span>
                   <span className="rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300">
-                    Bonding curve active
+                    {graduation.progressPercent >= 100 ? 'Graduated' : 'Bonding curve active'}
                   </span>
                 </div>
                 <p className="max-w-2xl text-neutral-600 dark:text-neutral-400">
-                  A trader-facing token page designed for immediate action: curve progress, live social proof, creator trust signals, and a wallet-aware trade flow that keeps momentum high after launch.
+                  A trader-facing token page designed for immediate action: live price reads, graduation progress, approval checks, and buy or sell execution from one surface.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2 text-sm text-neutral-500 dark:text-neutral-400">
                   <Badge icon={<Wallet className="h-3.5 w-3.5" />}>{shortAddress}</Badge>
                   <Badge icon={<Shield className="h-3.5 w-3.5" />}>Creator verified links</Badge>
-                  <Badge icon={<Globe className="h-3.5 w-3.5" />}>Trading page ready</Badge>
-                  <Badge icon={<TrendingUp className="h-3.5 w-3.5" />}>{walletAddress ? `Wallet ${formatAddress(walletAddress)}` : 'Connect wallet for trading'}</Badge>
+                  <Badge icon={<Globe className="h-3.5 w-3.5" />}>AMM route live</Badge>
+                  <Badge icon={<TrendingUp className="h-3.5 w-3.5" />}>{isConnected ? `Wallet ${formatAddress(walletAddress)}` : 'Connect wallet for trading'}</Badge>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-3">
                   <Link href="/explore?tab=tokens" className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700">
@@ -216,16 +257,18 @@ export default function TokenDetailPage({ params }: { params: { address: string 
           <div className="rounded-3xl border border-neutral-200 bg-neutral-50/90 p-5 dark:border-white/10 dark:bg-slate-950/60">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm text-neutral-500 dark:text-neutral-400">Curve completion</span>
-              <span className="text-sm font-semibold text-neutral-900 dark:text-white">63.4%</span>
+              <span className="text-sm font-semibold text-neutral-900 dark:text-white">
+                {graduation.isLoading ? 'Loading...' : `${graduation.progressPercent.toFixed(1)}%`}
+              </span>
             </div>
             <div className="mb-4 h-3 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
-              <div className="h-full rounded-full bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400" style={{ width: '63.4%' }} />
+              <div className="h-full rounded-full bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400" style={{ width: `${Math.min(graduation.progressPercent || 0, 100)}%` }} />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <HeroMetric label="Current price" value="$0.0148" hint="+48.0% from launch" />
-              <HeroMetric label="Market cap" value="$148,000" hint="Based on live curve price" />
-              <HeroMetric label="Liquidity raised" value="$94,600" hint="Before graduation" />
-              <HeroMetric label="Unique traders" value="326" hint="24h active wallets" />
+              <HeroMetric label="Current price" value={currentPrice.isLoading ? 'Loading...' : `$${currentPrice.priceFormatted}`} hint="Live AMM read" />
+              <HeroMetric label="Market address" value={shortAddress} hint="Active route" />
+              <HeroMetric label="Trade mode" value={tradeIntent === 'buy' ? 'Buy path' : 'Sell path'} hint="Switches execution and quotes" />
+              <HeroMetric label="Connected wallet" value={isConnected ? formatAddress(walletAddress) : 'Not connected'} hint="Required for writes" />
             </div>
           </div>
         </div>
@@ -238,14 +281,14 @@ export default function TokenDetailPage({ params }: { params: { address: string 
               <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Market snapshot</h2>
               <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-500 dark:border-white/10 dark:text-neutral-400">
                 <BarChart3 className="h-3.5 w-3.5" />
-                Updated live
+                On-chain aware
               </span>
             </div>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <SnapshotCard title="24h volume" value="$82,400" delta="+12.8%" />
-              <SnapshotCard title="Buys / sells" value="214 / 49" delta="Buy pressure strong" />
-              <SnapshotCard title="Graduation ETA" value="~6 hrs" delta="At current pace" />
-              <SnapshotCard title="Holders" value="492" delta="+37 today" />
+              <SnapshotCard title="Current price" value={currentPrice.isLoading ? 'Loading...' : `$${currentPrice.priceFormatted}`} delta="Pulled from AMM" />
+              <SnapshotCard title="Projected fee" value={`${projectedFee} USDC`} delta={tradeIntent === 'buy' ? 'Buy quote' : 'Sell quote'} />
+              <SnapshotCard title="Graduation" value={graduation.isLoading ? 'Loading...' : `${graduation.progressPercent.toFixed(1)}%`} delta="Live progress" />
+              <SnapshotCard title="Wallet state" value={isConnected ? 'Connected' : 'Disconnected'} delta="Needed for execution" />
             </div>
           </section>
 
@@ -301,10 +344,10 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                 </div>
               </div>
               <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
-                <div className="mb-3 text-sm font-semibold text-neutral-900 dark:text-white">Why this page matters</div>
+                <div className="mb-3 text-sm font-semibold text-neutral-900 dark:text-white">Execution path</div>
                 <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
-                  <p>This token detail layout turns a raw contract address into a trading destination with context, momentum, and immediate action paths.</p>
-                  <p>It now surfaces wallet state, balance gating, and gas-aware trade previews directly inside the market page before full contract execution is wired.</p>
+                  <p>Buy flow now includes wallet connect, USDC approval, and a direct AMM buy transaction.</p>
+                  <p>Sell flow now calls the live AMM sell hook and keeps gas, status, and connection context inside the same page.</p>
                 </div>
               </div>
             </div>
@@ -316,23 +359,23 @@ export default function TokenDetailPage({ params }: { params: { address: string 
             <div className="mb-4 flex items-center justify-between gap-3">
               <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Trade panel</h2>
               <span className="rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300">
-                Wallet-aware trading
+                Approval + execution
               </span>
             </div>
             <div className="space-y-4">
               <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <span className="text-neutral-500 dark:text-neutral-400">Wallet</span>
-                  <span className="font-semibold text-neutral-900 dark:text-white">{formatAddress(walletAddress)}</span>
+                  <span className="font-semibold text-neutral-900 dark:text-white">{isConnected ? formatAddress(walletAddress) : 'Not connected'}</span>
                 </div>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <WalletMetric label="USDC balance" value={walletAddress ? (usdcBalance.loading ? 'Loading...' : `${usdcBalance.formatted} USDC`) : 'Connect wallet'} />
-                  <WalletMetric label="Native balance" value={walletAddress ? (nativeBalance.loading ? 'Loading...' : `${nativeBalance.formatted} ARC`) : 'Connect wallet'} />
+                  <WalletMetric label="USDC balance" value={isConnected ? (usdcBalance.loading ? 'Loading...' : `${usdcBalance.formatted} USDC`) : 'Connect wallet'} />
+                  <WalletMetric label="Native balance" value={isConnected ? (nativeBalance.loading ? 'Loading...' : `${nativeBalance.formatted} ARC`) : 'Connect wallet'} />
                 </div>
-                {!walletAddress && (
-                  <button onClick={connectWallet} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700">
+                {!isConnected && (
+                  <button onClick={connectWallet} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60" disabled={isConnecting}>
                     <Wallet className="h-4 w-4" />
-                    Connect wallet
+                    {isConnecting ? 'Connecting...' : 'Connect wallet'}
                   </button>
                 )}
                 {walletError && <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">{walletError}</div>}
@@ -345,9 +388,18 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                     onClick={() => setSelectedAmount(amount)}
                     className={selectedAmount === amount ? 'rounded-2xl border border-blue-300 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300' : 'rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-700 hover:border-blue-300 hover:text-blue-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-200'}
                   >
-                    ${amount}
+                    {tradeIntent === 'buy' ? `$${amount}` : `${amount} ${symbolSeed}`}
                   </button>
                 ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => setTradeIntent('buy')} className={tradeIntent === 'buy' ? 'rounded-2xl bg-neutral-900 px-4 py-3 text-sm font-semibold text-white dark:bg-white dark:text-black' : 'rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-200'}>
+                  Buy
+                </button>
+                <button onClick={() => setTradeIntent('sell')} className={tradeIntent === 'sell' ? 'rounded-2xl bg-neutral-900 px-4 py-3 text-sm font-semibold text-white dark:bg-white dark:text-black' : 'rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-200'}>
+                  Sell
+                </button>
               </div>
 
               <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
@@ -356,12 +408,12 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                   <span className="font-semibold text-neutral-900 dark:text-white">{tradeIntent === 'buy' ? 'Buy' : 'Sell'}</span>
                 </div>
                 <div className="mb-3 flex items-center justify-between text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">You pay</span>
-                  <span className="font-semibold text-neutral-900 dark:text-white">${selectedAmount} USDC</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">Trade size</span>
+                  <span className="font-semibold text-neutral-900 dark:text-white">{tradeIntent === 'buy' ? `$${selectedAmount} USDC` : `${selectedAmount} ${symbolSeed}`}</span>
                 </div>
                 <div className="mb-3 flex items-center justify-between text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">Estimated received</span>
-                  <span className="font-semibold text-neutral-900 dark:text-white">{estimatedReceived.toLocaleString()} {symbolSeed}</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">Projected receive</span>
+                  <span className="font-semibold text-neutral-900 dark:text-white">{tradeIntent === 'buy' ? `${projectedReceive} ${symbolSeed}` : `$${projectedReceive} USDC`}</span>
                 </div>
                 <div className="mb-3 flex items-center justify-between text-sm">
                   <span className="text-neutral-500 dark:text-neutral-400">Buffered gas</span>
@@ -370,24 +422,41 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                 <div className="mb-3 flex items-center justify-between text-sm">
                   <span className="text-neutral-500 dark:text-neutral-400">Balance check</span>
                   <span className="font-semibold text-neutral-900 dark:text-white">
-                    {!walletAddress ? 'Wallet needed' : sufficientBalance.loading ? 'Checking...' : sufficientBalance.hasSufficientBalance ? 'Ready' : `Short ${sufficientBalance.shortfallFormatted}`}
+                    {tradeIntent === 'sell'
+                      ? isConnected ? 'Wallet connected' : 'Wallet needed'
+                      : !isConnected
+                        ? 'Wallet needed'
+                        : sufficientBalance.loading
+                          ? 'Checking...'
+                          : sufficientBalance.hasSufficientBalance
+                            ? 'Ready'
+                            : `Short ${sufficientBalance.shortfallFormatted}`}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">Fee</span>
-                  <span className="font-semibold text-neutral-900 dark:text-white">0.90%</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">Approval state</span>
+                  <span className="font-semibold text-neutral-900 dark:text-white">{approvalReady ? 'Approved' : tradeIntent === 'buy' ? 'Approval needed' : 'Not required'}</span>
                 </div>
               </div>
 
-              {tradeStatus && <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">{tradeStatus}</div>}
+              {(tradeStatus || buy.error || sell.error) && (
+                <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+                  {tradeStatus || buy.error?.message || sell.error?.message}
+                </div>
+              )}
 
-              <button onClick={() => handlePrepareTrade('buy')} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-base font-semibold text-white hover:bg-blue-700">
+              {tradeIntent === 'buy' && (
+                <button onClick={handleApprove} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-4 text-base font-semibold text-neutral-900 hover:bg-neutral-50 disabled:opacity-60 dark:border-white/10 dark:bg-slate-950/60 dark:text-white" disabled={approval.isLoading || !marketAddress}>
+                  <Shield className="h-5 w-5" />
+                  {approval.isLoading ? 'Approving USDC...' : approvalReady ? 'USDC approved' : 'Approve USDC'}
+                </button>
+              )}
+
+              <button onClick={() => handleExecute(tradeIntent)} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-base font-semibold text-white hover:bg-blue-700 disabled:opacity-60" disabled={buy.isLoading || sell.isLoading || approval.isLoading || !marketAddress}>
                 <TrendingUp className="h-5 w-5" />
-                {walletAddress ? 'Prepare buy' : 'Connect wallet to buy'}
-              </button>
-              <button onClick={() => handlePrepareTrade('sell')} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-4 text-base font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
-                <Flame className="h-5 w-5" />
-                {walletAddress ? 'Prepare sell' : 'Connect wallet to sell'}
+                {tradeIntent === 'buy'
+                  ? buy.isLoading ? 'Buying...' : 'Execute buy'
+                  : sell.isLoading ? 'Selling...' : 'Execute sell'}
               </button>
             </div>
           </section>
@@ -427,10 +496,10 @@ export default function TokenDetailPage({ params }: { params: { address: string 
               Build sequence
             </div>
             <ol className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
-              <li>1. Swap trade previews for live bonding-curve contract writes.</li>
-              <li>2. Thread approval and allowance checks into the buy path.</li>
+              <li>1. Add allowance reads so approval only appears when truly needed.</li>
+              <li>2. Resolve route metadata so token pages map cleanly between token and AMM addresses.</li>
               <li>3. Replace community placeholders with real comments and creator updates.</li>
-              <li>4. Route post-launch success screens directly into this page.</li>
+              <li>4. Route post-launch success screens directly into this market execution path.</li>
             </ol>
           </section>
         </aside>
