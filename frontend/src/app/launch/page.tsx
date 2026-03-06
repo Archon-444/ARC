@@ -8,6 +8,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import {
@@ -89,7 +90,6 @@ export default function LaunchPage() {
     isLoading: isCreating,
     isSuccess: isCreated,
     error: createError,
-    _txHash,
   } = useCreateToken();
 
   const socials = useMemo(
@@ -140,7 +140,7 @@ export default function LaunchPage() {
     }
   }, [createError]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -642,7 +642,7 @@ export default function LaunchPage() {
   );
 }
 
-function PreviewStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function PreviewStat({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
       <div className="mb-1 flex items-center gap-2 text-xs uppercase tracking-wide text-blue-100/70">
@@ -654,7 +654,7 @@ function PreviewStat({ icon, label, value }: { icon: React.ReactNode; label: str
   );
 }
 
-function PreviewBadge({ children }: { children: React.ReactNode }) {
+function PreviewBadge({ children }: { children: ReactNode }) {
   return <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{children}</span>;
 }
 
