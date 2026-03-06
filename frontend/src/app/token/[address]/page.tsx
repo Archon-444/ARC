@@ -1,5 +1,10 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { formatUnits, parseEther } from 'viem';
+import { useAccount, useConnect, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import {
   ArrowUpRight,
   BarChart3,
@@ -12,31 +17,400 @@ import {
   TrendingUp,
   Wallet,
 } from 'lucide-react';
+import { CONTRACTS } from '@/lib/contracts';
+import { useArcGasWithBuffer } from '@/hooks/useArcGasEstimate';
+import {
+  useArcNativeBalance,
+  useArcSufficientBalance,
+  useArcUSDCBalance,
+} from '@/hooks/useArcBalance';
+import {
+  useApproveAMMUSDC,
+  useBuyTokens,
+  useCalculateBuyReturn,
+  useCalculateSellReturn,
+  useCurrentPrice,
+  useGraduationProgress,
+  useRecentTrades,
+  useSellTokens,
+} from '@/hooks/useTokenAMM';
+import { useTokenConfig } from '@/hooks/useTokenFactory';
+import ArcTokenFactoryABI from '@/hooks/abis/ArcTokenFactory.json';
+import ERC20ABI from '@/hooks/abis/ERC20.json';
 
-const demoTrades = [
-  { wallet: '0x8f2c…91d4', side: 'Buy', amount: '$1,280', tokens: '12,840', age: '18s ago' },
-  { wallet: '0x13aa…42bc', side: 'Buy', amount: '$640', tokens: '6,155', age: '44s ago' },
-  { wallet: '0x2c71…d111', side: 'Sell', amount: '$310', tokens: '2,420', age: '2m ago' },
-  { wallet: '0xf9b4…7710', side: 'Buy', amount: '$2,480', tokens: '21,005', age: '4m ago' },
-];
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+const QUICK_AMOUNTS = [50, 250, 1000] as const;
 
-const holderBands = [
-  { label: 'Top holder', value: '6.4%' },
-  { label: 'Top 10 holders', value: '28.7%' },
-  { label: 'Creator allocation', value: '5.0%' },
-  { label: 'Graduation target', value: '80.0%' },
-];
+function formatAddress(address?: string) {
+  if (!address) return 'Not connected';
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
 
-export default async function TokenDetailPage({ params }: { params: Promise<{ address: string }> }) {
-  const { address } = await params;
+function shortenHash(hash?: string) {
+  if (!hash) return null;
+  return `${hash.slice(0, 10)}…${hash.slice(-6)}`;
+}
 
-  if (!address) {
-    notFound();
+function isHexAddress(value?: string): value is `0x${string}` {
+  return /^0x[a-fA-F0-9]{40}$/.test(value ?? '');
+}
+
+type CreatorLinks = {
+  website?: string;
+  x?: string;
+  telegram?: string;
+};
+
+function parseDescriptionAndLinks(description?: string): { summary: string; links: CreatorLinks } {
+  if (!description) {
+    return { summary: '', links: {} };
   }
 
-  const shortAddress = `${address.slice(0, 6)}…${address.slice(-4)}`;
-  const symbolSeed = address.slice(2, 6).toUpperCase() || 'ARC';
-  const projectName = `ARC ${symbolSeed}`;
+  const lines = description
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const links: CreatorLinks = {};
+  const summaryLines: string[] = [];
+
+  for (const line of lines) {
+    if (line.startsWith('Website: ')) {
+      links.website = line.replace('Website: ', '').trim();
+      continue;
+    }
+    if (line.startsWith('X: ')) {
+      links.x = line.replace('X: ', '').trim();
+      continue;
+    }
+    if (line.startsWith('Telegram: ')) {
+      links.telegram = line.replace('Telegram: ', '').trim();
+      continue;
+    }
+    summaryLines.push(line);
+  }
+
+  return {
+    summary: summaryLines.join(' '),
+    links,
+  };
+}
+
+function formatLaunchDate(timestamp?: bigint) {
+  if (!timestamp) return 'Unavailable';
+
+  const milliseconds = Number(timestamp) * 1000;
+  if (!Number.isFinite(milliseconds)) return 'Unavailable';
+
+  return new Date(milliseconds).toLocaleString();
+}
+
+function normalizeUrl(value?: string) {
+  if (!value) return null;
+  if (value.startsWith('http://') || value.startsWith('https://')) return value;
+  return `https://${value}`;
+}
+
+export default function TokenDetailPage({ params }: { params: { address: string } }) {
+  const routeAddress = params?.address;
+  const [selectedAmount, setSelectedAmount] = useState<number>(250);
+  const [tradeIntent, setTradeIntent] = useState<'buy' | 'sell'>('buy');
+  const [tradeStatus, setTradeStatus] = useState<string | null>(null);
+  const [walletError, setWalletError] = useState<string | null>(null);
+
+  const { address: walletAddress, isConnected } = useAccount();
+  const { connectAsync, connectors, isPending: isConnecting } = useConnect();
+
+  const routeContractAddress = isHexAddress(routeAddress) ? routeAddress : undefined;
+  const tokenFactoryAddress = isHexAddress(CONTRACTS.TOKEN_FACTORY)
+    ? (CONTRACTS.TOKEN_FACTORY as `0x${string}`)
+    : undefined;
+  const usdcAddress = isHexAddress(CONTRACTS.USDC)
+    ? (CONTRACTS.USDC as `0x${string}`)
+    : undefined;
+
+  const { data: isArcTokenData, isLoading: isResolvingRoute } = useReadContract({
+    address: tokenFactoryAddress,
+    abi: ArcTokenFactoryABI,
+    functionName: 'isArcToken',
+    args: routeContractAddress ? [routeContractAddress] : undefined,
+    query: {
+      enabled: Boolean(tokenFactoryAddress && routeContractAddress),
+    },
+  });
+
+  const isTokenRoute = Boolean(isArcTokenData);
+  const tokenAddress = isTokenRoute ? routeContractAddress : undefined;
+  const tokenConfigState = useTokenConfig(tokenAddress || '');
+  const tokenConfig = tokenConfigState.config;
+
+  const { data: tokenAmmData, isLoading: isResolvingAmm } = useReadContract({
+    address: tokenFactoryAddress,
+    abi: ArcTokenFactoryABI,
+    functionName: 'getTokenAMM',
+    args: routeContractAddress ? [routeContractAddress] : undefined,
+    query: {
+      enabled: Boolean(tokenFactoryAddress && routeContractAddress && isTokenRoute),
+    },
+  });
+
+  const resolvedMarketAddress =
+    typeof tokenAmmData === 'string' &&
+    isHexAddress(tokenAmmData) &&
+    tokenAmmData !== ZERO_ADDRESS
+      ? tokenAmmData
+      : routeContractAddress || '';
+
+  const marketAddress = isTokenRoute ? (resolvedMarketAddress === routeContractAddress ? '' : resolvedMarketAddress) : resolvedMarketAddress;
+  const routeResolved = Boolean(marketAddress) && (!isResolvingRoute && (!isTokenRoute || !isResolvingAmm));
+  const routeMode = isTokenRoute ? 'Token route resolved to AMM' : 'Direct AMM route';
+
+  const shortAddress = routeAddress ? `${routeAddress.slice(0, 6)}…${routeAddress.slice(-4)}` : 'Unknown market';
+  const marketShortAddress = marketAddress ? `${marketAddress.slice(0, 6)}…${marketAddress.slice(-4)}` : 'Resolving...';
+  const symbolSeed = tokenConfig?.symbol || (routeAddress ? routeAddress.slice(2, 6).toUpperCase() || 'ARC' : 'ARC');
+  const projectName = tokenConfig?.name || `ARC ${symbolSeed}`;
+
+  const tokenMetadata = useMemo(() => parseDescriptionAndLinks(tokenConfig?.description), [tokenConfig?.description]);
+  const heroDescription = tokenMetadata.summary || 'A trader-facing token page designed for immediate action: live price reads, resolved AMM routing, exact approval checks, and buy or sell execution from one surface.';
+  const communityLinks = [
+    { label: 'Website', value: tokenMetadata.links.website, href: normalizeUrl(tokenMetadata.links.website) },
+    { label: 'X', value: tokenMetadata.links.x, href: normalizeUrl(tokenMetadata.links.x) },
+    { label: 'Telegram', value: tokenMetadata.links.telegram, href: normalizeUrl(tokenMetadata.links.telegram) },
+  ].filter((item) => item.value && item.href);
+
+  const totalSupplyFormatted = tokenConfig ? formatUnits(tokenConfig.totalSupply, 18) : null;
+  const graduationThresholdFormatted = tokenConfig ? formatUnits(tokenConfig.graduationThreshold, 18) : null;
+  const basePriceFormatted = tokenConfig ? formatUnits(tokenConfig.basePrice, 6) : null;
+
+  const buyAmount = selectedAmount.toString();
+  const sellAmount = selectedAmount.toString();
+  const requiredUsdcAmount = BigInt(selectedAmount * 1_000_000);
+  const requiredSellAmount = parseEther(sellAmount);
+
+  const projectedBuy = useCalculateBuyReturn(routeResolved ? marketAddress : '', buyAmount);
+  const projectedSell = useCalculateSellReturn(routeResolved ? marketAddress : '', sellAmount);
+  const currentPrice = useCurrentPrice(routeResolved ? marketAddress : '');
+  const graduation = useGraduationProgress(routeResolved ? marketAddress : '');
+  const recentTrades = useRecentTrades(routeResolved ? marketAddress : '');
+
+  const transactionData = useMemo(
+    () => ({
+      from: walletAddress || ZERO_ADDRESS,
+      to: marketAddress || ZERO_ADDRESS,
+      value: '0x0',
+      data: tradeIntent === 'buy' ? '0xbuytokens' : '0xselltokens',
+    }),
+    [marketAddress, tradeIntent, walletAddress]
+  );
+
+  const usdcBalance = useArcUSDCBalance(walletAddress, {
+    enabled: Boolean(walletAddress),
+    refreshInterval: 15000,
+  });
+  const nativeBalance = useArcNativeBalance(walletAddress, {
+    enabled: Boolean(walletAddress),
+    refreshInterval: 15000,
+  });
+  const sufficientBalance = useArcSufficientBalance(walletAddress, requiredUsdcAmount);
+  const gasWithBuffer = useArcGasWithBuffer(transactionData, 20);
+
+  const approval = useApproveAMMUSDC(routeResolved ? marketAddress : '');
+  const buy = useBuyTokens(routeResolved ? marketAddress : '');
+  const sell = useSellTokens(routeResolved ? marketAddress : '');
+
+  const { data: allowanceData, isLoading: isCheckingAllowance } = useReadContract({
+    address: usdcAddress,
+    abi: ERC20ABI,
+    functionName: 'allowance',
+    args: walletAddress && routeResolved ? [walletAddress as `0x${string}`, marketAddress as `0x${string}`] : undefined,
+    query: {
+      enabled: Boolean(usdcAddress && walletAddress && routeResolved && tradeIntent === 'buy'),
+    },
+  });
+
+  const { data: sellAllowanceData, isLoading: isCheckingSellAllowance } = useReadContract({
+    address: tokenAddress,
+    abi: ERC20ABI,
+    functionName: 'allowance',
+    args: walletAddress && tokenAddress && routeResolved ? [walletAddress as `0x${string}`, marketAddress as `0x${string}`] : undefined,
+    query: {
+      enabled: Boolean(tokenAddress && walletAddress && routeResolved && tradeIntent === 'sell'),
+    },
+  });
+
+  const {
+    writeContract: approveSellToken,
+    data: sellApprovalHash,
+    isPending: isSellApprovalPending,
+    error: sellApprovalError,
+  } = useWriteContract();
+  const { isLoading: isSellApprovalConfirming, isSuccess: isSellApprovalSuccess } = useWaitForTransactionReceipt({
+    hash: sellApprovalHash,
+  });
+
+  const buyAllowance = (allowanceData as bigint | undefined) ?? 0n;
+  const buyApprovalRequired = tradeIntent === 'buy' && buyAllowance < requiredUsdcAmount;
+  const buyAllowanceFormatted = tradeIntent === 'buy' ? formatUnits(buyAllowance, 6) : '0';
+
+  const sellAllowance = (sellAllowanceData as bigint | undefined) ?? 0n;
+  const sellApprovalSupported = Boolean(tokenAddress);
+  const sellApprovalRequired = tradeIntent === 'sell' && sellApprovalSupported && sellAllowance < requiredSellAmount;
+  const sellAllowanceFormatted = tradeIntent === 'sell' && sellApprovalSupported ? formatUnits(sellAllowance, 18) : '0';
+
+  useEffect(() => {
+    setTradeStatus(null);
+  }, [selectedAmount, tradeIntent, walletAddress, marketAddress]);
+
+  useEffect(() => {
+    if (approval.isSuccess) {
+      setTradeStatus(`USDC approval confirmed for ${buyAmount} on ${marketShortAddress}.`);
+      recentTrades.refetch();
+    }
+  }, [approval.isSuccess, marketShortAddress, buyAmount, recentTrades]);
+
+  useEffect(() => {
+    if (isSellApprovalSuccess) {
+      setTradeStatus(`Sell approval confirmed for ${sellAmount} ${symbolSeed} on ${marketShortAddress}.`);
+      recentTrades.refetch();
+    }
+  }, [isSellApprovalSuccess, marketShortAddress, sellAmount, symbolSeed, recentTrades]);
+
+  useEffect(() => {
+    if (buy.isSuccess) {
+      setTradeStatus(`Buy transaction submitted: ${shortenHash(buy.txHash) || 'pending confirmation'}.`);
+      recentTrades.refetch();
+    }
+  }, [buy.isSuccess, buy.txHash, recentTrades]);
+
+  useEffect(() => {
+    if (sell.isSuccess) {
+      setTradeStatus(`Sell transaction submitted: ${shortenHash(sell.txHash) || 'pending confirmation'}.`);
+      recentTrades.refetch();
+    }
+  }, [sell.isSuccess, sell.txHash, recentTrades]);
+
+  const connectWallet = async () => {
+    if (!connectors.length) {
+      setWalletError('No wallet connector is available in this environment.');
+      return;
+    }
+
+    setWalletError(null);
+    try {
+      await connectAsync({ connector: connectors[0] });
+    } catch (error) {
+      console.error('Failed to connect wallet:', error);
+      setWalletError(error instanceof Error ? error.message : 'Wallet connection failed.');
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!routeResolved) {
+      setTradeStatus('Market route is still resolving. Wait for the AMM address before approving.');
+      return;
+    }
+
+    if (!isConnected) {
+      await connectWallet();
+      return;
+    }
+
+    if (!usdcAddress) {
+      setWalletError('USDC contract address is not configured.');
+      return;
+    }
+
+    approval.approve(buyAmount);
+    setTradeStatus(`Approval requested for ${buyAmount} USDC.`);
+  };
+
+  const handleApproveSell = async () => {
+    if (!routeResolved) {
+      setTradeStatus('Market route is still resolving. Wait for the AMM address before approving sell tokens.');
+      return;
+    }
+
+    if (!isConnected) {
+      await connectWallet();
+      return;
+    }
+
+    if (!tokenAddress) {
+      setTradeStatus('Sell approval is only supported when this page is opened from a token route.');
+      return;
+    }
+
+    approveSellToken({
+      address: tokenAddress,
+      abi: ERC20ABI,
+      functionName: 'approve',
+      args: [marketAddress as `0x${string}`, requiredSellAmount],
+    });
+    setTradeStatus(`Approval requested for ${sellAmount} ${symbolSeed}.`);
+  };
+
+  const handleExecute = async (intent: 'buy' | 'sell') => {
+    setTradeIntent(intent);
+    setWalletError(null);
+
+    if (!routeResolved) {
+      setTradeStatus('Market route is still resolving. Wait for the AMM address before trading.');
+      return;
+    }
+
+    if (!isConnected) {
+      await connectWallet();
+      return;
+    }
+
+    if (intent === 'buy') {
+      if (!sufficientBalance.hasSufficientBalance) {
+        setTradeStatus(`Insufficient USDC. Add ${sufficientBalance.shortfallFormatted} more to continue.`);
+        return;
+      }
+      if (buyApprovalRequired) {
+        setTradeStatus('Approve USDC first, then execute the buy transaction.');
+        return;
+      }
+      buy.buyTokens(buyAmount, 0n);
+      setTradeStatus(`Submitting buy for ${buyAmount} USDC.`);
+      return;
+    }
+
+    if (sellApprovalRequired) {
+      setTradeStatus('Approve the token first, then execute the sell transaction.');
+      return;
+    }
+
+    sell.sellTokens(sellAmount, 0n);
+    setTradeStatus(`Submitting sell for ${sellAmount} ${symbolSeed}.`);
+  };
+
+  const projectedReceive = tradeIntent === 'buy'
+    ? projectedBuy.tokensOutFormatted || '0'
+    : projectedSell.usdcOutFormatted || '0';
+  const projectedFee = tradeIntent === 'buy'
+    ? projectedBuy.feeFormatted || '0'
+    : projectedSell.feeFormatted || '0';
+
+  if (!routeAddress) {
+    return (
+      <div className="container mx-auto max-w-4xl px-4 py-16">
+        <div className="rounded-3xl border border-neutral-200 bg-white p-8 text-center shadow-sm dark:border-white/10 dark:bg-slate-900/70">
+          <div className="text-xl font-semibold text-neutral-900 dark:text-white">Token market missing</div>
+          <p className="mt-2 text-neutral-500 dark:text-neutral-400">Open this page from the launch feed or explore page with a valid market route.</p>
+          <div className="mt-6 flex justify-center gap-3">
+            <Link href="/explore" className="rounded-2xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700">
+              Explore tokens
+            </Link>
+            <Link href="/launch" className="rounded-2xl border border-neutral-200 bg-white px-5 py-3 font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
+              Launch a token
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 lg:py-10">
@@ -48,8 +422,13 @@ export default async function TokenDetailPage({ params }: { params: Promise<{ ad
               Live launch market
             </div>
             <div className="mb-4 flex items-start gap-4">
-              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-600 to-cyan-400 text-2xl font-bold text-white shadow-lg shadow-blue-500/20">
-                {symbolSeed.slice(0, 2)}
+              <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 to-cyan-400 text-2xl font-bold text-white shadow-lg shadow-blue-500/20">
+                {tokenConfig?.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={tokenConfig.imageUrl} alt={projectName} className="h-full w-full object-cover" />
+                ) : (
+                  symbolSeed.slice(0, 2)
+                )}
               </div>
               <div className="min-w-0">
                 <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -58,16 +437,26 @@ export default async function TokenDetailPage({ params }: { params: Promise<{ ad
                     ${symbolSeed}
                   </span>
                   <span className="rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300">
-                    Bonding curve active
+                    {graduation.progressPercent >= 100 ? 'Graduated' : 'Bonding curve active'}
                   </span>
                 </div>
-                <p className="max-w-2xl text-neutral-600 dark:text-neutral-400">
-                  A trader-facing token page designed for immediate action: curve progress, live social proof, creator trust signals, and a buy flow that keeps momentum high after launch.
-                </p>
+                <p className="max-w-2xl text-neutral-600 dark:text-neutral-400">{heroDescription}</p>
                 <div className="mt-4 flex flex-wrap gap-2 text-sm text-neutral-500 dark:text-neutral-400">
-                  <Badge icon={<Wallet className="h-3.5 w-3.5" />}>{shortAddress}</Badge>
-                  <Badge icon={<Shield className="h-3.5 w-3.5" />}>Creator verified links</Badge>
-                  <Badge icon={<Globe className="h-3.5 w-3.5" />}>Trading page ready</Badge>
+                  <Badge icon={<Wallet className="h-3.5 w-3.5" />}>{tokenConfig?.creator ? `Creator ${formatAddress(tokenConfig.creator)}` : shortAddress}</Badge>
+                  <Badge icon={<Shield className="h-3.5 w-3.5" />}>{routeResolved ? routeMode : 'Resolving route'}</Badge>
+                  <Badge icon={<Globe className="h-3.5 w-3.5" />}>{marketShortAddress}</Badge>
+                  <Badge icon={<Clock3 className="h-3.5 w-3.5" />}>{tokenConfig ? formatLaunchDate(tokenConfig.createdAt) : 'Launch metadata loading'}</Badge>
+                  <Badge icon={<TrendingUp className="h-3.5 w-3.5" />}>{isConnected ? `Wallet ${formatAddress(walletAddress)}` : 'Connect wallet for trading'}</Badge>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Link href="/explore?tab=tokens" className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700">
+                    <TrendingUp className="h-4 w-4" />
+                    Browse token markets
+                  </Link>
+                  <Link href="/launch" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
+                    Launch another token
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Link>
                 </div>
               </div>
             </div>
@@ -76,16 +465,18 @@ export default async function TokenDetailPage({ params }: { params: Promise<{ ad
           <div className="rounded-3xl border border-neutral-200 bg-neutral-50/90 p-5 dark:border-white/10 dark:bg-slate-950/60">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm text-neutral-500 dark:text-neutral-400">Curve completion</span>
-              <span className="text-sm font-semibold text-neutral-900 dark:text-white">63.4%</span>
+              <span className="text-sm font-semibold text-neutral-900 dark:text-white">
+                {graduation.isLoading ? 'Loading...' : `${graduation.progressPercent.toFixed(1)}%`}
+              </span>
             </div>
             <div className="mb-4 h-3 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
-              <div className="h-full rounded-full bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400" style={{ width: '63.4%' }} />
+              <div className="h-full rounded-full bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400" style={{ width: `${Math.min(graduation.progressPercent || 0, 100)}%` }} />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <HeroMetric label="Current price" value="$0.0148" hint="+48.0% from launch" />
-              <HeroMetric label="Market cap" value="$148,000" hint="Based on live curve price" />
-              <HeroMetric label="Liquidity raised" value="$94,600" hint="Before graduation" />
-              <HeroMetric label="Unique traders" value="326" hint="24h active wallets" />
+              <HeroMetric label="Current price" value={currentPrice.isLoading ? 'Loading...' : `$${currentPrice.priceFormatted}`} hint="Live AMM read" />
+              <HeroMetric label="Resolved market" value={marketShortAddress} hint={routeResolved ? routeMode : 'Waiting on route resolution'} />
+              <HeroMetric label="Base price" value={basePriceFormatted ? `$${basePriceFormatted}` : 'Loading...'} hint="Factory launch config" />
+              <HeroMetric label="Connected wallet" value={isConnected ? formatAddress(walletAddress) : 'Not connected'} hint="Required for writes" />
             </div>
           </div>
         </div>
@@ -98,24 +489,23 @@ export default async function TokenDetailPage({ params }: { params: Promise<{ ad
               <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Market snapshot</h2>
               <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-500 dark:border-white/10 dark:text-neutral-400">
                 <BarChart3 className="h-3.5 w-3.5" />
-                Updated live
+                On-chain aware
               </span>
             </div>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <SnapshotCard title="24h volume" value="$82,400" delta="+12.8%" />
-              <SnapshotCard title="Buys / sells" value="214 / 49" delta="Buy pressure strong" />
-              <SnapshotCard title="Graduation ETA" value="~6 hrs" delta="At current pace" />
-              <SnapshotCard title="Holders" value="492" delta="+37 today" />
+              <SnapshotCard title="Current price" value={currentPrice.isLoading ? 'Loading...' : `$${currentPrice.priceFormatted}`} delta="Pulled from AMM" />
+              <SnapshotCard title="Projected fee" value={`${projectedFee} USDC`} delta={tradeIntent === 'buy' ? 'Buy quote' : 'Sell quote'} />
+              <SnapshotCard title="Graduation" value={graduation.isLoading ? 'Loading...' : `${graduation.progressPercent.toFixed(1)}%`} delta="Live progress" />
+              <SnapshotCard title="Allowance" value={tradeIntent === 'buy' ? `${buyAllowanceFormatted} USDC` : sellApprovalSupported ? `${sellAllowanceFormatted} ${symbolSeed}` : 'Token route needed'} delta={tradeIntent === 'buy' ? (isCheckingAllowance ? 'Checking approval' : buyApprovalRequired ? 'Approval required' : 'Ready to buy') : sellApprovalSupported ? (isCheckingSellAllowance ? 'Checking approval' : sellApprovalRequired ? 'Approval required' : 'Ready to sell') : 'Direct AMM route'} />
             </div>
           </section>
 
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Recent trades</h2>
-              <Link href="/stats" className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400">
-                Full analytics
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
+              <span className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300">
+                Live event feed
+              </span>
             </div>
             <div className="overflow-hidden rounded-2xl border border-neutral-200 dark:border-white/10">
               <div className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr] bg-neutral-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:bg-slate-950/60 dark:text-neutral-400">
@@ -124,18 +514,27 @@ export default async function TokenDetailPage({ params }: { params: Promise<{ ad
                 <span>Value</span>
                 <span>Time</span>
               </div>
-              {demoTrades.map((trade) => (
-                <div key={`${trade.wallet}-${trade.age}`} className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr] items-center border-t border-neutral-200 px-4 py-3 text-sm dark:border-white/10">
+              {recentTrades.isLoading && !recentTrades.trades.length && (
+                <div className="px-4 py-6 text-sm text-neutral-500 dark:text-neutral-400">Loading recent market activity...</div>
+              )}
+              {!recentTrades.isLoading && !recentTrades.trades.length && !recentTrades.error && (
+                <div className="px-4 py-6 text-sm text-neutral-500 dark:text-neutral-400">No trade events have been indexed for this market yet.</div>
+              )}
+              {recentTrades.error && !recentTrades.trades.length && (
+                <div className="px-4 py-6 text-sm text-red-600 dark:text-red-400">Unable to load recent trades right now.</div>
+              )}
+              {recentTrades.trades.map((trade) => (
+                <div key={trade.id} className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr] items-center border-t border-neutral-200 px-4 py-3 text-sm dark:border-white/10">
                   <div>
-                    <div className="font-medium text-neutral-900 dark:text-white">{trade.wallet}</div>
-                    <div className="text-xs text-neutral-500 dark:text-neutral-400">{trade.tokens} tokens</div>
+                    <div className="font-medium text-neutral-900 dark:text-white">{formatAddress(trade.wallet)}</div>
+                    <div className="text-xs text-neutral-500 dark:text-neutral-400">{trade.tokens} tokens · fee ${trade.fee}</div>
                   </div>
                   <div>
                     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${trade.side === 'Buy' ? 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300' : 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300'}`}>
                       {trade.side}
                     </span>
                   </div>
-                  <div className="font-semibold text-neutral-900 dark:text-white">{trade.amount}</div>
+                  <div className="font-semibold text-neutral-900 dark:text-white">{trade.value}</div>
                   <div className="text-neutral-500 dark:text-neutral-400">{trade.age}</div>
                 </div>
               ))}
@@ -147,24 +546,25 @@ export default async function TokenDetailPage({ params }: { params: Promise<{ ad
               <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Creator and trust signals</h2>
               <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-500 dark:border-white/10 dark:text-neutral-400">
                 <Shield className="h-3.5 w-3.5" />
-                Social-first launch
+                Factory-backed metadata
               </span>
             </div>
             <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
               <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
                 <div className="mb-2 text-sm font-semibold text-neutral-900 dark:text-white">Creator profile</div>
-                <div className="text-sm text-neutral-600 dark:text-neutral-400">0xA9d3…be27</div>
+                <div className="text-sm text-neutral-600 dark:text-neutral-400">{tokenConfig?.creator ? formatAddress(tokenConfig.creator) : 'Loading creator...'}</div>
                 <div className="mt-3 space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
-                  <div className="flex items-center justify-between"><span>Past launches</span><span className="font-medium text-neutral-900 dark:text-white">4</span></div>
-                  <div className="flex items-center justify-between"><span>Graduated</span><span className="font-medium text-neutral-900 dark:text-white">3</span></div>
-                  <div className="flex items-center justify-between"><span>Repeat traders</span><span className="font-medium text-neutral-900 dark:text-white">38%</span></div>
+                  <div className="flex items-center justify-between"><span>Launch time</span><span className="font-medium text-neutral-900 dark:text-white">{tokenConfig ? formatLaunchDate(tokenConfig.createdAt) : 'Loading...'}</span></div>
+                  <div className="flex items-center justify-between"><span>Total supply</span><span className="font-medium text-neutral-900 dark:text-white">{totalSupplyFormatted ? Number(totalSupplyFormatted).toLocaleString() : 'Loading...'}</span></div>
+                  <div className="flex items-center justify-between"><span>Graduation target</span><span className="font-medium text-neutral-900 dark:text-white">{graduationThresholdFormatted ? Number(graduationThresholdFormatted).toLocaleString() : 'Loading...'}</span></div>
                 </div>
               </div>
               <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
-                <div className="mb-3 text-sm font-semibold text-neutral-900 dark:text-white">Why this page matters</div>
+                <div className="mb-3 text-sm font-semibold text-neutral-900 dark:text-white">Execution path</div>
                 <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
-                  <p>This token detail layout turns a raw contract address into a trading destination with context, momentum, and immediate action paths.</p>
-                  <p>It gives ARC a stronger bridge between launch and liquidity by combining creator proof, live metrics, and transaction visibility on one page.</p>
+                  <p>Buy flow resolves token routes into AMM routes, checks live USDC allowance, then gates approval only when it is actually needed.</p>
+                  <p>Sell flow reads token allowance when the route is token-native and asks for approval before execution only when the position requires it.</p>
+                  <p>{tokenConfig ? 'Header, creator details, and the recent trades feed are now hydrated from live factory and AMM data for token-native routes.' : 'Open this page from a token route to hydrate launch metadata directly from the token factory.'}</p>
                 </div>
               </div>
             </div>
@@ -173,45 +573,128 @@ export default async function TokenDetailPage({ params }: { params: Promise<{ ad
 
         <aside className="space-y-6">
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex items-center justify-between gap-3">
               <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Trade panel</h2>
               <span className="rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300">
-                Ready for wallet hook-in
+                Resolved routing + allowance
               </span>
             </div>
             <div className="space-y-4">
+              <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-neutral-500 dark:text-neutral-400">Wallet</span>
+                  <span className="font-semibold text-neutral-900 dark:text-white">{isConnected ? formatAddress(walletAddress) : 'Not connected'}</span>
+                </div>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <WalletMetric label="USDC balance" value={isConnected ? (usdcBalance.loading ? 'Loading...' : `${usdcBalance.formatted} USDC`) : 'Connect wallet'} />
+                  <WalletMetric label="Native balance" value={isConnected ? (nativeBalance.loading ? 'Loading...' : `${nativeBalance.formatted} ARC`) : 'Connect wallet'} />
+                </div>
+                {!isConnected && (
+                  <button onClick={connectWallet} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60" disabled={isConnecting}>
+                    <Wallet className="h-4 w-4" />
+                    {isConnecting ? 'Connecting...' : 'Connect wallet'}
+                  </button>
+                )}
+                {walletError && <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">{walletError}</div>}
+              </div>
+
               <div className="grid grid-cols-3 gap-2">
-                {['$50', '$250', '$1000'].map((amount) => (
-                  <button key={amount} className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-700 hover:border-blue-300 hover:text-blue-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-200">
-                    {amount}
+                {QUICK_AMOUNTS.map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => setSelectedAmount(amount)}
+                    className={selectedAmount === amount ? 'rounded-2xl border border-blue-300 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300' : 'rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-700 hover:border-blue-300 hover:text-blue-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-200'}
+                  >
+                    {tradeIntent === 'buy' ? `$${amount}` : `${amount} ${symbolSeed}`}
                   </button>
                 ))}
               </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => setTradeIntent('buy')} className={tradeIntent === 'buy' ? 'rounded-2xl bg-neutral-900 px-4 py-3 text-sm font-semibold text-white dark:bg-white dark:text-black' : 'rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-200'}>
+                  Buy
+                </button>
+                <button onClick={() => setTradeIntent('sell')} className={tradeIntent === 'sell' ? 'rounded-2xl bg-neutral-900 px-4 py-3 text-sm font-semibold text-white dark:bg-white dark:text-black' : 'rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-200'}>
+                  Sell
+                </button>
+              </div>
+
               <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
                 <div className="mb-3 flex items-center justify-between text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">You pay</span>
-                  <span className="font-semibold text-neutral-900 dark:text-white">$250 USDC</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">Resolved market</span>
+                  <span className="font-semibold text-neutral-900 dark:text-white">{marketShortAddress}</span>
                 </div>
                 <div className="mb-3 flex items-center justify-between text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">Estimated received</span>
-                  <span className="font-semibold text-neutral-900 dark:text-white">16,891 {symbolSeed}</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">Trade size</span>
+                  <span className="font-semibold text-neutral-900 dark:text-white">{tradeIntent === 'buy' ? `$${selectedAmount} USDC` : `${selectedAmount} ${symbolSeed}`}</span>
                 </div>
                 <div className="mb-3 flex items-center justify-between text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">Slippage</span>
-                  <span className="font-semibold text-neutral-900 dark:text-white">0.85%</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">Projected receive</span>
+                  <span className="font-semibold text-neutral-900 dark:text-white">{tradeIntent === 'buy' ? `${projectedReceive} ${symbolSeed}` : `$${projectedReceive} USDC`}</span>
+                </div>
+                <div className="mb-3 flex items-center justify-between text-sm">
+                  <span className="text-neutral-500 dark:text-neutral-400">Buffered gas</span>
+                  <span className="font-semibold text-neutral-900 dark:text-white">{gasWithBuffer.loading ? 'Estimating...' : gasWithBuffer.gasEstimate?.gasCostFormatted || 'Unavailable'}</span>
+                </div>
+                <div className="mb-3 flex items-center justify-between text-sm">
+                  <span className="text-neutral-500 dark:text-neutral-400">Balance check</span>
+                  <span className="font-semibold text-neutral-900 dark:text-white">
+                    {tradeIntent === 'sell'
+                      ? isConnected ? 'Wallet connected' : 'Wallet needed'
+                      : !isConnected
+                        ? 'Wallet needed'
+                        : sufficientBalance.loading
+                          ? 'Checking...'
+                          : sufficientBalance.hasSufficientBalance
+                            ? 'Ready'
+                            : `Short ${sufficientBalance.shortfallFormatted}`}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">Fee</span>
-                  <span className="font-semibold text-neutral-900 dark:text-white">0.90%</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">Approval state</span>
+                  <span className="font-semibold text-neutral-900 dark:text-white">
+                    {tradeIntent === 'buy'
+                      ? isCheckingAllowance
+                        ? 'Checking allowance'
+                        : buyApprovalRequired
+                          ? 'Approval required'
+                          : 'Ready to buy'
+                      : !sellApprovalSupported
+                        ? 'Token route needed'
+                        : isCheckingSellAllowance
+                          ? 'Checking allowance'
+                          : sellApprovalRequired
+                            ? 'Approval required'
+                            : 'Ready to sell'}
+                  </span>
                 </div>
               </div>
-              <button className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-base font-semibold text-white hover:bg-blue-700">
-                <TrendingUp className="h-5 w-5" />
-                Buy now
-              </button>
-              <button className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-4 text-base font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
-                <Flame className="h-5 w-5" />
-                Sell tokens
+
+              {(tradeStatus || buy.error || sell.error || sellApprovalError) && (
+                <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+                  {tradeStatus || buy.error?.message || sell.error?.message || sellApprovalError?.message}
+                </div>
+              )}
+
+              {tradeIntent === 'buy' && buyApprovalRequired && (
+                <button onClick={handleApprove} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-4 text-base font-semibold text-neutral-900 hover:bg-neutral-50 disabled:opacity-60 dark:border-white/10 dark:bg-slate-950/60 dark:text-white" disabled={approval.isLoading || !routeResolved}>
+                  <Shield className="h-5 w-5" />
+                  {approval.isLoading ? 'Approving USDC...' : 'Approve USDC'}
+                </button>
+              )}
+
+              {tradeIntent === 'sell' && sellApprovalRequired && (
+                <button onClick={handleApproveSell} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-4 text-base font-semibold text-neutral-900 hover:bg-neutral-50 disabled:opacity-60 dark:border-white/10 dark:bg-slate-950/60 dark:text-white" disabled={(isSellApprovalPending || isSellApprovalConfirming) || !routeResolved}>
+                  <Shield className="h-5 w-5" />
+                  {isSellApprovalPending || isSellApprovalConfirming ? 'Approving token...' : `Approve ${symbolSeed}`}
+                </button>
+              )}
+
+              <button onClick={() => handleExecute(tradeIntent)} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-base font-semibold text-white hover:bg-blue-700 disabled:opacity-60" disabled={buy.isLoading || sell.isLoading || approval.isLoading || isSellApprovalPending || isSellApprovalConfirming || !routeResolved}>
+                {tradeIntent === 'buy' ? <TrendingUp className="h-5 w-5" /> : <Flame className="h-5 w-5" />}
+                {tradeIntent === 'buy'
+                  ? buy.isLoading ? 'Buying...' : 'Execute buy'
+                  : sell.isLoading ? 'Selling...' : 'Execute sell'}
               </button>
             </div>
           </section>
@@ -219,29 +702,43 @@ export default async function TokenDetailPage({ params }: { params: Promise<{ ad
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
             <h2 className="mb-4 text-xl font-semibold text-neutral-900 dark:text-white">Distribution risk view</h2>
             <div className="space-y-3">
-              {holderBands.map((row) => (
-                <div key={row.label} className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-white/10 dark:bg-slate-950/60">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-neutral-500 dark:text-neutral-400">{row.label}</span>
-                    <span className="font-semibold text-neutral-900 dark:text-white">{row.value}</span>
-                  </div>
-                </div>
-              ))}
+              <RiskRow label="Creator allocation" value="Config-driven launches" />
+              <RiskRow label="Total supply" value={totalSupplyFormatted ? Number(totalSupplyFormatted).toLocaleString() : 'Loading...'} />
+              <RiskRow label="Graduation target" value={graduationThresholdFormatted ? Number(graduationThresholdFormatted).toLocaleString() : 'Loading...'} />
+              <RiskRow label="Base price" value={basePriceFormatted ? `$${basePriceFormatted}` : 'Loading...'} />
             </div>
           </section>
 
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Community pulse</h2>
+              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Community links</h2>
               <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-500 dark:border-white/10 dark:text-neutral-400">
                 <MessageSquare className="h-3.5 w-3.5" />
-                Social hooks next
+                Embedded from launch metadata
               </span>
             </div>
             <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
-              <CommunityRow author="0x22aa…71d0" text="Clean launch, curve feels fair so far." />
-              <CommunityRow author="0x7b19…c014" text="Watching for graduation tonight." />
-              <CommunityRow author="0x0f44…90c9" text="Creator shipped links and docs fast, bullish." />
+              {communityLinks.length ? (
+                communityLinks.map((link) => (
+                  <a
+                    key={link.label}
+                    href={link.href || '#'}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-neutral-50 p-4 transition hover:border-blue-300 hover:text-blue-700 dark:border-white/10 dark:bg-slate-950/60 dark:hover:text-blue-300"
+                  >
+                    <div>
+                      <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">{link.label}</div>
+                      <div className="break-all">{link.value}</div>
+                    </div>
+                    <ArrowUpRight className="h-4 w-4 flex-shrink-0" />
+                  </a>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
+                  Community links are not embedded for this route yet. Launch metadata will appear here automatically for token-native routes with website, X, or Telegram fields.
+                </div>
+              )}
             </div>
           </section>
 
@@ -251,10 +748,10 @@ export default async function TokenDetailPage({ params }: { params: Promise<{ ad
               Build sequence
             </div>
             <ol className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
-              <li>1. Connect live subgraph metrics into the snapshot cards.</li>
-              <li>2. Wire buy and sell actions to the bonding-curve contracts.</li>
-              <li>3. Replace community placeholders with real comments and creator updates.</li>
-              <li>4. Route post-launch success screens directly into this page.</li>
+              <li>1. Backfill creator history and trust metrics from indexed entities.</li>
+              <li>2. Add reverse lookup support for direct AMM routes so sell-side token approvals can always be resolved.</li>
+              <li>3. Extend metadata hydration to all stats and analytics surfaces.</li>
+              <li>4. Replace polling with indexed subscriptions when a dedicated event service is available.</li>
             </ol>
           </section>
         </aside>
@@ -283,7 +780,7 @@ function SnapshotCard({ title, value, delta }: { title: string; value: string; d
   );
 }
 
-function Badge({ children, icon }: { children: React.ReactNode; icon: React.ReactNode }) {
+function Badge({ children, icon }: { children: ReactNode; icon: ReactNode }) {
   return (
     <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 dark:border-white/10 dark:bg-slate-950/60">
       {icon}
@@ -292,11 +789,22 @@ function Badge({ children, icon }: { children: React.ReactNode; icon: React.Reac
   );
 }
 
-function CommunityRow({ author, text }: { author: string; text: string }) {
+function WalletMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
-      <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">{author}</div>
-      <div>{text}</div>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-3 dark:border-white/10 dark:bg-slate-900/80">
+      <div className="text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">{label}</div>
+      <div className="mt-1 font-semibold text-neutral-900 dark:text-white">{value}</div>
+    </div>
+  );
+}
+
+function RiskRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-white/10 dark:bg-slate-950/60">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-neutral-500 dark:text-neutral-400">{label}</span>
+        <span className="font-semibold text-neutral-900 dark:text-white">{value}</span>
+      </div>
     </div>
   );
 }

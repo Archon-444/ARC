@@ -1,6 +1,6 @@
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { parseUnits, parseEther, formatUnits } from 'viem';
-import { useCallback } from 'react';
+import { decodeEventLog, parseUnits, parseEther, formatUnits } from 'viem';
+import { useCallback, useMemo } from 'react';
 import ArcTokenFactoryABI from './abis/ArcTokenFactory.json';
 import ERC20ABI from './abis/ERC20.json';
 
@@ -26,7 +26,7 @@ export interface TokenConfig {
  */
 export function useCreateToken() {
   const { writeContract, data: hash, isPending: isWriting, error: writeError } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { data: receipt, isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   const createToken = useCallback(
     (params: {
@@ -34,10 +34,10 @@ export function useCreateToken() {
       symbol: string;
       description: string;
       imageUrl: string;
-      totalSupply: string; // in whole tokens (e.g., "1000000")
-      basePrice: string; // in USDC (e.g., "0.01")
-      slope: string; // in whole units (e.g., "1")
-      curveType: number; // 0 = LINEAR, 1 = EXPONENTIAL
+      totalSupply: string;
+      basePrice: string;
+      slope: string;
+      curveType: number;
     }) => {
       writeContract({
         address: FACTORY_ADDRESS,
@@ -58,11 +58,36 @@ export function useCreateToken() {
     [writeContract]
   );
 
+  const creationEvent = useMemo(() => {
+    if (!receipt) return null;
+
+    for (const log of receipt.logs) {
+      try {
+        const decoded = decodeEventLog({
+          abi: ArcTokenFactoryABI,
+          data: log.data,
+          topics: log.topics,
+        });
+
+        if (decoded.eventName === 'TokenCreated') {
+          return decoded;
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    return null;
+  }, [receipt]);
+
   return {
     createToken,
     isLoading: isWriting || isConfirming,
     isSuccess,
     txHash: hash,
+    receipt,
+    createdTokenAddress: (creationEvent?.args?.tokenAddress as `0x${string}` | undefined) ?? undefined,
+    createdAMMAddress: (creationEvent?.args?.ammAddress as `0x${string}` | undefined) ?? undefined,
     error: writeError,
   };
 }
