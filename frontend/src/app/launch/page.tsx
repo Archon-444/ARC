@@ -97,6 +97,7 @@ export default function LaunchPage() {
     createToken,
     isLoading: isCreating,
     isSuccess: isCreated,
+    createdTokenAddress: createdTokenAddressFromTx,
     error: createError,
   } = useCreateToken();
 
@@ -139,6 +140,12 @@ export default function LaunchPage() {
     const syncCreatedToken = async () => {
       if (!isCreated) return;
 
+      if (createdTokenAddressFromTx) {
+        setCreatedTokenAddress(createdTokenAddressFromTx);
+        setStep('success');
+        return;
+      }
+
       const refreshed = await refetchTokens();
       const refreshedTokens = ((refreshed.data as `0x${string}`[] | undefined) ?? tokens) || [];
       const latestToken = refreshedTokens[refreshedTokens.length - 1] ?? null;
@@ -155,7 +162,7 @@ export default function LaunchPage() {
     };
 
     syncCreatedToken();
-  }, [isCreated, refetchTokens, tokenCountBeforeLaunch, tokens]);
+  }, [isCreated, createdTokenAddressFromTx, refetchTokens, tokenCountBeforeLaunch, tokens]);
 
   useEffect(() => {
     if (createError) {
