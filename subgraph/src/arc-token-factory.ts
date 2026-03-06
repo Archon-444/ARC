@@ -2,7 +2,7 @@ import { BigInt, log } from "@graphprotocol/graph-ts";
 import { TokenCreated } from "../generated/ArcTokenFactory/ArcTokenFactory";
 import { ArcBondingCurveAMM } from "../generated/templates";
 import { LaunchedToken, TokenLauncherStats, AmmTokenLookup } from "../generated/schema";
-import { ZERO_BI, ONE_BI } from "./helpers";
+import { ZERO_BI, ONE_BI } from "./helpers", ZERO_ADDRESS } from "./helpers";
 
 /**
  * Get or create TokenLauncherStats singleton
@@ -31,6 +31,14 @@ export function getOrCreateTokenLauncherStats(): TokenLauncherStats {
 export function handleTokenCreated(event: TokenCreated): void {
   let tokenId = event.params.tokenAddress.toHexString();
   let token = new LaunchedToken(tokenId);
+
+    // Validate creator address - log warning if zero address
+  if (event.params.creator.toHexString() == ZERO_ADDRESS) {
+    log.warning("Token created with zero address creator: {} ({}). This may indicate a contract deployment issue.", [
+      event.params.name,
+      tokenId
+    ]);
+  }
 
   token.address = event.params.tokenAddress;
   token.amm = event.params.ammAddress;
