@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -414,7 +415,7 @@ function PulseCard({ label, value, hint }: { label: string; value: string; hint:
   );
 }
 
-function FeedMetric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function FeedMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
     <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-3 dark:border-white/10 dark:bg-slate-900/80">
       <div className="mb-1 flex items-center gap-2 text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
@@ -433,7 +434,7 @@ function FeaturePanel({
   href,
   cta,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
   description: string;
   href: string;
@@ -457,7 +458,7 @@ function FeaturePanel({
   );
 }
 
-function QueueRow({ icon, title }: { icon: React.ReactNode; title: string }) {
+function QueueRow({ icon, title }: { icon: ReactNode; title: string }) {
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-300">

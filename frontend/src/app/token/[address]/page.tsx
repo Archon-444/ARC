@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { notFound } from 'next/navigation';
 import {
   ArrowUpRight,
@@ -68,6 +69,16 @@ export default async function TokenDetailPage({ params }: { params: Promise<{ ad
                   <Badge icon={<Wallet className="h-3.5 w-3.5" />}>{shortAddress}</Badge>
                   <Badge icon={<Shield className="h-3.5 w-3.5" />}>Creator verified links</Badge>
                   <Badge icon={<Globe className="h-3.5 w-3.5" />}>Trading page ready</Badge>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Link href="/explore?tab=tokens" className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700">
+                    <TrendingUp className="h-4 w-4" />
+                    Browse token markets
+                  </Link>
+                  <Link href="/launch" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
+                    Launch another token
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Link>
                 </div>
               </div>
             </div>
@@ -283,7 +294,7 @@ function SnapshotCard({ title, value, delta }: { title: string; value: string; d
   );
 }
 
-function Badge({ children, icon }: { children: React.ReactNode; icon: React.ReactNode }) {
+function Badge({ children, icon }: { children: ReactNode; icon: ReactNode }) {
   return (
     <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 dark:border-white/10 dark:bg-slate-950/60">
       {icon}
