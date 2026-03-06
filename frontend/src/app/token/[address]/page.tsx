@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { formatUnits } from 'viem';
-import { useAccount, useConnect, useReadContract } from 'wagmi';
+import { formatUnits, parseEther } from 'viem';
+import { useAccount, useConnect, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import {
   ArrowUpRight,
   BarChart3,
@@ -97,6 +97,7 @@ export default function TokenDetailPage({ params }: { params: { address: string 
   });
 
   const isTokenRoute = Boolean(isArcTokenData);
+  const tokenAddress = isTokenRoute ? routeContractAddress : undefined;
 
   const { data: tokenAmmData, isLoading: isResolvingAmm } = useReadContract({
     address: tokenFactoryAddress,
@@ -124,11 +125,13 @@ export default function TokenDetailPage({ params }: { params: { address: string 
   const symbolSeed = routeAddress ? routeAddress.slice(2, 6).toUpperCase() || 'ARC' : 'ARC';
   const projectName = `ARC ${symbolSeed}`;
 
-  const tradeAmount = selectedAmount.toString();
-  const requiredAmount = BigInt(selectedAmount * 1_000_000);
+  const buyAmount = selectedAmount.toString();
+  const sellAmount = selectedAmount.toString();
+  const requiredUsdcAmount = BigInt(selectedAmount * 1_000_000);
+  const requiredSellAmount = parseEther(sellAmount);
 
-  const projectedBuy = useCalculateBuyReturn(routeResolved ? marketAddress : '', tradeAmount);
-  const projectedSell = useCalculateSellReturn(routeResolved ? marketAddress : '', tradeAmount);
+  const projectedBuy = useCalculateBuyReturn(routeResolved ? marketAddress : '', buyAmount);
+  const projectedSell = useCalculateSellReturn(routeResolved ? marketAddress : '', sellAmount);
   const currentPrice = useCurrentPrice(routeResolved ? marketAddress : '');
   const graduation = useGraduationProgress(routeResolved ? marketAddress : '');
 
@@ -150,7 +153,7 @@ export default function TokenDetailPage({ params }: { params: { address: string 
     enabled: Boolean(walletAddress),
     refreshInterval: 15000,
   });
-  const sufficientBalance = useArcSufficientBalance(walletAddress, requiredAmount);
+  const sufficientBalance = useArcSufficientBalance(walletAddress, requiredUsdcAmount);
   const gasWithBuffer = useArcGasWithBuffer(transactionData, 20);
 
   const approval = useApproveAMMUSDC(routeResolved ? marketAddress : '');
@@ -167,9 +170,34 @@ export default function TokenDetailPage({ params }: { params: { address: string 
     },
   });
 
-  const allowance = (allowanceData as bigint | undefined) ?? 0n;
-  const approvalRequired = tradeIntent === 'buy' && allowance < requiredAmount;
-  const allowanceFormatted = tradeIntent === 'buy' ? formatUnits(allowance, 6) : '0';
+  const { data: sellAllowanceData, isLoading: isCheckingSellAllowance } = useReadContract({
+    address: tokenAddress,
+    abi: ERC20ABI,
+    functionName: 'allowance',
+    args: walletAddress && tokenAddress && routeResolved ? [walletAddress as `0x${string}`, marketAddress as `0x${string}`] : undefined,
+    query: {
+      enabled: Boolean(tokenAddress && walletAddress && routeResolved && tradeIntent === 'sell'),
+    },
+  });
+
+  const {
+    writeContract: approveSellToken,
+    data: sellApprovalHash,
+    isPending: isSellApprovalPending,
+    error: sellApprovalError,
+  } = useWriteContract();
+  const { isLoading: isSellApprovalConfirming, isSuccess: isSellApprovalSuccess } = useWaitForTransactionReceipt({
+    hash: sellApprovalHash,
+  });
+
+  const buyAllowance = (allowanceData as bigint | undefined) ?? 0n;
+  const buyApprovalRequired = tradeIntent === 'buy' && buyAllowance < requiredUsdcAmount;
+  const buyAllowanceFormatted = tradeIntent === 'buy' ? formatUnits(buyAllowance, 6) : '0';
+
+  const sellAllowance = (sellAllowanceData as bigint | undefined) ?? 0n;
+  const sellApprovalSupported = Boolean(tokenAddress);
+  const sellApprovalRequired = tradeIntent === 'sell' && sellApprovalSupported && sellAllowance < requiredSellAmount;
+  const sellAllowanceFormatted = tradeIntent === 'sell' && sellApprovalSupported ? formatUnits(sellAllowance, 18) : '0';
 
   useEffect(() => {
     setTradeStatus(null);
@@ -177,9 +205,15 @@ export default function TokenDetailPage({ params }: { params: { address: string 
 
   useEffect(() => {
     if (approval.isSuccess) {
-      setTradeStatus(`USDC approval confirmed for ${tradeAmount} on ${marketShortAddress}.`);
+      setTradeStatus(`USDC approval confirmed for ${buyAmount} on ${marketShortAddress}.`);
     }
-  }, [approval.isSuccess, marketShortAddress, tradeAmount]);
+  }, [approval.isSuccess, marketShortAddress, buyAmount]);
+
+  useEffect(() => {
+    if (isSellApprovalSuccess) {
+      setTradeStatus(`Sell approval confirmed for ${sellAmount} ${symbolSeed} on ${marketShortAddress}.`);
+    }
+  }, [isSellApprovalSuccess, marketShortAddress, sellAmount, symbolSeed]);
 
   useEffect(() => {
     if (buy.isSuccess) {
@@ -224,8 +258,33 @@ export default function TokenDetailPage({ params }: { params: { address: string 
       return;
     }
 
-    approval.approve(tradeAmount);
-    setTradeStatus(`Approval requested for ${tradeAmount} USDC.`);
+    approval.approve(buyAmount);
+    setTradeStatus(`Approval requested for ${buyAmount} USDC.`);
+  };
+
+  const handleApproveSell = async () => {
+    if (!routeResolved) {
+      setTradeStatus('Market route is still resolving. Wait for the AMM address before approving sell tokens.');
+      return;
+    }
+
+    if (!isConnected) {
+      await connectWallet();
+      return;
+    }
+
+    if (!tokenAddress) {
+      setTradeStatus('Sell approval is only supported when this page is opened from a token route.');
+      return;
+    }
+
+    approveSellToken({
+      address: tokenAddress,
+      abi: ERC20ABI,
+      functionName: 'approve',
+      args: [marketAddress as `0x${string}`, requiredSellAmount],
+    });
+    setTradeStatus(`Approval requested for ${sellAmount} ${symbolSeed}.`);
   };
 
   const handleExecute = async (intent: 'buy' | 'sell') => {
@@ -247,17 +306,22 @@ export default function TokenDetailPage({ params }: { params: { address: string 
         setTradeStatus(`Insufficient USDC. Add ${sufficientBalance.shortfallFormatted} more to continue.`);
         return;
       }
-      if (approvalRequired) {
+      if (buyApprovalRequired) {
         setTradeStatus('Approve USDC first, then execute the buy transaction.');
         return;
       }
-      buy.buyTokens(tradeAmount, 0n);
-      setTradeStatus(`Submitting buy for ${tradeAmount} USDC.`);
+      buy.buyTokens(buyAmount, 0n);
+      setTradeStatus(`Submitting buy for ${buyAmount} USDC.`);
       return;
     }
 
-    sell.sellTokens(tradeAmount, 0n);
-    setTradeStatus(`Submitting sell for ${tradeAmount} ${symbolSeed}.`);
+    if (sellApprovalRequired) {
+      setTradeStatus('Approve the token first, then execute the sell transaction.');
+      return;
+    }
+
+    sell.sellTokens(sellAmount, 0n);
+    setTradeStatus(`Submitting sell for ${sellAmount} ${symbolSeed}.`);
   };
 
   const projectedReceive = tradeIntent === 'buy'
@@ -366,7 +430,7 @@ export default function TokenDetailPage({ params }: { params: { address: string 
               <SnapshotCard title="Current price" value={currentPrice.isLoading ? 'Loading...' : `$${currentPrice.priceFormatted}`} delta="Pulled from AMM" />
               <SnapshotCard title="Projected fee" value={`${projectedFee} USDC`} delta={tradeIntent === 'buy' ? 'Buy quote' : 'Sell quote'} />
               <SnapshotCard title="Graduation" value={graduation.isLoading ? 'Loading...' : `${graduation.progressPercent.toFixed(1)}%`} delta="Live progress" />
-              <SnapshotCard title="Allowance" value={tradeIntent === 'buy' ? `${allowanceFormatted} USDC` : 'Not required'} delta={tradeIntent === 'buy' ? (isCheckingAllowance ? 'Checking approval' : approvalRequired ? 'Approval required' : 'Ready to buy') : 'Sell path'} />
+              <SnapshotCard title="Allowance" value={tradeIntent === 'buy' ? `${buyAllowanceFormatted} USDC` : sellApprovalSupported ? `${sellAllowanceFormatted} ${symbolSeed}` : 'Token route needed'} delta={tradeIntent === 'buy' ? (isCheckingAllowance ? 'Checking approval' : buyApprovalRequired ? 'Approval required' : 'Ready to buy') : sellApprovalSupported ? (isCheckingSellAllowance ? 'Checking approval' : sellApprovalRequired ? 'Approval required' : 'Ready to sell') : 'Direct AMM route'} />
             </div>
           </section>
 
@@ -425,7 +489,7 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                 <div className="mb-3 text-sm font-semibold text-neutral-900 dark:text-white">Execution path</div>
                 <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
                   <p>Buy flow now resolves token routes into AMM routes, checks live USDC allowance, then gates approval only when it is actually needed.</p>
-                  <p>Sell flow keeps direct AMM execution, gas context, and wallet state inside the same page while routing ambiguity is removed.</p>
+                  <p>Sell flow now also reads token allowance when the route is token-native and asks for approval before execution only when the position requires it.</p>
                 </div>
               </div>
             </div>
@@ -514,31 +578,44 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-neutral-500 dark:text-neutral-400">Approval state</span>
                   <span className="font-semibold text-neutral-900 dark:text-white">
-                    {tradeIntent === 'sell'
-                      ? 'Not required'
-                      : isCheckingAllowance
+                    {tradeIntent === 'buy'
+                      ? isCheckingAllowance
                         ? 'Checking allowance'
-                        : approvalRequired
+                        : buyApprovalRequired
                           ? 'Approval required'
-                          : 'Ready to buy'}
+                          : 'Ready to buy'
+                      : !sellApprovalSupported
+                        ? 'Token route needed'
+                        : isCheckingSellAllowance
+                          ? 'Checking allowance'
+                          : sellApprovalRequired
+                            ? 'Approval required'
+                            : 'Ready to sell'}
                   </span>
                 </div>
               </div>
 
-              {(tradeStatus || buy.error || sell.error) && (
+              {(tradeStatus || buy.error || sell.error || sellApprovalError) && (
                 <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
-                  {tradeStatus || buy.error?.message || sell.error?.message}
+                  {tradeStatus || buy.error?.message || sell.error?.message || sellApprovalError?.message}
                 </div>
               )}
 
-              {tradeIntent === 'buy' && approvalRequired && (
+              {tradeIntent === 'buy' && buyApprovalRequired && (
                 <button onClick={handleApprove} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-4 text-base font-semibold text-neutral-900 hover:bg-neutral-50 disabled:opacity-60 dark:border-white/10 dark:bg-slate-950/60 dark:text-white" disabled={approval.isLoading || !routeResolved}>
                   <Shield className="h-5 w-5" />
                   {approval.isLoading ? 'Approving USDC...' : 'Approve USDC'}
                 </button>
               )}
 
-              <button onClick={() => handleExecute(tradeIntent)} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-base font-semibold text-white hover:bg-blue-700 disabled:opacity-60" disabled={buy.isLoading || sell.isLoading || approval.isLoading || !routeResolved}>
+              {tradeIntent === 'sell' && sellApprovalRequired && (
+                <button onClick={handleApproveSell} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-4 text-base font-semibold text-neutral-900 hover:bg-neutral-50 disabled:opacity-60 dark:border-white/10 dark:bg-slate-950/60 dark:text-white" disabled={(isSellApprovalPending || isSellApprovalConfirming) || !routeResolved}>
+                  <Shield className="h-5 w-5" />
+                  {isSellApprovalPending || isSellApprovalConfirming ? 'Approving token...' : `Approve ${symbolSeed}`}
+                </button>
+              )}
+
+              <button onClick={() => handleExecute(tradeIntent)} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-base font-semibold text-white hover:bg-blue-700 disabled:opacity-60" disabled={buy.isLoading || sell.isLoading || approval.isLoading || isSellApprovalPending || isSellApprovalConfirming || !routeResolved}>
                 {tradeIntent === 'buy' ? <TrendingUp className="h-5 w-5" /> : <Flame className="h-5 w-5" />}
                 {tradeIntent === 'buy'
                   ? buy.isLoading ? 'Buying...' : 'Execute buy'
@@ -582,10 +659,10 @@ export default function TokenDetailPage({ params }: { params: { address: string 
               Build sequence
             </div>
             <ol className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
-              <li>1. Add sell-side token allowance handling if the AMM requires ERC20 approvals for token exits.</li>
-              <li>2. Replace community placeholders with real comments and creator updates.</li>
-              <li>3. Route post-launch success screens directly into this market execution path.</li>
-              <li>4. Backfill live feed data and token metadata from indexed entities.</li>
+              <li>1. Replace community placeholders with real comments and creator updates.</li>
+              <li>2. Route post-launch success screens directly into this market execution path.</li>
+              <li>3. Backfill live feed data and token metadata from indexed entities.</li>
+              <li>4. Add reverse lookup support for direct AMM routes so sell-side token approvals can always be resolved.</li>
             </ol>
           </section>
         </aside>
