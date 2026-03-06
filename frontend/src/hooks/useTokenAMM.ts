@@ -1,10 +1,51 @@
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { parseUnits, parseEther, formatUnits, formatEther } from 'viem';
-import { useCallback } from 'react';
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi';
+import { parseUnits, parseEther, formatUnits, formatEther, parseAbiItem } from 'viem';
+import { useCallback, useEffect, useState } from 'react';
 import ArcBondingCurveAMMABI from './abis/ArcBondingCurveAMM.json';
 import ERC20ABI from './abis/ERC20.json';
 
 const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS as `0x${string}`;
+const RECENT_TRADES_BLOCK_WINDOW = 20000n;
+const RECENT_TRADES_LIMIT = 10;
+
+export interface RecentTrade {
+  id: string;
+  wallet: `0x${string}`;
+  side: 'Buy' | 'Sell';
+  value: string;
+  tokens: string;
+  fee: string;
+  price: string;
+  age: string;
+  timestamp: number;
+}
+
+function formatAmount(value: string, maxFractionDigits = 4) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return '0';
+
+  return numeric.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: numeric > 0 && numeric < 1 ? 6 : maxFractionDigits,
+  });
+}
+
+function formatRelativeTime(timestampSeconds: bigint | number) {
+  const timestamp = typeof timestampSeconds === 'bigint' ? Number(timestampSeconds) : timestampSeconds;
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return 'Just now';
+
+  const diffSeconds = Math.max(0, Math.floor(Date.now() / 1000) - timestamp);
+  if (diffSeconds < 60) return `${diffSeconds}s ago`;
+
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
+}
 
 /**
  * Hook for buying tokens on a bonding curve AMM
@@ -89,6 +130,96 @@ export function useSellTokens(ammAddress: string) {
     isSuccess,
     txHash: hash,
     error: writeError,
+  };
+}
+
+/**
+ * Hook for reading recent AMM trades from on-chain events
+ */
+export function useRecentTrades(ammAddress: string) {
+  const publicClient = usePublicClient();
+  const [trades, setTrades] = useState<RecentTrade[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchTrades = useCallback(async () => {
+    if (!publicClient || !ammAddress) {
+      setTrades([]);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const currentBlock = await publicClient.getBlockNumber();
+      const fromBlock = currentBlock > RECENT_TRADES_BLOCK_WINDOW ? currentBlock - RECENT_TRADES_BLOCK_WINDOW : 0n;
+
+      const [buyLogs, sellLogs] = await Promise.all([
+        publicClient.getLogs({
+          address: ammAddress as `0x${string}`,
+          event: parseAbiItem('event TokensBought(address indexed buyer, uint256 usdcAmount, uint256 tokensOut, uint256 platformFee, uint256 newPrice, uint256 timestamp)'),
+          fromBlock,
+          toBlock: 'latest',
+        }),
+        publicClient.getLogs({
+          address: ammAddress as `0x${string}`,
+          event: parseAbiItem('event TokensSold(address indexed seller, uint256 tokenAmount, uint256 usdcOut, uint256 platformFee, uint256 newPrice, uint256 timestamp)'),
+          fromBlock,
+          toBlock: 'latest',
+        }),
+      ]);
+
+      const normalizedBuys: RecentTrade[] = buyLogs.map((log) => ({
+        id: `${log.transactionHash}-${String(log.logIndex)}-buy`,
+        wallet: (log.args.buyer as `0x${string}`) || '0x0000000000000000000000000000000000000000',
+        side: 'Buy',
+        value: `$${formatAmount(formatUnits((log.args.usdcAmount as bigint) || 0n, 6), 2)}`,
+        tokens: formatAmount(formatEther((log.args.tokensOut as bigint) || 0n), 4),
+        fee: formatAmount(formatUnits((log.args.platformFee as bigint) || 0n, 6), 2),
+        price: `$${formatAmount(formatUnits((log.args.newPrice as bigint) || 0n, 6), 6)}`,
+        age: formatRelativeTime((log.args.timestamp as bigint) || 0n),
+        timestamp: Number((log.args.timestamp as bigint) || 0n),
+      }));
+
+      const normalizedSells: RecentTrade[] = sellLogs.map((log) => ({
+        id: `${log.transactionHash}-${String(log.logIndex)}-sell`,
+        wallet: (log.args.seller as `0x${string}`) || '0x0000000000000000000000000000000000000000',
+        side: 'Sell',
+        value: `$${formatAmount(formatUnits((log.args.usdcOut as bigint) || 0n, 6), 2)}`,
+        tokens: formatAmount(formatEther((log.args.tokenAmount as bigint) || 0n), 4),
+        fee: formatAmount(formatUnits((log.args.platformFee as bigint) || 0n, 6), 2),
+        price: `$${formatAmount(formatUnits((log.args.newPrice as bigint) || 0n, 6), 6)}`,
+        age: formatRelativeTime((log.args.timestamp as bigint) || 0n),
+        timestamp: Number((log.args.timestamp as bigint) || 0n),
+      }));
+
+      const normalizedTrades = [...normalizedBuys, ...normalizedSells]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, RECENT_TRADES_LIMIT);
+
+      setTrades(normalizedTrades);
+    } catch (fetchError) {
+      setError(fetchError instanceof Error ? fetchError : new Error('Failed to load recent trades.'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [ammAddress, publicClient]);
+
+  useEffect(() => {
+    fetchTrades();
+
+    if (!ammAddress || !publicClient) return;
+
+    const interval = window.setInterval(fetchTrades, 15000);
+    return () => window.clearInterval(interval);
+  }, [ammAddress, fetchTrades, publicClient]);
+
+  return {
+    trades,
+    isLoading,
+    error,
+    refetch: fetchTrades,
   };
 }
 

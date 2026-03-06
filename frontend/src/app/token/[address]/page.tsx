@@ -31,6 +31,7 @@ import {
   useCalculateSellReturn,
   useCurrentPrice,
   useGraduationProgress,
+  useRecentTrades,
   useSellTokens,
 } from '@/hooks/useTokenAMM';
 import { useTokenConfig } from '@/hooks/useTokenFactory';
@@ -38,14 +39,6 @@ import ArcTokenFactoryABI from '@/hooks/abis/ArcTokenFactory.json';
 import ERC20ABI from '@/hooks/abis/ERC20.json';
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-
-const demoTrades = [
-  { wallet: '0x8f2c…91d4', side: 'Buy', amount: '$1,280', tokens: '12,840', age: '18s ago' },
-  { wallet: '0x13aa…42bc', side: 'Buy', amount: '$640', tokens: '6,155', age: '44s ago' },
-  { wallet: '0x2c71…d111', side: 'Sell', amount: '$310', tokens: '2,420', age: '2m ago' },
-  { wallet: '0xf9b4…7710', side: 'Buy', amount: '$2,480', tokens: '21,005', age: '4m ago' },
-];
-
 const QUICK_AMOUNTS = [50, 250, 1000] as const;
 
 function formatAddress(address?: string) {
@@ -198,6 +191,7 @@ export default function TokenDetailPage({ params }: { params: { address: string 
   const projectedSell = useCalculateSellReturn(routeResolved ? marketAddress : '', sellAmount);
   const currentPrice = useCurrentPrice(routeResolved ? marketAddress : '');
   const graduation = useGraduationProgress(routeResolved ? marketAddress : '');
+  const recentTrades = useRecentTrades(routeResolved ? marketAddress : '');
 
   const transactionData = useMemo(
     () => ({
@@ -270,26 +264,30 @@ export default function TokenDetailPage({ params }: { params: { address: string 
   useEffect(() => {
     if (approval.isSuccess) {
       setTradeStatus(`USDC approval confirmed for ${buyAmount} on ${marketShortAddress}.`);
+      recentTrades.refetch();
     }
-  }, [approval.isSuccess, marketShortAddress, buyAmount]);
+  }, [approval.isSuccess, marketShortAddress, buyAmount, recentTrades]);
 
   useEffect(() => {
     if (isSellApprovalSuccess) {
       setTradeStatus(`Sell approval confirmed for ${sellAmount} ${symbolSeed} on ${marketShortAddress}.`);
+      recentTrades.refetch();
     }
-  }, [isSellApprovalSuccess, marketShortAddress, sellAmount, symbolSeed]);
+  }, [isSellApprovalSuccess, marketShortAddress, sellAmount, symbolSeed, recentTrades]);
 
   useEffect(() => {
     if (buy.isSuccess) {
       setTradeStatus(`Buy transaction submitted: ${shortenHash(buy.txHash) || 'pending confirmation'}.`);
+      recentTrades.refetch();
     }
-  }, [buy.isSuccess, buy.txHash]);
+  }, [buy.isSuccess, buy.txHash, recentTrades]);
 
   useEffect(() => {
     if (sell.isSuccess) {
       setTradeStatus(`Sell transaction submitted: ${shortenHash(sell.txHash) || 'pending confirmation'}.`);
+      recentTrades.refetch();
     }
-  }, [sell.isSuccess, sell.txHash]);
+  }, [sell.isSuccess, sell.txHash, recentTrades]);
 
   const connectWallet = async () => {
     if (!connectors.length) {
@@ -505,10 +503,9 @@ export default function TokenDetailPage({ params }: { params: { address: string 
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Recent trades</h2>
-              <Link href="/stats" className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400">
-                Full analytics
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
+              <span className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300">
+                Live event feed
+              </span>
             </div>
             <div className="overflow-hidden rounded-2xl border border-neutral-200 dark:border-white/10">
               <div className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr] bg-neutral-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:bg-slate-950/60 dark:text-neutral-400">
@@ -517,18 +514,27 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                 <span>Value</span>
                 <span>Time</span>
               </div>
-              {demoTrades.map((trade) => (
-                <div key={`${trade.wallet}-${trade.age}`} className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr] items-center border-t border-neutral-200 px-4 py-3 text-sm dark:border-white/10">
+              {recentTrades.isLoading && !recentTrades.trades.length && (
+                <div className="px-4 py-6 text-sm text-neutral-500 dark:text-neutral-400">Loading recent market activity...</div>
+              )}
+              {!recentTrades.isLoading && !recentTrades.trades.length && !recentTrades.error && (
+                <div className="px-4 py-6 text-sm text-neutral-500 dark:text-neutral-400">No trade events have been indexed for this market yet.</div>
+              )}
+              {recentTrades.error && !recentTrades.trades.length && (
+                <div className="px-4 py-6 text-sm text-red-600 dark:text-red-400">Unable to load recent trades right now.</div>
+              )}
+              {recentTrades.trades.map((trade) => (
+                <div key={trade.id} className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr] items-center border-t border-neutral-200 px-4 py-3 text-sm dark:border-white/10">
                   <div>
-                    <div className="font-medium text-neutral-900 dark:text-white">{trade.wallet}</div>
-                    <div className="text-xs text-neutral-500 dark:text-neutral-400">{trade.tokens} tokens</div>
+                    <div className="font-medium text-neutral-900 dark:text-white">{formatAddress(trade.wallet)}</div>
+                    <div className="text-xs text-neutral-500 dark:text-neutral-400">{trade.tokens} tokens · fee ${trade.fee}</div>
                   </div>
                   <div>
                     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${trade.side === 'Buy' ? 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300' : 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300'}`}>
                       {trade.side}
                     </span>
                   </div>
-                  <div className="font-semibold text-neutral-900 dark:text-white">{trade.amount}</div>
+                  <div className="font-semibold text-neutral-900 dark:text-white">{trade.value}</div>
                   <div className="text-neutral-500 dark:text-neutral-400">{trade.age}</div>
                 </div>
               ))}
@@ -558,7 +564,7 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                 <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
                   <p>Buy flow resolves token routes into AMM routes, checks live USDC allowance, then gates approval only when it is actually needed.</p>
                   <p>Sell flow reads token allowance when the route is token-native and asks for approval before execution only when the position requires it.</p>
-                  <p>{tokenConfig ? 'Header and creator details are now hydrated from the token factory config for token-native routes.' : 'Open this page from a token route to hydrate launch metadata directly from the token factory.'}</p>
+                  <p>{tokenConfig ? 'Header, creator details, and the recent trades feed are now hydrated from live factory and AMM data for token-native routes.' : 'Open this page from a token route to hydrate launch metadata directly from the token factory.'}</p>
                 </div>
               </div>
             </div>
@@ -742,10 +748,10 @@ export default function TokenDetailPage({ params }: { params: { address: string 
               Build sequence
             </div>
             <ol className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
-              <li>1. Replace placeholder trading activity with indexed market events.</li>
-              <li>2. Backfill live feed data and creator history from indexed entities.</li>
-              <li>3. Add reverse lookup support for direct AMM routes so sell-side token approvals can always be resolved.</li>
-              <li>4. Extend metadata hydration to all stats and analytics surfaces.</li>
+              <li>1. Backfill creator history and trust metrics from indexed entities.</li>
+              <li>2. Add reverse lookup support for direct AMM routes so sell-side token approvals can always be resolved.</li>
+              <li>3. Extend metadata hydration to all stats and analytics surfaces.</li>
+              <li>4. Replace polling with indexed subscriptions when a dedicated event service is available.</li>
             </ol>
           </section>
         </aside>
