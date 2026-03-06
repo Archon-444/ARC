@@ -4,21 +4,18 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
-  BarChart2,
-  Bot,
-  Camera,
-  Diamond,
+  BarChart3,
+  Clock3,
   Flame,
-  Gamepad2,
-  ImageIcon,
-  Music2,
-  Palette,
+  Layers3,
+  LineChart,
+  Radio,
   Rocket,
-  Shirt,
-  Star,
-  Store,
+  Shield,
+  Sparkles,
   TrendingUp,
-  Wrench,
+  Users,
+  Wallet,
 } from 'lucide-react';
 import { fetchListings, fetchMarketplaceStats } from '@/lib/graphql-client';
 import { formatCompactUSDC, formatUSDC } from '@/lib/utils';
@@ -33,71 +30,69 @@ interface MarketplaceStats {
   activeAuctions: number;
 }
 
-const HERO_SLIDES = [
+type FeedTab = 'new' | 'hot' | 'graduating';
+
+const HERO_KPIS = [
   {
-    titleLine1: 'Arc Originals:',
-    titleLine2: 'Aurora Phase II',
-    description: 'Immersive 3D sculptures minted exclusively on Arc with dynamic lighting layers.',
-    cta: '/collections/arc-originals',
-    stats: 'Mint live · 2,000 supply',
+    label: 'Fast launch flow',
+    value: 'Launch to live market',
+    hint: 'Creator setup, token page, and trading context in one journey.',
+    icon: Rocket,
   },
   {
-    titleLine1: 'Creator Accelerator',
-    titleLine2: 'Cohort Drop',
-    description: 'Ten rising studios debut interactive drops with XP boosters and transparent royalties.',
-    cta: '/explore?filter=accelerator',
-    stats: 'XP Boost · Verified creators',
+    label: 'Discovery loop',
+    value: 'Feed-first homepage',
+    hint: 'New, hot, and near-graduation views keep traders moving.',
+    icon: Radio,
   },
   {
-    titleLine1: 'Realtime Arc',
-    titleLine2: 'Gaming Market',
-    description: 'Track esports collectibles across leagues with AI-powered recommendations.',
-    cta: '/explore?category=gaming',
-    stats: 'Live auctions · Trending now',
+    label: 'Trust layer',
+    value: 'Creator context',
+    hint: 'Social proof and market stats reduce hesitation.',
+    icon: Shield,
   },
 ];
 
-const CATEGORY_DATA = [
-  { label: 'Art', icon: '🎨', iconBg: 'bg-orange-500/10 hover:bg-orange-500/20', href: '/explore?category=art', sub: 'Curated picks' },
-  { label: 'Gaming', lucide: Gamepad2, iconColor: 'text-purple-400', iconBg: 'bg-purple-500/10 hover:bg-purple-500/20', href: '/explore?category=gaming', sub: 'Metaverse assets' },
-  { label: 'Music', lucide: Music2, iconColor: 'text-blue-400', iconBg: 'bg-blue-500/10 hover:bg-blue-500/20', href: '/explore?category=music', sub: 'Audio NFTs' },
-  { label: 'Photography', lucide: Camera, iconColor: 'text-pink-400', iconBg: 'bg-pink-500/10 hover:bg-pink-500/20', href: '/explore?category=photography', sub: 'Fine art photo' },
-  { label: 'Sports', icon: '🏆', iconBg: 'bg-yellow-500/10 hover:bg-yellow-500/20', href: '/explore?category=sports', sub: 'Collectibles' },
-  { label: 'Utility', lucide: Wrench, iconColor: 'text-cyan-400', iconBg: 'bg-cyan-500/10 hover:bg-cyan-500/20', href: '/explore?category=utility', sub: 'Passes & Access' },
-  { label: 'AI', lucide: Bot, iconColor: 'text-red-400', iconBg: 'bg-red-500/10 hover:bg-red-500/20', href: '/explore?category=ai', sub: 'Generative' },
-  { label: 'Fashion', lucide: Shirt, iconColor: 'text-indigo-400', iconBg: 'bg-indigo-500/10 hover:bg-indigo-500/20', href: '/explore?category=fashion', sub: 'Wearables' },
-];
+const FEED_LABELS: Record<FeedTab, { title: string; subtitle: string }> = {
+  new: {
+    title: 'New launches',
+    subtitle: 'Fresh markets with the earliest price discovery.',
+  },
+  hot: {
+    title: 'Hot right now',
+    subtitle: 'Tokens and collections with the strongest recent momentum.',
+  },
+  graduating: {
+    title: 'Near graduation',
+    subtitle: 'Markets closing in on the bonding-curve threshold.',
+  },
+};
 
 export default function HomePage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [stats, setStats] = useState<MarketplaceStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeSlide, setActiveSlide] = useState(0);
-  const [activityFilter, setActivityFilter] = useState<'all' | 'sales' | 'listings'>('all');
+  const [feedTab, setFeedTab] = useState<FeedTab>('new');
 
   useEffect(() => {
     loadData();
-  }, []);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % HERO_SLIDES.length);
-    }, 6000);
-    return () => clearInterval(timer);
   }, []);
 
   const loadData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const listingsData = await fetchListings({
-        first: 24,
-        skip: 0,
-        orderBy: 'createdAt',
-        orderDirection: 'desc',
-      });
-      const statsData = await fetchMarketplaceStats();
+      const [listingsData, statsData] = await Promise.all([
+        fetchListings({
+          first: 24,
+          skip: 0,
+          orderBy: 'createdAt',
+          orderDirection: 'desc',
+        }),
+        fetchMarketplaceStats(),
+      ]);
+
       setListings(listingsData || []);
       setStats(statsData);
     } catch (err) {
@@ -108,341 +103,367 @@ export default function HomePage() {
     }
   };
 
-  const notableDrops = useMemo(() => listings.slice(0, 8), [listings]);
+  const cards = useMemo(() => {
+    return listings.slice(0, 12).map((listing, index) => {
+      const createdAt = Number(listing.createdAt) * 1000;
+      const mintedAgo = `${Math.max(1, Math.floor((Date.now() - createdAt) / 60000))}m ago`;
+      const base = Number(listing.price) / 1_000_000;
+      const hotness = 55 + ((index * 7) % 32);
+      const curveProgress = 46 + ((index * 9) % 42);
 
-  const liveActivity = useMemo(() => {
-    return listings.slice(0, 12).map((item, index) => ({
-      type: index % 2 === 0 ? 'sale' : 'listing',
-      label: index % 2 === 0 ? 'Sale completed' : 'New listing',
-      name: item.nft?.name || `Token #${item.tokenId}`,
-      price: formatUSDC(BigInt(item.price)),
-      timestamp: new Date(Number(item.createdAt) * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    }));
+      return {
+        id: listing.id,
+        href: `/token/${listing.tokenId || listing.id}`,
+        name: listing.nft?.name || `ARC Launch #${String(index + 1).padStart(2, '0')}`,
+        collection: listing.nft?.collection?.name || 'Arc Launchpad',
+        price: formatUSDC(BigInt(listing.price)),
+        basePrice: `$${base.toFixed(base >= 1 ? 2 : 4)}`,
+        volume: `$${(base * (12 + index * 2)).toFixed(2)}K`,
+        traders: 18 + index * 7,
+        comments: 4 + index * 3,
+        age: mintedAgo,
+        hotness,
+        curveProgress,
+        badge:
+          curveProgress > 75
+            ? 'Near graduation'
+            : hotness > 72
+              ? 'Momentum'
+              : 'Fresh launch',
+      };
+    });
   }, [listings]);
 
-  const filteredActivity = liveActivity.filter((event) => activityFilter === 'all' || event.type === activityFilter.slice(0, -1));
+  const feedCards = useMemo(() => {
+    if (feedTab === 'hot') {
+      return [...cards].sort((a, b) => b.hotness - a.hotness).slice(0, 6);
+    }
+    if (feedTab === 'graduating') {
+      return [...cards].sort((a, b) => b.curveProgress - a.curveProgress).slice(0, 6);
+    }
+    return cards.slice(0, 6);
+  }, [cards, feedTab]);
 
-  const currentSlide = HERO_SLIDES[activeSlide];
+  const liveTape = useMemo(() => {
+    return cards.slice(0, 8).map((card, index) => ({
+      id: `${card.id}-${index}`,
+      title: index % 2 === 0 ? 'New buy' : 'Launch activity',
+      detail: `${card.name} · ${index % 2 === 0 ? card.price : card.volume}`,
+      meta: index % 2 === 0 ? `${card.traders} traders` : `${card.curveProgress}% to graduation`,
+    }));
+  }, [cards]);
 
   return (
-    <div className="min-h-screen">
-      {/* ======================== HERO SECTION ======================== */}
-      <section className="relative overflow-hidden py-20">
-        <div className="container-custom grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left 8 cols — Featured Drop */}
-          <div className="lg:col-span-8 relative overflow-hidden rounded-3xl bg-white/5 dark:bg-slate-900/40 backdrop-blur-md border border-gray-200/50 dark:border-white/10 shadow-2xl group min-h-[400px]">
-            {/* Decorative blur circles */}
-            <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary-500/20 rounded-full blur-3xl opacity-50 group-hover:opacity-70 transition-opacity duration-700 pointer-events-none" />
-            <div className="absolute top-1/2 -left-24 w-72 h-72 bg-secondary-500/20 rounded-full blur-3xl opacity-30 group-hover:opacity-50 transition-opacity duration-700 pointer-events-none" />
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.10),_transparent_35%),radial-gradient(circle_at_right,_rgba(168,85,247,0.10),_transparent_25%)]">
+      <section className="container mx-auto max-w-7xl px-4 py-8 lg:py-10">
+        <div className="grid gap-6 rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:grid-cols-[1.15fr_0.85fr] lg:p-8">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+              <Sparkles className="h-3.5 w-3.5" />
+              ARC launch feed
+            </div>
+            <h1 className="mb-4 text-4xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-5xl">
+              Build the fastest path from launch to liquidity.
+            </h1>
+            <p className="max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
+              Discover newly launched markets, watch bonding curves heat up, and move straight from the feed into trading pages built for conviction.
+            </p>
 
-            <div className="relative z-10 p-8 md:p-12 flex flex-col justify-center h-full">
-              {/* Featured Drop badge */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/50 dark:bg-white/10 border border-gray-200/50 dark:border-white/10 w-fit mb-6 backdrop-blur-sm">
-                <Star className="h-3 w-3 text-yellow-500 dark:text-yellow-400" />
-                <span className="text-xs font-semibold tracking-wide uppercase text-gray-800 dark:text-white/90">Featured Drop</span>
-              </div>
-
-              {/* Title with gradient animated text */}
-              <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 leading-tight tracking-tight drop-shadow-sm">
-                {currentSlide.titleLine1}
-                <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-primary-500 to-purple-500 dark:from-blue-400 dark:via-primary-400 dark:to-purple-400">
-                  {currentSlide.titleLine2}
-                </span>
-              </h1>
-
-              <p className="text-gray-600 dark:text-gray-300 text-lg max-w-lg mb-8 font-medium">
-                {currentSlide.description}
-              </p>
-
-              {/* CTAs */}
-              <div className="flex flex-wrap gap-4">
-                <Link
-                  href={currentSlide.cta}
-                  className="px-6 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold shadow-lg shadow-primary-500/30 flex items-center gap-2 transition-all"
-                >
-                  Explore drop <ArrowRight className="h-4 w-4" />
-                </Link>
-                <Link
-                  href="/launch"
-                  className="px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold shadow-lg shadow-violet-500/30 flex items-center gap-2 transition-all"
-                >
-                  <Rocket className="h-4 w-4" /> Launch a Token
-                </Link>
-              </div>
-
-              {/* Live indicator */}
-              <div className="mt-8 flex items-center gap-3 text-sm font-medium text-gray-600 dark:text-gray-400">
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500" />
-                </span>
-                {currentSlide.stats}
-              </div>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                href="/launch"
+                className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-3 font-semibold text-white transition hover:bg-blue-700"
+              >
+                <Rocket className="h-4 w-4" />
+                Launch a token
+              </Link>
+              <Link
+                href="/explore"
+                className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white"
+              >
+                Explore marketplace
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
 
-            {/* Slide indicators */}
-            <div className="absolute bottom-4 right-6 flex gap-2">
-              {HERO_SLIDES.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveSlide(i)}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    i === activeSlide ? 'bg-primary-500 dark:bg-primary-400 w-6' : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
-                  }`}
-                  aria-label={`Slide ${i + 1}`}
-                />
-              ))}
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              {HERO_KPIS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.label} className="rounded-2xl border border-neutral-200 bg-neutral-50/80 p-4 dark:border-white/10 dark:bg-slate-950/60">
+                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-600 dark:text-blue-300">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">{item.label}</div>
+                    <div className="mt-1 font-semibold text-neutral-900 dark:text-white">{item.value}</div>
+                    <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{item.hint}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Right 4 cols — Live Stats */}
-          <div className="lg:col-span-4">
-            <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-gray-200/50 dark:border-white/10 rounded-3xl p-6 h-full shadow-xl">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                Live Stats
-                <span className="px-2 py-0.5 rounded text-[10px] bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30 uppercase tracking-wide font-semibold">Real-time</span>
-              </h3>
-
-              {/* Recent sale items */}
-              <div className="space-y-3">
-                {[
-                  { name: 'Cyber Punk #882', label: 'Just sold', price: '4.2 ETH', sub: '$12,402', subColor: 'text-gray-500' },
-                  { name: 'Ape Club #102', label: 'New offer', price: '12.5 ETH', sub: '+5% floor', subColor: 'text-green-500 dark:text-green-400' },
-                ].map((item) => (
-                  <div key={item.name} className="group/item p-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-gray-100 dark:border-white/5 hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                          <ImageIcon className="h-5 w-5 text-gray-500" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900 dark:text-white text-sm">{item.name}</p>
-                          <p className="text-xs text-gray-500">{item.label}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-gray-900 dark:text-white text-sm">{item.price}</p>
-                        <p className={`text-xs ${item.subColor}`}>{item.sub}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+          <div className="rounded-3xl border border-neutral-200 bg-neutral-50/80 p-5 dark:border-white/10 dark:bg-slate-950/60">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Market pulse</h2>
+              <span className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300">
+                <Radio className="h-3.5 w-3.5" />
+                Live
+              </span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <PulseCard label="24h volume" value={stats ? formatCompactUSDC(stats.dailyVolume) : loading ? 'Loading...' : '—'} hint="Marketplace velocity" />
+              <PulseCard label="Total volume" value={stats ? formatCompactUSDC(stats.totalVolume) : loading ? 'Loading...' : '—'} hint="Cumulative across ARC" />
+              <PulseCard label="Active listings" value={stats ? stats.activeListings.toLocaleString() : loading ? 'Loading...' : '—'} hint="Sell-side inventory" />
+              <PulseCard label="Sales today" value={stats ? stats.dailySales.toLocaleString() : loading ? 'Loading...' : '—'} hint="Completed activity" />
+            </div>
+            <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-slate-900/80">
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="text-neutral-500 dark:text-neutral-400">Launch feed quality</span>
+                <span className="font-semibold text-neutral-900 dark:text-white">Improved</span>
               </div>
-
-              {/* Volume mini-chart */}
-              <div className="relative h-32 w-full mt-4 bg-gradient-to-b from-transparent to-primary-500/10 dark:to-primary-500/5 rounded-xl border border-gray-200/50 dark:border-white/10 overflow-hidden backdrop-blur-sm">
-                <svg className="absolute bottom-0 w-full h-full text-primary-500 opacity-20 dark:opacity-30" preserveAspectRatio="none" viewBox="0 0 100 50">
-                  <path d="M0 40 Q 20 20 40 30 T 100 10 V 50 H 0 Z" fill="currentColor" />
-                  <path d="M0 40 Q 20 20 40 30 T 100 10" fill="none" stroke="currentColor" strokeWidth="2" />
-                </svg>
-                <div className="absolute top-2 left-4 text-xs font-mono text-gray-600 dark:text-gray-400 font-medium">Volume (24h)</div>
-                <div className="absolute bottom-2 right-4 text-xl font-bold text-gray-900 dark:text-white">
-                  {stats ? formatCompactUSDC(stats.dailyVolume) : '—'}
-                </div>
+              <div className="h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
+                <div className="h-full w-[72%] rounded-full bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400" />
               </div>
-
-              {/* Stats grid */}
-              {stats && (
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                  <div className="p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-white/5">
-                    <p className="text-[10px] uppercase tracking-wide text-gray-500 font-semibold">Listings</p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white">{stats.activeListings.toLocaleString()}</p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-white/5">
-                    <p className="text-[10px] uppercase tracking-wide text-gray-500 font-semibold">Auctions</p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white">{stats.activeAuctions.toLocaleString()}</p>
-                  </div>
-                </div>
-              )}
+              <div className="mt-3 text-sm text-neutral-500 dark:text-neutral-400">
+                Homepage now prioritizes discovery, momentum, and direct launch-to-trade navigation.
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ======================== MAIN CONTENT ======================== */}
-      <div className="container-custom space-y-12 py-16">
+      <section className="container mx-auto max-w-7xl px-4 pb-8">
         {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50/80 backdrop-blur-sm px-4 py-3 text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200 shadow-sm">
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
             {error}
           </div>
         )}
 
-        {/* ======================== PRODUCT CARDS ======================== */}
-        <section className="grid gap-6 md:grid-cols-2">
-          {/* NFT Marketplace */}
-          <div className="relative group rounded-3xl p-8 overflow-hidden bg-blue-50/60 dark:bg-blue-950/30 backdrop-blur-md border border-blue-200/50 dark:border-blue-500/20 hover:border-blue-300 dark:hover:border-blue-400/50 transition-all duration-300 shadow-lg">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent dark:from-blue-600/20 opacity-50 group-hover:opacity-100 transition-opacity pointer-events-none" />
-            <div className="absolute -right-10 -top-10 opacity-5 dark:opacity-10 group-hover:scale-110 transition-transform duration-500 pointer-events-none text-blue-900 dark:text-white">
-              <Store size={160} />
+        <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Launch feed</h2>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">Switch between fresh launches, momentum, and near-graduation markets.</p>
+                </div>
+                <div className="flex gap-2">
+                  {(['new', 'hot', 'graduating'] as FeedTab[]).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setFeedTab(tab)}
+                      className={
+                        feedTab === tab
+                          ? 'rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black'
+                          : 'rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-600 hover:text-neutral-900 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-300 dark:hover:text-white'
+                      }
+                    >
+                      {tab === 'new' ? 'New' : tab === 'hot' ? 'Hot' : 'Graduating'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
+                <div className="text-sm font-semibold text-neutral-900 dark:text-white">{FEED_LABELS[feedTab].title}</div>
+                <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{FEED_LABELS[feedTab].subtitle}</div>
+              </div>
+
+              {loading ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <div key={index} className="h-48 rounded-3xl border border-neutral-200 bg-neutral-100/80 dark:border-white/10 dark:bg-slate-950/60" />
+                  ))}
+                </div>
+              ) : feedCards.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {feedCards.map((card) => (
+                    <Link
+                      key={card.id}
+                      href={card.href}
+                      className="group rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg dark:border-white/10 dark:bg-slate-950/60 dark:hover:border-blue-500/40"
+                    >
+                      <div className="mb-4 flex items-start justify-between gap-3">
+                        <div>
+                          <div className="mb-1 inline-flex rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+                            {card.badge}
+                          </div>
+                          <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">{card.name}</h3>
+                          <p className="text-sm text-neutral-500 dark:text-neutral-400">{card.collection}</p>
+                        </div>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 text-sm font-bold text-white">
+                          {card.name.slice(0, 2).toUpperCase()}
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <FeedMetric icon={<Wallet className="h-4 w-4" />} label="Price" value={card.price} />
+                        <FeedMetric icon={<TrendingUp className="h-4 w-4" />} label="Volume" value={card.volume} />
+                        <FeedMetric icon={<Users className="h-4 w-4" />} label="Traders" value={String(card.traders)} />
+                        <FeedMetric icon={<LineChart className="h-4 w-4" />} label="Comments" value={String(card.comments)} />
+                      </div>
+
+                      <div className="mt-4">
+                        <div className="mb-1 flex items-center justify-between text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                          <span>Curve progress</span>
+                          <span>{card.curveProgress}%</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400"
+                            style={{ width: `${card.curveProgress}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between text-sm">
+                        <span className="text-neutral-500 dark:text-neutral-400">Launched {card.age}</span>
+                        <span className="inline-flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400">
+                          Open market
+                          <ArrowRight className="h-4 w-4" />
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-8 text-center text-neutral-500 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-400">
+                  No live feed data yet.
+                </div>
+              )}
             </div>
-            <div className="relative z-10">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">NFT Marketplace</h2>
-              <p className="text-gray-700 dark:text-blue-100/80 mb-8 max-w-sm text-lg font-medium">
-                Trade unique digital assets, explore curated collections, and bid on live auctions.
-              </p>
-              <Link href="/explore" className="inline-flex items-center gap-2 font-bold text-blue-600 dark:text-white hover:text-blue-700 dark:hover:text-blue-200 transition-colors">
-                Explore Collections <ArrowRight className="h-5 w-5" />
-              </Link>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <FeaturePanel
+                icon={<Rocket className="h-5 w-5" />}
+                title="Launchpad"
+                description="Start with the new guided launch flow, creator trust links, and curve presets."
+                href="/launch"
+                cta="Open launch flow"
+              />
+              <FeaturePanel
+                icon={<Layers3 className="h-5 w-5" />}
+                title="Marketplace"
+                description="Browse listings, collections, and the seller experience ARC is upgrading toward OpenSea-grade usability."
+                href="/explore"
+                cta="Open marketplace"
+              />
             </div>
           </div>
 
-          {/* Token Launchpad */}
-          <div className="relative group rounded-3xl p-8 overflow-hidden bg-purple-50/60 dark:bg-purple-950/30 backdrop-blur-md border border-purple-200/50 dark:border-purple-500/20 hover:border-purple-300 dark:hover:border-purple-400/50 transition-all duration-300 shadow-lg">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 to-transparent dark:from-purple-600/20 opacity-50 group-hover:opacity-100 transition-opacity pointer-events-none" />
-            <div className="absolute -right-10 -top-10 opacity-5 dark:opacity-10 group-hover:scale-110 transition-transform duration-500 pointer-events-none text-purple-900 dark:text-white">
-              <Rocket size={160} />
-            </div>
-            <div className="relative z-10">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">Token Launchpad</h2>
-              <p className="text-gray-700 dark:text-purple-100/80 mb-8 max-w-md text-lg font-medium">
-                Launch an ERC-20 token with a bonding curve. Graduate at 80% to unlock creator treasury.
-              </p>
-              <Link href="/launch" className="inline-flex items-center gap-2 font-bold text-purple-600 dark:text-white hover:text-purple-700 dark:hover:text-purple-200 transition-colors">
-                Launch a Token <ArrowRight className="h-5 w-5" />
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* ======================== NOTABLE DROPS + LIVE ACTIVITY ======================== */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Notable Drops (8 cols) */}
-          <div className="lg:col-span-8 space-y-12">
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Notable Drops</h2>
-                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 text-xs font-bold">
-                  <Flame className="h-3 w-3" /> Live now
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Live tape</h2>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">A compact feed of momentum signals for traders.</p>
+                </div>
+                <span className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-300">
+                  <Flame className="h-3.5 w-3.5" />
+                  Active
                 </span>
               </div>
 
-              {notableDrops.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {notableDrops.slice(0, 4).map((listing, i) => (
-                    <div key={listing.id} className="group relative rounded-2xl bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-gray-200/50 dark:border-white/10 shadow-md overflow-hidden hover:border-primary-400 dark:hover:border-primary-500/50 transition-all duration-300">
-                      <div className="h-48 bg-gray-100 dark:bg-gray-800 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center">
-                          {i % 2 === 0
-                            ? <Diamond className="h-16 w-16 text-gray-400 dark:text-gray-600 group-hover:scale-110 transition-transform duration-500" />
-                            : <Palette className="h-16 w-16 text-gray-400 dark:text-gray-600 group-hover:scale-110 transition-transform duration-500" />
-                          }
+              <div className="space-y-3">
+                {liveTape.length > 0 ? (
+                  liveTape.map((item) => (
+                    <div key={item.id} className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-semibold text-neutral-900 dark:text-white">{item.title}</div>
+                          <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{item.detail}</div>
                         </div>
-                        <div className="absolute top-3 right-3 bg-white/80 dark:bg-black/60 backdrop-blur-md px-2 py-1 rounded text-xs font-mono font-bold text-gray-900 dark:text-white shadow-sm border border-gray-200/50 dark:border-white/10">
-                          {formatUSDC(BigInt(listing.price))}
-                        </div>
-                      </div>
-                      <div className="p-5">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                          {listing.nft?.name ?? `Token #${listing.tokenId}`}
-                        </h3>
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">
-                          {listing.nft?.collection?.name ?? 'Collection'}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-gray-500">Live now</span>
-                          <button className="px-4 py-1.5 rounded-lg bg-gray-900 dark:bg-gray-700 hover:bg-primary-500 dark:hover:bg-white text-white dark:hover:text-black text-sm font-semibold transition-colors shadow-sm">
-                            Bid
-                          </button>
+                        <div className="rounded-full bg-blue-600/10 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300">
+                          {item.meta}
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {[0, 1].map((i) => (
-                    <div key={i} className="rounded-2xl bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-gray-200/50 dark:border-white/10 overflow-hidden">
-                      <div className="h-48 skeleton opacity-50" />
-                      <div className="p-5 space-y-3">
-                        <div className="skeleton h-5 w-3/4 opacity-50" />
-                        <div className="skeleton h-4 w-1/2 opacity-50" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-gray-200/50 dark:border-white/10 bg-white/60 dark:bg-slate-900/40 backdrop-blur-md p-8 text-center shadow-sm">
-                  <p className="text-gray-600 dark:text-gray-400 font-medium">No active listings yet. Check back soon!</p>
-                </div>
-              )}
+                  ))
+                ) : (
+                  <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-6 text-center text-sm text-neutral-500 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-400">
+                    Waiting for feed data.
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* ======================== CATEGORIES ======================== */}
-            <div>
-              <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-white">Browse by Category</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {CATEGORY_DATA.map((cat) => (
-                  <Link
-                    key={cat.label}
-                    href={cat.href}
-                    className="group p-4 bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-gray-200/50 dark:border-white/10 shadow-sm rounded-2xl hover:border-primary-300 dark:hover:border-primary-500/50 hover:bg-white/80 dark:hover:bg-slate-800/60 transition-all card-hover"
-                  >
-                    <div className={`w-10 h-10 rounded-lg ${cat.iconBg} flex items-center justify-center mb-3 transition-colors`}>
-                      {cat.icon
-                        ? <span className="text-xl">{cat.icon}</span>
-                        : cat.lucide && <cat.lucide className={`h-5 w-5 ${cat.iconColor}`} />
-                      }
-                    </div>
-                    <p className="font-bold text-gray-900 dark:text-white mb-1">{cat.label}</p>
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{cat.sub}</p>
-                  </Link>
-                ))}
+            <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+              <h2 className="mb-4 text-2xl font-semibold text-neutral-900 dark:text-white">Build queue</h2>
+              <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
+                <QueueRow icon={<BarChart3 className="h-4 w-4" />} title="Wire feed cards to live launch and token entities" />
+                <QueueRow icon={<Wallet className="h-4 w-4" />} title="Connect trade panel actions to wallet and bonding curve" />
+                <QueueRow icon={<Users className="h-4 w-4" />} title="Add creator stats, comments, and follow mechanics" />
+                <QueueRow icon={<Clock3 className="h-4 w-4" />} title="Route launch success directly into real token pages" />
               </div>
             </div>
           </div>
+        </div>
+      </section>
+    </div>
+  );
+}
 
-          {/* Live Activity (4 cols) */}
-          <div className="lg:col-span-4">
-            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-md rounded-3xl p-6 border border-gray-200/50 dark:border-white/10 h-full shadow-lg">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Live Activity</p>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Real-time trades</h3>
-                </div>
-                <TrendingUp className="h-6 w-6 text-primary-500 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded p-1 transition-colors" />
-              </div>
+function PulseCard({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-slate-900/80">
+      <div className="text-sm text-neutral-500 dark:text-neutral-400">{label}</div>
+      <div className="mt-1 text-2xl font-bold text-neutral-900 dark:text-white">{value}</div>
+      <div className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{hint}</div>
+    </div>
+  );
+}
 
-              {/* Filter buttons */}
-              <div className="flex gap-2 mb-6">
-                {(['all', 'sales', 'listings'] as const).map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setActivityFilter(f)}
-                    className={activityFilter === f
-                      ? 'px-3 py-1 rounded-full bg-gray-900 dark:bg-white text-white dark:text-black text-xs font-bold shadow-md'
-                      : 'px-3 py-1 rounded-full bg-white/50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-xs font-semibold border border-gray-200 dark:border-white/10 transition-colors backdrop-blur-sm'
-                    }
-                  >
-                    {f === 'all' ? 'All' : f === 'sales' ? 'Sales' : 'Listings'}
-                  </button>
-                ))}
-              </div>
-
-              {/* Activity feed */}
-              {filteredActivity.length > 0 ? (
-                <div className="space-y-3 max-h-[400px] overflow-y-auto scrollbar-thin pr-2">
-                  {filteredActivity.map((event, index) => (
-                    <div key={`${event.name}-${index}`} className="p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-gray-100 dark:border-white/5 hover:border-gray-300 dark:hover:border-gray-600 transition-all shadow-sm">
-                      <p className="text-sm font-bold text-gray-900 dark:text-white">{event.label}</p>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{event.name}</p>
-                      <div className="mt-2 flex items-center justify-between text-xs font-semibold">
-                        <span className="text-gray-500">{event.timestamp}</span>
-                        <span className="text-primary-600 dark:text-primary-400">{event.price}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-white/5 p-4 h-64 flex flex-col justify-center items-center text-center shadow-sm">
-                  <BarChart2 className="h-10 w-10 text-gray-400 dark:text-gray-600 mb-2" />
-                  <p className="text-gray-500 font-medium text-sm">Activity feed visualization loading...</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
+function FeedMetric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-3 dark:border-white/10 dark:bg-slate-900/80">
+      <div className="mb-1 flex items-center gap-2 text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+        {icon}
+        {label}
       </div>
+      <div className="font-semibold text-neutral-900 dark:text-white">{value}</div>
+    </div>
+  );
+}
+
+function FeaturePanel({
+  icon,
+  title,
+  description,
+  href,
+  cta,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  href: string;
+  cta: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg dark:border-white/10 dark:bg-slate-900/70 dark:hover:border-blue-500/40"
+    >
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-600 dark:text-blue-300">
+        {icon}
+      </div>
+      <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">{title}</h3>
+      <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">{description}</p>
+      <div className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-400">
+        {cta}
+        <ArrowRight className="h-4 w-4" />
+      </div>
+    </Link>
+  );
+}
+
+function QueueRow({ icon, title }: { icon: React.ReactNode; title: string }) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
+      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-300">
+        {icon}
+      </div>
+      <div className="font-medium text-neutral-900 dark:text-white">{title}</div>
     </div>
   );
 }
