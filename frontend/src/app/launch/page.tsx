@@ -25,7 +25,7 @@ import {
   Twitter,
   Zap,
 } from 'lucide-react';
-import { useCreateToken, useApproveFactoryUSDC, useCreationFee } from '@/hooks/useTokenFactory';
+import { useAllTokens, useCreateToken, useApproveFactoryUSDC, useCreationFee } from '@/hooks/useTokenFactory';
 import { useGenerateTokenPage } from '@/hooks/useGenerateTokenPage';
 import { useUSDCBalance } from '@/hooks/useMarketplace';
 import { CurveType, CURVE_TYPE_NAMES } from '@/lib/contracts';
@@ -46,6 +46,11 @@ function formatNumber(value: string) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return '0';
   return numeric.toLocaleString();
+}
+
+function formatAddress(address?: string | null) {
+  if (!address) return 'Unavailable';
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
 function appendCreatorLinks(description: string, socials: { website: string; x: string; telegram: string }) {
@@ -76,10 +81,13 @@ export default function LaunchPage() {
   const [curveType, setCurveType] = useState<number>(CurveType.LINEAR);
   const [step, setStep] = useState<'form' | 'approving' | 'creating' | 'success' | 'error'>('form');
   const [error, setError] = useState<string | null>(null);
+  const [createdTokenAddress, setCreatedTokenAddress] = useState<`0x${string}` | null>(null);
+  const [tokenCountBeforeLaunch, setTokenCountBeforeLaunch] = useState<number | null>(null);
 
   const { generate, isLoading: isGenerating, error: generateError } = useGenerateTokenPage();
   const { fee, feeFormatted } = useCreationFee();
   const { balance, balanceFormatted } = useUSDCBalance(address || '');
+  const { tokens, refetch: refetchTokens } = useAllTokens();
   const {
     approve,
     isLoading: isApproving,
@@ -128,10 +136,26 @@ export default function LaunchPage() {
   }, [isApproved, step, createToken, name, symbol, description, socials, imageUrl, totalSupply, basePrice, slope, curveType]);
 
   useEffect(() => {
-    if (isCreated) {
+    const syncCreatedToken = async () => {
+      if (!isCreated) return;
+
+      const refreshed = await refetchTokens();
+      const refreshedTokens = ((refreshed.data as `0x${string}`[] | undefined) ?? tokens) || [];
+      const latestToken = refreshedTokens[refreshedTokens.length - 1] ?? null;
+
+      if (latestToken) {
+        setCreatedTokenAddress(latestToken);
+      }
+
+      if (tokenCountBeforeLaunch !== null && refreshedTokens.length <= tokenCountBeforeLaunch) {
+        setError('Token was created, but the new token route is still indexing. You can open it from explore in a moment.');
+      }
+
       setStep('success');
-    }
-  }, [isCreated]);
+    };
+
+    syncCreatedToken();
+  }, [isCreated, refetchTokens, tokenCountBeforeLaunch, tokens]);
 
   useEffect(() => {
     if (createError) {
@@ -173,6 +197,8 @@ export default function LaunchPage() {
       return;
     }
 
+    setCreatedTokenAddress(null);
+    setTokenCountBeforeLaunch(tokens.length);
     setStep('approving');
     approve(feeFormatted);
   };
@@ -241,21 +267,30 @@ export default function LaunchPage() {
         <div className="mx-auto max-w-3xl rounded-3xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-8 text-center shadow-sm dark:border-green-500/20 dark:from-green-500/10 dark:to-emerald-500/10 dark:bg-slate-900">
           <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-green-600 dark:text-green-400" />
           <h2 className="mb-2 text-2xl font-bold text-green-900 dark:text-green-200">Token launched successfully</h2>
-          <p className="mx-auto mb-6 max-w-xl text-green-800 dark:text-green-300">
-            Your token has been deployed and is ready for discovery. Next up is surfacing it in feeds, stats, and the post-launch trading experience.
+          <p className="mx-auto mb-4 max-w-xl text-green-800 dark:text-green-300">
+            Your token has been deployed and is ready for discovery. The next step is trading directly on the token market page.
           </p>
+          <div className="mx-auto mb-6 max-w-xl rounded-2xl border border-green-200 bg-white/70 p-4 text-left text-sm text-green-900 dark:border-green-500/20 dark:bg-slate-950/40 dark:text-green-200">
+            <div className="flex items-center justify-between">
+              <span>Created token route</span>
+              <span className="font-semibold">{formatAddress(createdTokenAddress)}</span>
+            </div>
+            <div className="mt-2 text-green-700 dark:text-green-300">
+              {createdTokenAddress ? 'Primary action now opens the live token market page.' : 'Route indexing is still catching up, so explore remains available as fallback.'}
+            </div>
+          </div>
           <div className="flex flex-col justify-center gap-3 sm:flex-row">
             <button
-              onClick={() => router.push('/explore')}
+              onClick={() => router.push(createdTokenAddress ? `/token/${createdTokenAddress}` : '/explore')}
               className="inline-flex items-center justify-center rounded-xl bg-green-600 px-6 py-3 font-semibold text-white hover:bg-green-700"
             >
-              View live tokens
+              {createdTokenAddress ? 'Open token market' : 'View live tokens'}
             </button>
             <button
-              onClick={() => router.push('/stats')}
+              onClick={() => router.push('/explore')}
               className="inline-flex items-center justify-center rounded-xl border border-green-300 bg-white px-6 py-3 font-semibold text-green-700 hover:bg-green-50 dark:border-green-500/20 dark:bg-slate-900 dark:text-green-300"
             >
-              Open launch stats
+              Explore all launches
             </button>
           </div>
         </div>
@@ -628,7 +663,7 @@ export default function LaunchPage() {
               <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
                 <FlowStep active={step === 'approving'} complete={step === 'creating' || step === 'success'} title="Approve USDC" description="Allow the factory contract to collect the current creation fee." />
                 <FlowStep active={step === 'creating'} complete={step === 'success'} title="Deploy token" description="Create the token and initialize the bonding-curve market." />
-                <FlowStep active={step === 'success'} complete={step === 'success'} title="Go live" description="Surface the token for trading, discovery, and analytics." />
+                <FlowStep active={step === 'success'} complete={step === 'success'} title="Open market page" description="Jump directly into the live token market once the route is indexed." />
               </div>
               <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
                 <ArrowRight className="h-3.5 w-3.5" />
