@@ -10,6 +10,7 @@ import { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useAccount } from 'wagmi';
 import {
   ArrowRight,
   CheckCircle2,
@@ -23,6 +24,8 @@ import {
   SlidersHorizontal,
   Sparkles,
   TrendingUp,
+  Trophy,
+  User,
   Wallet,
 } from 'lucide-react';
 import { NFTGrid } from '@/components/nft/NFTCard';
@@ -47,6 +50,11 @@ const SORT_OPTIONS: SortOption[] = [
   { label: 'Ending Soon', value: 'ending', orderBy: 'endTime', orderDirection: 'asc' },
 ];
 
+function formatAddress(address?: string | null) {
+  if (!address) return 'Connect wallet';
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
+
 export default function ExplorePage() {
   return (
     <Suspense fallback={<LoadingPage label="Loading Explore..." />}>
@@ -57,6 +65,7 @@ export default function ExplorePage() {
 
 function ExploreContent() {
   const searchParams = useSearchParams();
+  const { address, isConnected } = useAccount();
   const initialTab = searchParams.get('tab') as ViewMode | null;
 
   const [viewMode, setViewMode] = useState<ViewMode>(
@@ -181,6 +190,7 @@ function ExploreContent() {
 
   const totalPages = Math.ceil((filteredNFTs.length || ITEMS_PER_PAGE) / ITEMS_PER_PAGE);
   const tokenMarketCount = launchedTokens.length;
+  const connectedRouteCount = isConnected ? 4 : 3;
 
   const activityRows = useMemo(() => {
     return listings.slice(0, 6).map((listing, index) => ({
@@ -227,6 +237,35 @@ function ExploreContent() {
     } as const;
   }, [tokenMarketCount, tokensLoading, viewMode]);
 
+  const connectedRoutes = [
+    {
+      title: 'Launch flow',
+      description: 'Create a new token and route it back into discovery.',
+      href: '/launch',
+      icon: <Rocket className="h-4 w-4" />,
+    },
+    {
+      title: 'Stats',
+      description: 'Check momentum, volume, and market context.',
+      href: '/stats',
+      icon: <TrendingUp className="h-4 w-4" />,
+    },
+    {
+      title: 'Rewards',
+      description: 'Follow wallet-linked progression beyond discovery.',
+      href: '/rewards',
+      icon: <Trophy className="h-4 w-4" />,
+    },
+    ...(isConnected
+      ? [{
+          title: 'Profile',
+          description: 'Return to your connected wallet identity and creator context.',
+          href: `/profile/${address}`,
+          icon: <User className="h-4 w-4" />,
+        }]
+      : []),
+  ];
+
   if (isLoading && !listings.length && !auctions.length && viewMode !== 'tokens') {
     return <LoadingPage label="Loading NFTs..." />;
   }
@@ -262,12 +301,16 @@ function ExploreContent() {
               Open stats
               <ArrowRight className="h-4 w-4" />
             </Link>
+            <Link href={isConnected && address ? `/profile/${address}` : '/profile'} className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-3 font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
+              <User className="h-4 w-4" />
+              Profile
+            </Link>
           </div>
         </div>
 
         <div className="rounded-3xl border border-neutral-200 bg-neutral-50/80 p-5 dark:border-white/10 dark:bg-slate-950/60">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Market pulse</h2>
+            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Connected market pulse</h2>
             <span className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300">
               <Radio className="h-3.5 w-3.5" />
               Live
@@ -281,13 +324,22 @@ function ExploreContent() {
               <StatCard label="Active Auctions" value={formatNumber(stats.activeAuctions)} />
             </div>
           )}
-          <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-slate-900/80">
-            <div className="text-sm font-semibold text-neutral-900 dark:text-white">Launched token markets</div>
-            <div className="mt-1 text-2xl font-bold text-neutral-900 dark:text-white">
-              {tokensLoading ? 'Loading...' : tokenMarketCount.toLocaleString()}
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-slate-900/80">
+              <div className="text-sm font-semibold text-neutral-900 dark:text-white">Connected wallet</div>
+              <div className="mt-1 text-xl font-bold text-neutral-900 dark:text-white">{formatAddress(address)}</div>
+              <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                Discovery now sits closer to profile, launch, rewards, and token-market routes.
+              </div>
             </div>
-            <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-              Token discovery now sits alongside ARC marketplace inventory as a first-class experience.
+            <div className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-slate-900/80">
+              <div className="text-sm font-semibold text-neutral-900 dark:text-white">Launched token markets</div>
+              <div className="mt-1 text-2xl font-bold text-neutral-900 dark:text-white">
+                {tokensLoading ? 'Loading...' : tokenMarketCount.toLocaleString()}
+              </div>
+              <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                Token discovery now sits alongside ARC marketplace inventory as a first-class experience.
+              </div>
             </div>
           </div>
         </div>
@@ -320,6 +372,25 @@ function ExploreContent() {
                 Launch flow
               </Link>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-8 rounded-3xl border border-blue-200 bg-blue-50/80 p-5 shadow-sm dark:border-blue-500/20 dark:bg-blue-500/10 lg:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="mb-1 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-200">
+              <Sparkles className="h-4 w-4" />
+              Shell continuity
+            </div>
+            <div className="text-lg font-semibold text-neutral-900 dark:text-white">Discovery is now a connected ARC route, not a dead-end browse page.</div>
+            <p className="mt-1 max-w-3xl text-sm text-blue-800 dark:text-blue-200">
+              Users can move from explore into launch, stats, rewards, and profile with less context switching, while token mode stays positioned as the handoff into live market pages.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-blue-200 bg-white/70 px-4 py-3 text-sm text-blue-900 dark:border-blue-500/20 dark:bg-slate-950/40 dark:text-blue-200">
+            <div className="font-semibold">Connected routes</div>
+            <div className="mt-1">{connectedRouteCount} high-intent paths from explore</div>
           </div>
         </div>
       </div>
@@ -419,6 +490,10 @@ function ExploreContent() {
                       Stats
                       <ArrowRight className="h-4 w-4" />
                     </Link>
+                    <Link href="/rewards" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-900 dark:text-white">
+                      <Trophy className="h-4 w-4" />
+                      Rewards
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -477,6 +552,21 @@ function ExploreContent() {
         <aside className="space-y-6">
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
             <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Creator routes</h2>
+              <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+                <Sparkles className="h-3.5 w-3.5" />
+                Connected shell
+              </span>
+            </div>
+            <div className="space-y-3">
+              {connectedRoutes.map((route) => (
+                <ShortcutCard key={route.title} icon={route.icon} title={route.title} description={route.description} href={route.href} />
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+            <div className="mb-4 flex items-center justify-between">
               <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Market watch</h2>
               <span className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-300">
                 <Radio className="h-3.5 w-3.5" />
@@ -505,21 +595,11 @@ function ExploreContent() {
           </section>
 
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
-            <h2 className="mb-4 text-2xl font-semibold text-neutral-900 dark:text-white">Quick routes</h2>
-            <div className="space-y-3">
-              <ShortcutCard icon={<Rocket className="h-4 w-4" />} title="Launch flow" description="Create with the guided ARC token launch flow." href="/launch" />
-              <ShortcutCard icon={<Wallet className="h-4 w-4" />} title="Token markets" description="Jump directly into the launched-token discovery view." href="/explore?tab=tokens" />
-              <ShortcutCard icon={<TrendingUp className="h-4 w-4" />} title="Analytics" description="Review the ARC stats surface for momentum and volume signals." href="/stats" />
-              <ShortcutCard icon={<Gavel className="h-4 w-4" />} title="Auction mode" description="Switch into active auction inventory instantly." href="/explore?tab=auctions" />
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
             <h2 className="mb-4 text-2xl font-semibold text-neutral-900 dark:text-white">Discovery guide</h2>
             <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
               <GuideRow title="Start with All" description="Use the combined view when you want the widest picture of what is active on ARC right now." />
               <GuideRow title="Switch into Tokens" description="Move into token mode when you want launchpad-native markets and trader-facing routes." />
-              <GuideRow title="Use search with tabs" description="Search becomes more useful after narrowing into listings, auctions, or tokens." />
+              <GuideRow title="Follow connected routes" description="Use launch, stats, rewards, and profile to keep discovery tied to the rest of the ARC shell." />
             </div>
           </section>
         </aside>
