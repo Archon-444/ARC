@@ -4,14 +4,29 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
+import {
+  Activity,
+  ArrowRight,
+  BarChart3,
+  Copy,
+  Package,
+  Rocket,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Trophy,
+  User,
+  Wallet,
+} from 'lucide-react';
 import { fetchGraphQL } from '@/lib/graphql-client';
 import { GET_USER } from '@/graphql/queries';
 import NFTCard from '@/components/NFTCard';
 import { formatUSDC } from '@/hooks/useMarketplace';
+import { cn } from '@/lib/utils';
 
 type TabType = 'owned' | 'created' | 'activity' | 'listings';
 
-interface Activity {
+interface ActivityItem {
   id: string;
   price: string;
   createdAt: string;
@@ -24,6 +39,10 @@ interface Activity {
     };
   };
   type: 'purchase' | 'sale';
+}
+
+function shortenAddress(address: string) {
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
 export default function ProfilePage() {
@@ -66,8 +85,7 @@ export default function ProfilePage() {
     setTimeout(() => setCopiedAddress(false), 2000);
   };
 
-  // Combine purchases and sales into activity feed
-  const activities: Activity[] = user
+  const activities: ActivityItem[] = user
     ? [
         ...(user.purchases || []).map((p: any) => ({ ...p, type: 'purchase' as const })),
         ...(user.sales || []).map((s: any) => ({ ...s, type: 'sale' as const })),
@@ -76,25 +94,36 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-primary-500"></div>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">User Not Found</h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
-          This user doesn't exist or hasn't interacted with the marketplace yet.
-        </p>
-        <Link
-          href="/explore"
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-        >
-          Browse NFTs
-        </Link>
+      <div className="min-h-screen px-4 py-12 lg:py-20">
+        <div className="mx-auto max-w-5xl">
+          <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-8 text-center shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:p-10">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-500/10 text-primary-500">
+              <User className="h-8 w-8" />
+            </div>
+            <h2 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">Profile not found</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-neutral-600 dark:text-neutral-400">
+              This wallet has not created a visible ARC profile state yet, or it has not interacted with the marketplace surfaces that populate this view.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Link href="/explore" className="inline-flex items-center gap-2 rounded-2xl bg-primary-500 px-5 py-3 font-semibold text-white transition hover:bg-primary-600">
+                <Search className="h-4 w-4" />
+                Explore markets
+              </Link>
+              <Link href="/rewards" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
+                <Trophy className="h-4 w-4" />
+                Open rewards
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -103,355 +132,317 @@ export default function ProfilePage() {
   const createdNFTs = user.createdNFTs || [];
   const activeListings = user.listings || [];
 
+  const quickRoutes = [
+    {
+      title: 'Open token markets',
+      description: 'Jump from wallet identity into launched-token discovery and live ARC market routes.',
+      href: '/explore?tab=tokens',
+      icon: <Wallet className="h-4 w-4" />,
+    },
+    {
+      title: 'Review stats',
+      description: 'Use analytics before returning to account, trading, or launch actions.',
+      href: '/stats',
+      icon: <BarChart3 className="h-4 w-4" />,
+    },
+    {
+      title: 'Open rewards',
+      description: 'Check loyalty, quests, and progression from the same connected shell.',
+      href: '/rewards',
+      icon: <Trophy className="h-4 w-4" />,
+    },
+    {
+      title: isOwnProfile ? 'Open studio' : 'Explore markets',
+      description: isOwnProfile
+        ? 'Move from profile into ARC creation and listing workflows.'
+        : 'Return to discovery and browse the broader ARC marketplace.',
+      href: isOwnProfile ? '/studio' : '/explore',
+      icon: isOwnProfile ? <Sparkles className="h-4 w-4" /> : <Search className="h-4 w-4" />,
+    },
+  ];
+
+  const tabs = [
+    { id: 'owned' as const, label: `Owned (${ownedNFTs.length})` },
+    { id: 'created' as const, label: `Created (${createdNFTs.length})` },
+    { id: 'listings' as const, label: `Listings (${activeListings.length})` },
+    { id: 'activity' as const, label: `Activity (${activities.length})` },
+  ];
+
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      {/* Profile Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          {/* Profile Info */}
-          <div className="flex items-center gap-6">
-            {/* Avatar */}
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold">
-              {profileAddress.slice(2, 4).toUpperCase()}
+    <div className="min-h-screen px-4 py-8 lg:px-6 lg:py-10">
+      <div className="mx-auto max-w-7xl space-y-8">
+        <div className="grid gap-6 rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:grid-cols-[1.1fr_0.9fr] lg:p-8">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+              <User className="h-3.5 w-3.5" />
+              ARC profile
             </div>
-
-            {/* Address and Stats */}
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {isOwnProfile ? 'Your Profile' : `${profileAddress.slice(0, 6)}...${profileAddress.slice(-4)}`}
-                </h1>
-                {isOwnProfile && (
-                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-semibold rounded">
-                    You
-                  </span>
-                )}
+            <div className="flex items-start gap-4">
+              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary-500 to-secondary-500 text-2xl font-bold text-white shadow-lg shadow-primary-500/20 lg:h-24 lg:w-24 lg:text-3xl">
+                {profileAddress.slice(2, 4).toUpperCase()}
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <span className="font-mono">{profileAddress}</span>
-                <button
-                  onClick={copyAddress}
-                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition"
-                  title="Copy address"
-                >
-                  {copiedAddress ? (
-                    <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                      />
-                    </svg>
+              <div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-4xl">
+                    {isOwnProfile ? 'Your ARC profile' : shortenAddress(profileAddress)}
+                  </h1>
+                  {isOwnProfile && (
+                    <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+                      You
+                    </span>
                   )}
-                </button>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-neutral-500 dark:text-neutral-400">
+                  <span className="font-mono">{profileAddress}</span>
+                  <button
+                    onClick={copyAddress}
+                    className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 transition hover:border-primary-400 hover:text-primary-600 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-200 dark:hover:text-primary-300"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    {copiedAddress ? 'Copied' : 'Copy address'}
+                  </button>
+                </div>
+                <p className="mt-4 max-w-2xl text-neutral-600 dark:text-neutral-400">
+                  ARC now treats the wallet profile as a connected shell destination, combining holdings, creation, listings, and activity with faster routes into discovery, rewards, analytics, and launch flows.
+                </p>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Owned</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{ownedNFTs.length}</p>
-          </div>
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Created</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{createdNFTs.length}</p>
-          </div>
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Spent</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {formatUSDC(BigInt(user.totalSpent || 0))}
+          <div className="rounded-3xl border border-neutral-200 bg-neutral-50/80 p-5 dark:border-white/10 dark:bg-slate-950/60">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Profile state</h2>
+              <span className={cn(
+                'inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold',
+                isOwnProfile
+                  ? 'border border-green-200 bg-green-50 text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300'
+                  : 'border border-neutral-200 bg-white text-neutral-600 dark:border-white/10 dark:bg-slate-900 dark:text-neutral-300'
+              )}>
+                <ShieldCheck className="h-3.5 w-3.5" />
+                {isOwnProfile ? 'Connected identity' : 'Public wallet view'}
+              </span>
+            </div>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              {isOwnProfile
+                ? 'You are viewing your wallet-linked account surface, with direct continuity into creation, loyalty, analytics, and token-market routes.'
+                : 'You are viewing a public ARC wallet surface, with routes back into discovery, rewards, and broader product navigation.'}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">USDC</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <Link href="/settings" className="inline-flex items-center justify-between rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 transition hover:border-primary-400 hover:text-primary-600 dark:border-white/10 dark:bg-slate-900/80 dark:text-white">
+                Settings
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link href="/launch" className="inline-flex items-center justify-between rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 transition hover:border-primary-400 hover:text-primary-600 dark:border-white/10 dark:bg-slate-900/80 dark:text-white">
+                Launch a token
+                <Rocket className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Earned</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {formatUSDC(BigInt(user.totalEarned || 0))}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">USDC</p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <OverviewCard label="Owned assets" value={ownedNFTs.length.toString()} hint="Wallet-held marketplace items" />
+          <OverviewCard label="Created assets" value={createdNFTs.length.toString()} hint="Minted and published by this wallet" />
+          <OverviewCard label="Total spent" value={`${formatUSDC(BigInt(user.totalSpent || 0))} USDC`} hint="Marketplace purchases" />
+          <OverviewCard label="Total earned" value={`${formatUSDC(BigInt(user.totalEarned || 0))} USDC`} hint="Marketplace sales" />
+        </div>
+
+        <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+          <div className="mb-4">
+            <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Shell routes</h2>
+            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Move directly from profile into the highest-value ARC product surfaces.</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {quickRoutes.map((route) => (
+              <RouteCard key={route.title} {...route} />
+            ))}
+          </div>
+        </section>
+
+        <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+          <div className="flex flex-wrap gap-2">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  'inline-flex items-center rounded-full px-4 py-2.5 text-sm font-semibold transition-colors',
+                  activeTab === tab.id
+                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-black'
+                    : 'border border-neutral-200 bg-white text-neutral-600 hover:text-neutral-900 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-300 dark:hover:text-white'
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => setActiveTab('owned')}
-          className={`px-6 py-3 font-medium transition-colors ${
-            activeTab === 'owned'
-              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-          }`}
-        >
-          Owned ({ownedNFTs.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('created')}
-          className={`px-6 py-3 font-medium transition-colors ${
-            activeTab === 'created'
-              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-          }`}
-        >
-          Created ({createdNFTs.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('listings')}
-          className={`px-6 py-3 font-medium transition-colors ${
-            activeTab === 'listings'
-              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-          }`}
-        >
-          Listings ({activeListings.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('activity')}
-          className={`px-6 py-3 font-medium transition-colors ${
-            activeTab === 'activity'
-              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-          }`}
-        >
-          Activity ({activities.length})
-        </button>
-      </div>
+        {activeTab === 'owned' && (
+          <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+            {ownedNFTs.length === 0 ? (
+              <EmptyState
+                icon={<Package className="h-6 w-6" />}
+                title="No owned assets"
+                description={isOwnProfile ? 'Start by exploring ARC inventory and token-market routes to build your wallet profile.' : 'This wallet does not currently show owned ARC assets.'}
+                href={isOwnProfile ? '/explore' : '/explore?tab=all'}
+                cta={isOwnProfile ? 'Explore markets' : 'Browse inventory'}
+              />
+            ) : (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {ownedNFTs.map((nft: any) => (
+                  <NFTCard key={nft.id} nft={nft} />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
-      {/* Tab Content */}
-      {activeTab === 'owned' && (
-        <div>
-          {ownedNFTs.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-                />
-              </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No NFTs owned</h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {isOwnProfile ? 'Start by purchasing your first NFT' : 'This user doesn\'t own any NFTs yet'}
-              </p>
-              {isOwnProfile && (
-                <Link
-                  href="/explore"
-                  className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                >
-                  Explore NFTs
-                </Link>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {ownedNFTs.map((nft: any) => (
-                <NFTCard key={nft.id} nft={nft} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+        {activeTab === 'created' && (
+          <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+            {createdNFTs.length === 0 ? (
+              <EmptyState
+                icon={<Sparkles className="h-6 w-6" />}
+                title="No created assets"
+                description={isOwnProfile ? 'Use Studio and launch workflows to publish your first ARC asset.' : 'This wallet has not created ARC assets yet.'}
+                href={isOwnProfile ? '/studio' : '/explore'}
+                cta={isOwnProfile ? 'Open studio' : 'Explore markets'}
+              />
+            ) : (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {createdNFTs.map((nft: any) => (
+                  <NFTCard key={nft.id} nft={nft} />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
-      {activeTab === 'created' && (
-        <div>
-          {createdNFTs.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                />
-              </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No NFTs created</h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {isOwnProfile ? 'Start creating your first NFT' : 'This user hasn\'t created any NFTs yet'}
-              </p>
-              {isOwnProfile && (
-                <Link
-                  href="/studio"
-                  className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                >
-                  Go to Studio
-                </Link>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {createdNFTs.map((nft: any) => (
-                <NFTCard key={nft.id} nft={nft} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+        {activeTab === 'listings' && (
+          <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+            {activeListings.length === 0 ? (
+              <EmptyState
+                icon={<Wallet className="h-6 w-6" />}
+                title="No active listings"
+                description={isOwnProfile ? 'Create or list assets to surface sell-side activity in your ARC profile.' : 'This wallet has no active ARC listings right now.'}
+                href={isOwnProfile ? '/studio' : '/explore'}
+                cta={isOwnProfile ? 'Open studio' : 'Explore markets'}
+              />
+            ) : (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {activeListings.map((listing: any) => {
+                  const nftWithListing = {
+                    ...listing.nft,
+                    listing: {
+                      id: listing.id,
+                      price: listing.price,
+                      active: true,
+                    },
+                  };
+                  return <NFTCard key={listing.id} nft={nftWithListing} />;
+                })}
+              </div>
+            )}
+          </section>
+        )}
 
-      {activeTab === 'listings' && (
-        <div>
-          {activeListings.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No active listings</h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {isOwnProfile ? 'List your NFTs for sale' : 'This user has no active listings'}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {activeListings.map((listing: any) => {
-                const nftWithListing = {
-                  ...listing.nft,
-                  listing: {
-                    id: listing.id,
-                    price: listing.price,
-                    active: true,
-                  },
-                };
-                return <NFTCard key={listing.id} nft={nftWithListing} />;
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'activity' && (
-        <div>
-          {activities.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No activity yet</h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {isOwnProfile ? 'Your marketplace activity will appear here' : 'This user has no activity yet'}
-              </p>
-            </div>
-          ) : (
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+        {activeTab === 'activity' && (
+          <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+            {activities.length === 0 ? (
+              <EmptyState
+                icon={<Activity className="h-6 w-6" />}
+                title="No activity yet"
+                description={isOwnProfile ? 'Your marketplace purchases and sales will appear here once activity starts flowing through ARC.' : 'This wallet does not yet show ARC marketplace activity.'}
+                href="/explore"
+                cta="Explore markets"
+              />
+            ) : (
+              <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
                 {activities.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        {/* Activity Icon */}
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            activity.type === 'purchase'
-                              ? 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400'
-                              : 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400'
-                          }`}
-                        >
-                          {activity.type === 'purchase' ? (
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-                            </svg>
-                          ) : (
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                              <path
-                                fillRule="evenodd"
-                                d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          )}
-                        </div>
-
-                        {/* Activity Details */}
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white">
-                            {activity.type === 'purchase' ? 'Purchased' : 'Sold'}{' '}
-                            <Link
-                              href={`/nft/${activity.nft.collection}/${activity.nft.tokenId}`}
-                              className="text-blue-600 dark:text-blue-400 hover:underline"
-                            >
-                              {activity.nft.collection.name} #{activity.nft.tokenId}
-                            </Link>
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {new Date(parseInt(activity.createdAt) * 1000).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </p>
-                        </div>
+                  <div key={activity.id} className="flex flex-col gap-4 py-4 first:pt-0 last:pb-0 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-start gap-4">
+                      <div className={cn(
+                        'flex h-11 w-11 items-center justify-center rounded-2xl',
+                        activity.type === 'purchase'
+                          ? 'bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400'
+                          : 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400'
+                      )}>
+                        {activity.type === 'purchase' ? <Package className="h-5 w-5" /> : <Wallet className="h-5 w-5" />}
                       </div>
-
-                      {/* Price */}
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900 dark:text-white">
-                          {formatUSDC(BigInt(activity.price))} USDC
+                      <div>
+                        <p className="font-medium text-neutral-900 dark:text-white">
+                          {activity.type === 'purchase' ? 'Purchased' : 'Sold'}{' '}
+                          <Link href={`/nft/${activity.nft.collection.name}/${activity.nft.tokenId}`} className="text-primary-600 hover:underline dark:text-primary-400">
+                            {activity.nft.collection.name} #{activity.nft.tokenId}
+                          </Link>
                         </p>
-                        <p
-                          className={`text-sm ${
-                            activity.type === 'sale'
-                              ? 'text-green-600 dark:text-green-400'
-                              : 'text-red-600 dark:text-red-400'
-                          }`}
-                        >
-                          {activity.type === 'sale' ? '+' : '-'}
-                          {formatUSDC(BigInt(activity.price))}
+                        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                          {new Date(parseInt(activity.createdAt) * 1000).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
                         </p>
                       </div>
+                    </div>
+                    <div className="text-left md:text-right">
+                      <p className="font-semibold text-neutral-900 dark:text-white">{formatUSDC(BigInt(activity.price))} USDC</p>
+                      <p className={cn('text-sm', activity.type === 'sale' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')}>
+                        {activity.type === 'sale' ? '+' : '-'}{formatUSDC(BigInt(activity.price))}
+                      </p>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function OverviewCard({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+      <div className="text-sm text-neutral-500 dark:text-neutral-400">{label}</div>
+      <div className="mt-1 text-3xl font-bold text-neutral-900 dark:text-white">{value}</div>
+      <div className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">{hint}</div>
+    </div>
+  );
+}
+
+function RouteCard({ title, description, href, icon }: { title: string; description: string; href: string; icon: JSX.Element }) {
+  return (
+    <Link href={href} className="block rounded-2xl border border-neutral-200 bg-neutral-50 p-4 transition hover:border-primary-400 hover:bg-white dark:border-white/10 dark:bg-slate-950/60">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-primary-500/10 text-primary-500">
+            {icon}
+          </div>
+          <div className="font-semibold text-neutral-900 dark:text-white">{title}</div>
+          <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</div>
         </div>
-      )}
+        <ArrowRight className="mt-1 h-4 w-4 text-neutral-400" />
+      </div>
+    </Link>
+  );
+}
+
+function EmptyState({ icon, title, description, href, cta }: { icon: JSX.Element; title: string; description: string; href: string; cta: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-neutral-300 bg-neutral-50 px-6 py-14 text-center dark:border-white/10 dark:bg-slate-950/60">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-500/10 text-primary-500">
+        {icon}
+      </div>
+      <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">{title}</h3>
+      <p className="mt-2 max-w-xl text-sm text-neutral-500 dark:text-neutral-400">{description}</p>
+      <Link href={href} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-primary-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-600">
+        {cta}
+        <ArrowRight className="h-4 w-4" />
+      </Link>
     </div>
   );
 }
