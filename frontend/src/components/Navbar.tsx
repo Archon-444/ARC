@@ -66,8 +66,19 @@ const mobileNav = [
   { label: 'Home', href: '/', icon: <Compass className="h-5 w-5" /> },
   { label: 'Explore', href: '/explore', icon: <Search className="h-5 w-5" /> },
   { label: 'Launch', href: '/launch', icon: <Rocket className="h-5 w-5" /> },
-  { label: 'Create', href: '/studio', icon: <Sparkles className="h-5 w-5" /> },
+  { label: 'Studio', href: '/studio', icon: <Sparkles className="h-5 w-5" /> },
   { label: 'Profile', href: '/profile', icon: <User className="h-5 w-5" /> },
+];
+
+const mobileMenuLinks = [
+  { label: 'Home', href: '/' },
+  { label: 'Explore', href: '/explore' },
+  { label: 'Launch', href: '/launch' },
+  { label: 'Studio', href: '/studio' },
+  { label: 'Stats', href: '/stats' },
+  { label: 'Rewards', href: '/rewards' },
+  { label: 'Profile', href: '/profile' },
+  { label: 'Settings', href: '/settings' },
 ];
 
 export default function Navbar() {
@@ -90,7 +101,6 @@ export default function Navbar() {
   }, [isConnected]);
   const cartCount = 0;
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (walletMenuRef.current && !walletMenuRef.current.contains(event.target as Node)) {
@@ -125,9 +135,7 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-neutral-200/60 bg-white/95 backdrop-blur-xl dark:border-neutral-800 dark:bg-background-dark/95">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-6">
-        {/* Left: Logo + Navigation */}
         <div className="flex items-center gap-10">
-          {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-secondary-500 text-white shadow-lg shadow-primary-500/30">
               <Hexagon className="h-4 w-4 fill-white" />
@@ -135,9 +143,7 @@ export default function Navbar() {
             <span className="text-lg font-bold text-neutral-900 dark:text-white">ArcMarket</span>
           </Link>
 
-          {/* Primary Navigation */}
           <nav className="hidden lg:flex items-center gap-1">
-            {/* Explore Dropdown */}
             <div
               className="relative"
               onMouseEnter={() => setExploreOpen(true)}
@@ -152,7 +158,6 @@ export default function Navbar() {
                 <ChevronDown className={`h-4 w-4 transition-transform ${exploreOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Explore Dropdown Menu */}
               <div
                 className={`absolute left-0 top-full pt-2 transition-all duration-150 ${
                   exploreOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
@@ -179,7 +184,6 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Other Nav Items */}
             {primaryNav.filter((item) => item.label !== 'Explore').map((item) => (
               <Link
                 key={item.label}
@@ -195,7 +199,6 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-3">
             <Link
               href="/launch"
@@ -205,16 +208,14 @@ export default function Navbar() {
             </Link>
             <Link
               href="/studio"
-              className="px-5 py-1.5 rounded-full bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium shadow-lg shadow-primary-500/25 transition-all"
+              className="flex items-center gap-1.5 px-5 py-1.5 rounded-full bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium shadow-lg shadow-primary-500/25 transition-all"
             >
-              Create
+              <Sparkles className="h-3.5 w-3.5" /> Studio
             </Link>
           </div>
         </div>
 
-        {/* Right: Actions */}
         <div className="flex items-center gap-2">
-          {/* Inline Search Input (lg+) */}
           <div className="hidden lg:flex items-center relative">
             <Search className="absolute left-3 h-4 w-4 text-gray-400" />
             <input
@@ -222,29 +223,26 @@ export default function Navbar() {
               onFocus={open}
               readOnly
               className="pl-10 pr-16 py-2 w-64 bg-gray-100 dark:bg-surface-dark rounded-full text-sm focus:ring-2 focus:ring-primary-500 placeholder-gray-500 dark:text-gray-200 cursor-pointer outline-none"
-              placeholder="Search collections..."
+              placeholder="Search collections, NFTs, users..."
             />
             <kbd className="absolute right-3 px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-xs text-gray-500 font-mono">⌘K</kbd>
           </div>
 
-          {/* Mobile Search */}
           <button
             onClick={open}
             className="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+            aria-label="Open search"
           >
             <Search className="h-5 w-5" />
           </button>
 
-          {/* Notification Bell with red dot */}
-          <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:text-primary-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800">
+          <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:text-primary-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800" aria-label="Notifications">
             <Bell className="h-5 w-5" />
             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full" />
           </button>
 
-          {/* Theme Toggle */}
           <ThemeToggle />
 
-          {/* Unified Wallet Button */}
           <div className="relative hidden lg:block" ref={walletMenuRef}>
             <button
               onClick={() => setWalletMenuOpen(!walletMenuOpen)}
@@ -258,7 +256,6 @@ export default function Navbar() {
               {isWalletConnected ? truncateAddress(activeWallet.address as `0x${string}`) : 'Connect Wallet'}
             </button>
 
-            {/* Wallet Dropdown */}
             {walletMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-neutral-200 bg-white p-2 shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
                 {isWalletConnected ? (
@@ -324,7 +321,6 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Profile Menu (contains secondary items: XP, Cart, Settings) */}
           <div className="relative hidden lg:block" ref={profileMenuRef}>
             <button
               onClick={() => setProfileMenuOpen(!profileMenuOpen)}
@@ -332,10 +328,8 @@ export default function Navbar() {
               aria-label="Profile"
             />
 
-            {/* Profile Dropdown */}
             {profileMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-neutral-200 bg-white p-2 shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
-                {/* XP Progress */}
                 <div className="px-3 py-2 border-b border-neutral-100 dark:border-neutral-800">
                   {loyaltyTier ? (
                     <>
@@ -362,7 +356,6 @@ export default function Navbar() {
                   )}
                 </div>
 
-                {/* Menu Items */}
                 <div className="mt-2 space-y-0.5">
                   <Link
                     href="/profile"
@@ -408,17 +401,16 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white/95 backdrop-blur-xl shadow-lg dark:border-neutral-800 dark:bg-background-dark/95 lg:hidden safe-area-inset-bottom">
         <div className="grid grid-cols-5">
           {mobileNav.map((item) => (
@@ -438,7 +430,6 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile Slide-out Menu */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
@@ -450,18 +441,19 @@ export default function Navbar() {
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="ml-auto flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                aria-label="Close menu"
               >
                 <X className="h-5 w-5" />
               </button>
 
               <nav className="space-y-1">
-                {primaryNav.map((item) => (
+                {mobileMenuLinks.map((item) => (
                   <Link
                     key={item.label}
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`block rounded-lg px-4 py-3 text-base font-medium transition-colors ${
-                      pathname.startsWith(item.href)
+                      pathname === item.href || pathname.startsWith(item.href + '/')
                         ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white'
                         : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
                     }`}
@@ -497,7 +489,6 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* Modals */}
       <WalletManagementModal isOpen={showWalletModal} onClose={() => setShowWalletModal(false)} />
       <CreateWalletModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onSuccess={() => setShowCreateModal(false)} />
     </header>

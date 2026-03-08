@@ -10,7 +10,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Home, Search, PlusCircle, Activity, User } from 'lucide-react';
+import { Home, Search, Rocket, Sparkles, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface NavItem {
@@ -32,15 +32,15 @@ const defaultNavItems: NavItem[] = [
     label: 'Explore',
   },
   {
-    href: '/create',
-    icon: PlusCircle,
-    label: 'Create',
+    href: '/launch',
+    icon: Rocket,
+    label: 'Launch',
     highlight: true,
   },
   {
-    href: '/activity',
-    icon: Activity,
-    label: 'Activity',
+    href: '/studio',
+    icon: Sparkles,
+    label: 'Studio',
   },
   {
     href: '/profile',
@@ -87,7 +87,6 @@ export function BottomNavigation({
                   )}
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  {/* Active indicator */}
                   {isActive && (
                     <motion.div
                       layoutId="bottomNavIndicator"
@@ -100,7 +99,6 @@ export function BottomNavigation({
                     />
                   )}
 
-                  {/* Icon container with highlight effect for Create button */}
                   <div
                     className={cn(
                       'relative flex items-center justify-center',
@@ -117,7 +115,6 @@ export function BottomNavigation({
                     />
                   </div>
 
-                  {/* Label */}
                   <span
                     className={cn(
                       'text-[10px] font-medium transition-all',
@@ -133,16 +130,11 @@ export function BottomNavigation({
         </ul>
       </div>
 
-      {/* Safe area for devices with bottom notch (iOS) */}
       <div className="h-safe-area-inset-bottom bg-inherit" />
     </nav>
   );
 }
 
-/**
- * Spacer component to prevent content from being hidden behind bottom nav
- * Use this at the bottom of your mobile pages
- */
 export function BottomNavSpacer() {
   return <div className="h-16 md:hidden" aria-hidden="true" />;
 }
