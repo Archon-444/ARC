@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import {
+  BarChart3,
   Bell,
   ChevronDown,
   CircleDollarSign,
@@ -25,7 +26,7 @@ import {
 import { useCircleWallet } from '@/hooks/useCircleWallet';
 import { WalletManagementModal } from '@/components/circle/WalletManagementModal';
 import { CreateWalletModal } from '@/components/circle/CreateWalletModal';
-import { truncateAddress } from '@/lib/utils';
+import { truncateAddress, cn } from '@/lib/utils';
 import { useCommandPalette } from '@/hooks/useCommandPalette';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -60,6 +61,14 @@ const exploreSections = [
       { label: 'Profile', href: '/profile' },
     ],
   },
+];
+
+const shellQuickRoutes = [
+  { label: 'Explore', href: '/explore', icon: <Compass className="h-3.5 w-3.5" /> },
+  { label: 'Token markets', href: '/explore?tab=tokens', icon: <Wallet className="h-3.5 w-3.5" /> },
+  { label: 'Launch', href: '/launch', icon: <Rocket className="h-3.5 w-3.5" /> },
+  { label: 'Stats', href: '/stats', icon: <BarChart3 className="h-3.5 w-3.5" /> },
+  { label: 'Rewards', href: '/rewards', icon: <Trophy className="h-3.5 w-3.5" /> },
 ];
 
 const mobileNav = [
@@ -100,6 +109,49 @@ export default function Navbar() {
   }, [isConnected]);
   const cartCount = 0;
 
+  const shellContext = useMemo(() => {
+    if (pathname.startsWith('/launch')) {
+      return {
+        title: 'Launch flow active',
+        description: 'Create and route new token launches into live ARC market pages.',
+      };
+    }
+    if (pathname.startsWith('/stats')) {
+      return {
+        title: 'Analytics active',
+        description: 'Review ARC performance signals, then route back into discovery or launches.',
+      };
+    }
+    if (pathname.startsWith('/rewards')) {
+      return {
+        title: 'Rewards active',
+        description: 'Track loyalty, quests, and status while staying connected to the core ARC shell.',
+      };
+    }
+    if (pathname.startsWith('/explore')) {
+      return {
+        title: 'Discovery active',
+        description: 'Move from marketplace inventory into token markets, launches, and analytics.',
+      };
+    }
+    if (pathname.startsWith('/token/')) {
+      return {
+        title: 'Token market active',
+        description: 'Trade launched tokens with quicker return paths into discovery and shell routes.',
+      };
+    }
+    if (pathname.startsWith('/studio')) {
+      return {
+        title: 'Studio active',
+        description: 'Build inside ARC with the same connected shell used across discovery and markets.',
+      };
+    }
+    return {
+      title: 'ARC shell active',
+      description: 'One navigation layer for discovery, launches, trading, analytics, and rewards.',
+    };
+  }, [pathname]);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (walletMenuRef.current && !walletMenuRef.current.contains(event.target as Node)) {
@@ -139,7 +191,12 @@ export default function Navbar() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-secondary-500 text-white shadow-lg shadow-primary-500/30">
               <Hexagon className="h-4 w-4 fill-white" />
             </div>
-            <span className="text-lg font-bold text-neutral-900 dark:text-white">ARC</span>
+            <div>
+              <span className="text-lg font-bold text-neutral-900 dark:text-white">ARC</span>
+              <div className="hidden text-[11px] font-medium uppercase tracking-[0.18em] text-neutral-400 lg:block">
+                Connected shell
+              </div>
+            </div>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1">
@@ -149,7 +206,7 @@ export default function Navbar() {
               onMouseLeave={() => setExploreOpen(false)}
             >
               <button className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
-                exploreOpen
+                exploreOpen || pathname.startsWith('/explore')
                   ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white'
                   : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
               }`}>
@@ -300,8 +357,7 @@ export default function Navbar() {
                     </div>
                     <div className="[&>div]:w-full [&_button]:w-full [&_button]:justify-center">
                       <ConnectButton.Custom>
-                        {({ account, chain, openConnectModal, mounted }) => {
-                          const _connected = mounted && account && chain;
+                        {({ openConnectModal }) => {
                           return (
                             <button
                               onClick={openConnectModal}
@@ -410,6 +466,41 @@ export default function Navbar() {
         </div>
       </div>
 
+      <div className="border-t border-neutral-200/60 bg-white/70 dark:border-neutral-800 dark:bg-background-dark/70">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 lg:px-6 lg:py-2.5">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">Current route</div>
+              <div className="text-sm font-semibold text-neutral-900 dark:text-white">{shellContext.title}</div>
+              <div className="text-sm text-neutral-500 dark:text-neutral-400">{shellContext.description}</div>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0">
+              {shellQuickRoutes.map((route) => {
+                const isActive = route.href === '/explore?tab=tokens'
+                  ? pathname.startsWith('/explore')
+                  : pathname === route.href || pathname.startsWith(route.href + '/');
+
+                return (
+                  <Link
+                    key={route.label}
+                    href={route.href}
+                    className={cn(
+                      'inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-2 text-xs font-semibold transition-colors',
+                      isActive
+                        ? 'border-primary-500/20 bg-primary-500/10 text-primary-600 dark:text-primary-300'
+                        : 'border-neutral-200 bg-white text-neutral-600 hover:text-neutral-900 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-300 dark:hover:text-white'
+                    )}
+                  >
+                    {route.icon}
+                    {route.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white/95 shadow-lg backdrop-blur-xl dark:border-neutral-800 dark:bg-background-dark/95 lg:hidden safe-area-inset-bottom">
         <div className="grid grid-cols-5">
           {mobileNav.map((item) => (
@@ -445,6 +536,12 @@ export default function Navbar() {
                 <X className="h-5 w-5" />
               </button>
 
+              <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
+                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">Current route</div>
+                <div className="mt-1 font-semibold text-neutral-900 dark:text-white">{shellContext.title}</div>
+                <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{shellContext.description}</div>
+              </div>
+
               <nav className="space-y-1">
                 {mobileMenuLinks.map((item) => (
                   <Link
@@ -461,6 +558,23 @@ export default function Navbar() {
                   </Link>
                 ))}
               </nav>
+
+              <div>
+                <p className="px-4 text-xs font-medium uppercase tracking-wide text-neutral-400">Quick routes</p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {shellQuickRoutes.map((route) => (
+                    <Link
+                      key={route.label}
+                      href={route.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-3 text-sm font-medium text-neutral-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-200"
+                    >
+                      {route.icon}
+                      {route.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
 
               <div className="space-y-4">
                 {exploreSections.map((section) => (
