@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
   ArrowRight,
+  BarChart3,
   CheckCircle,
   Image as ImageIcon,
   Layers,
@@ -14,7 +15,9 @@ import {
   Rocket,
   Search,
   Sparkles,
+  Trophy,
   Upload,
+  User,
   Wallet,
 } from 'lucide-react';
 import { fetchGraphQL } from '@/lib/graphql-client';
@@ -37,6 +40,11 @@ interface MintFormData {
   collectionAddress: string;
   image: File | null;
   imagePreview: string;
+}
+
+function shortenAddress(address?: string) {
+  if (!address) return 'No wallet connected';
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
 export default function StudioPage() {
@@ -170,73 +178,149 @@ export default function StudioPage() {
     alert('NFT minted successfully. (Mock)');
   };
 
+  const completedSteps = ['upload', 'details', 'collection', 'review'].indexOf(createStep);
+  const averageAssetsPerCollection = collections.length > 0 ? (createdNFTs.length / collections.length).toFixed(1) : '0.0';
+  const selectedCollection = collections.find((collection) => collection.address === mintForm.collectionAddress);
+  const shellRoutes = [
+    {
+      title: 'Open profile',
+      description: 'Return to your wallet identity and creator-facing account surface.',
+      href: '/profile',
+      icon: <User className="h-4 w-4" />,
+    },
+    {
+      title: 'Review stats',
+      description: 'Use ARC analytics before coming back to creation and launch decisions.',
+      href: '/stats',
+      icon: <BarChart3 className="h-4 w-4" />,
+    },
+    {
+      title: 'Open rewards',
+      description: 'Check loyalty and progression while staying inside the connected shell.',
+      href: '/rewards',
+      icon: <Trophy className="h-4 w-4" />,
+    },
+    {
+      title: 'Open token markets',
+      description: 'Move from creation into launched-token discovery and trading routes.',
+      href: '/explore?tab=tokens',
+      icon: <Wallet className="h-4 w-4" />,
+    },
+  ];
+
   if (!isConnected) {
     return (
       <div className="min-h-screen px-4 py-12 lg:py-20">
-        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
-              <Sparkles className="h-3.5 w-3.5" />
-              ARC studio
-            </div>
-            <h1 className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-5xl">
-              Connect your wallet to open the ARC creator studio.
-            </h1>
-            <p className="mt-4 max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
-              Studio brings collection management, asset creation, and launch-ready preparation into one wallet-native ARC workflow.
-            </p>
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-8 grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+            <div>
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+                <Sparkles className="h-3.5 w-3.5" />
+                ARC studio
+              </div>
+              <h1 className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-5xl">
+                Connect your wallet to open the ARC creator studio.
+              </h1>
+              <p className="mt-4 max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
+                Studio brings collection management, asset creation, and launch-ready preparation into one wallet-native ARC workflow.
+              </p>
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                href="/explore"
-                className="inline-flex items-center gap-2 rounded-2xl bg-primary-500 px-6 py-3 font-semibold text-white transition hover:bg-primary-600"
-              >
-                <Search className="h-4 w-4" />
-                Explore markets
-              </Link>
-              <Link
-                href="/launch"
-                className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white"
-              >
-                <Rocket className="h-4 w-4" />
-                Launch a token
-              </Link>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  href="/explore"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-primary-500 px-6 py-3 font-semibold text-white transition hover:bg-primary-600"
+                >
+                  <Search className="h-4 w-4" />
+                  Explore markets
+                </Link>
+                <Link
+                  href="/launch"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white"
+                >
+                  <Rocket className="h-4 w-4" />
+                  Launch a token
+                </Link>
+              </div>
             </div>
 
-            <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
-              Connect from the navigation bar, then return here to manage collections and creation flows tied to your wallet.
-            </p>
+            <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:p-8">
+              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-500/10 text-primary-500">
+                <Layers className="h-7 w-7" />
+              </div>
+              <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">What studio unlocks</h2>
+              <div className="mt-5 space-y-4">
+                <FeatureRow
+                  icon={<Layers className="h-4 w-4" />}
+                  title="Collection control"
+                  description="Create and manage wallet-linked ARC collections from one dedicated workspace."
+                />
+                <FeatureRow
+                  icon={<ImageIcon className="h-4 w-4" />}
+                  title="Asset preparation"
+                  description="Upload media, define metadata, and review mint details before publishing."
+                />
+                <FeatureRow
+                  icon={<Wallet className="h-4 w-4" />}
+                  title="Wallet-native continuity"
+                  description="Keep creation, discovery, profile, and launch actions aligned across the same ARC shell."
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:p-8">
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-500/10 text-primary-500">
-              <Layers className="h-7 w-7" />
-            </div>
-            <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">What studio unlocks</h2>
-            <div className="mt-5 space-y-4">
-              <FeatureRow
-                icon={<Layers className="h-4 w-4" />}
-                title="Collection control"
-                description="Create and manage wallet-linked ARC collections from one dedicated workspace."
-              />
-              <FeatureRow
-                icon={<ImageIcon className="h-4 w-4" />}
-                title="Asset preparation"
-                description="Upload media, define metadata, and review mint details before publishing."
-              />
-              <FeatureRow
-                icon={<Wallet className="h-4 w-4" />}
-                title="Wallet-native continuity"
-                description="Keep creation, discovery, profile, and launch actions aligned across the same ARC shell."
-              />
+          <div className="mb-8 rounded-3xl border border-neutral-200/60 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:p-6">
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-blue-900 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <div className="mb-1 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
+                    <Sparkles className="h-4 w-4" />
+                    Studio state
+                  </div>
+                  <div className="text-lg font-semibold text-neutral-900 dark:text-white">Wallet connection required</div>
+                  <p className="mt-1 max-w-3xl text-sm text-current">
+                    This studio entry surface now acts as a clearer shell handoff, explaining the wallet requirement while keeping users connected to profile, analytics, rewards, token markets, and launch routes.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Link href="/profile" className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-white dark:text-black">
+                    <User className="h-4 w-4" />
+                    Profile
+                  </Link>
+                  <Link href="/stats" className="inline-flex items-center gap-2 rounded-2xl border border-current/10 bg-white/70 px-4 py-2.5 text-sm font-semibold text-current dark:bg-white/5">
+                    <BarChart3 className="h-4 w-4" />
+                    Stats
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <MetricCard icon={<Layers className="h-5 w-5" />} label="Collections" value="Wallet-linked" tone="blue" />
+            <MetricCard icon={<ImageIcon className="h-5 w-5" />} label="Assets created" value="Live after connect" tone="purple" />
+            <MetricCard icon={<Rocket className="h-5 w-5" />} label="Launch route" value="Ready" tone="green" />
+            <MetricCard icon={<Trophy className="h-5 w-5" />} label="Rewards route" value="Ready" tone="blue" />
+          </div>
+
+          <section className="mt-8 rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+            <div className="mb-4">
+              <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Shell routes</h2>
+              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Move into creation-adjacent ARC surfaces while studio access is waiting on wallet connection.</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {shellRoutes.map((route) => (
+                <LinkCard key={route.title} {...route} />
+              ))}
+            </div>
+          </section>
+
+          <p className="mt-6 text-sm text-neutral-500 dark:text-neutral-400">
+            Connect from the navigation bar, then return here to manage collections and creation flows tied to your wallet.
+          </p>
         </div>
       </div>
     );
   }
-
-  const completedSteps = ['upload', 'details', 'collection', 'review'].indexOf(createStep);
 
   return (
     <div className="min-h-screen">
@@ -259,7 +343,7 @@ export default function StudioPage() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <div className="text-sm font-semibold text-neutral-900 dark:text-white">Connected wallet</div>
-                <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{address}</div>
+                <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{shortenAddress(address)}</div>
               </div>
               <span className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300">
                 <Wallet className="h-3.5 w-3.5" />
@@ -279,11 +363,51 @@ export default function StudioPage() {
           </div>
         </div>
 
-        <div className="mb-8 grid gap-4 md:grid-cols-3">
+        <div className="mb-8 rounded-3xl border border-neutral-200/60 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:p-6">
+          <div className="rounded-2xl border border-green-200 bg-green-50 p-4 text-green-900 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-200">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div className="mb-1 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
+                  <Sparkles className="h-4 w-4" />
+                  Creator state
+                </div>
+                <div className="text-lg font-semibold text-neutral-900 dark:text-white">Wallet-linked studio active</div>
+                <p className="mt-1 max-w-3xl text-sm text-current">
+                  The studio now behaves more like a creation hub inside the connected shell, with clearer continuity into profile, token markets, analytics, rewards, and launch routes.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Link href="/stats" className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-white dark:text-black">
+                  <BarChart3 className="h-4 w-4" />
+                  Stats
+                </Link>
+                <Link href="/rewards" className="inline-flex items-center gap-2 rounded-2xl border border-current/10 bg-white/70 px-4 py-2.5 text-sm font-semibold text-current dark:bg-white/5">
+                  <Trophy className="h-4 w-4" />
+                  Rewards
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <MetricCard icon={<Layers className="h-5 w-5" />} label="Collections" value={collections.length.toString()} tone="blue" />
           <MetricCard icon={<ImageIcon className="h-5 w-5" />} label="Assets created" value={createdNFTs.length.toString()} tone="purple" />
-          <MetricCard icon={<CheckCircle className="h-5 w-5" />} label="Studio status" value="Active" tone="green" />
+          <MetricCard icon={<CheckCircle className="h-5 w-5" />} label="Assets per collection" value={averageAssetsPerCollection} tone="green" />
+          <MetricCard icon={<Rocket className="h-5 w-5" />} label="Mint step" value={`Stage ${completedSteps + 1}`} tone="blue" />
         </div>
+
+        <section className="mb-8 rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+          <div className="mb-4">
+            <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Creator routes</h2>
+            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Move from creation into the highest-value ARC surfaces without losing account context.</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {shellRoutes.map((route) => (
+              <LinkCard key={route.title} {...route} />
+            ))}
+          </div>
+        </section>
 
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-neutral-200/60 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
           <div>
@@ -347,11 +471,11 @@ export default function StudioPage() {
                 </section>
 
                 <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
-                  <h2 className="mb-4 text-2xl font-semibold text-neutral-900 dark:text-white">Collection guide</h2>
+                  <h2 className="mb-4 text-2xl font-semibold text-neutral-900 dark:text-white">Launch readiness</h2>
                   <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
-                    <GuideRow title="Start with media" description="Upload the asset first so the rest of the mint flow has a clear visual anchor." />
-                    <GuideRow title="Add strong metadata" description="Use names, descriptions, and attributes that make your ARC asset easier to discover later." />
-                    <GuideRow title="Choose the right collection" description="Create a new collection only when the asset should live in its own branded series." />
+                    <GuideRow title="Collections in wallet" description={`${collections.length} collection routes are currently connected to this creator profile.`} />
+                    <GuideRow title="Assets prepared" description={`${createdNFTs.length} created assets are available as live creator-state context.`} />
+                    <GuideRow title="Current create target" description={selectedCollection ? `Review is pointed at ${selectedCollection.name}.` : 'Choose or deploy a collection inside the guided mint flow.'} />
                   </div>
                 </section>
               </aside>
@@ -374,7 +498,7 @@ export default function StudioPage() {
                   <Badge variant="neutral">Step {completedSteps + 1} of 4</Badge>
                 </div>
 
-                <div className="grid gap-3 md:grid-cols-4">
+                <div className="mb-5 grid gap-3 md:grid-cols-4">
                   {(['upload', 'details', 'collection', 'review'] as const).map((step, idx) => {
                     const isActive = step === createStep;
                     const isCompleted = completedSteps > idx;
@@ -397,6 +521,18 @@ export default function StudioPage() {
                       </div>
                     );
                   })}
+                </div>
+
+                <div className="rounded-2xl border border-primary-200 bg-primary-50/70 p-4 text-primary-900 dark:border-primary-500/20 dark:bg-primary-500/10 dark:text-primary-200">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.18em]">Create state</div>
+                      <div className="mt-1 text-sm">{selectedCollection ? `Collection selected: ${selectedCollection.name}` : 'No collection selected yet.'}</div>
+                    </div>
+                    <div className="text-sm font-semibold">
+                      {mintForm.name ? `Asset: ${mintForm.name}` : 'Asset details in progress'}
+                    </div>
+                  </div>
                 </div>
               </div>
 

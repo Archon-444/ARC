@@ -45,6 +45,15 @@ function shortenAddress(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
+function sumActivityValue(items: ActivityItem[]) {
+  return items.reduce((total, item) => total + BigInt(item.price || '0'), 0n);
+}
+
+function averageActivityValue(items: ActivityItem[]) {
+  if (items.length === 0) return 0n;
+  return sumActivityValue(items) / BigInt(items.length);
+}
+
 export default function ProfilePage() {
   const params = useParams();
   const profileAddress = params?.address as string;
@@ -131,6 +140,15 @@ export default function ProfilePage() {
   const ownedNFTs = user.ownedNFTs || [];
   const createdNFTs = user.createdNFTs || [];
   const activeListings = user.listings || [];
+  const purchases = (user.purchases || []).map((p: any) => ({ ...p, type: 'purchase' as const }));
+  const sales = (user.sales || []).map((s: any) => ({ ...s, type: 'sale' as const }));
+  const totalSpent = BigInt(user.totalSpent || 0);
+  const totalEarned = BigInt(user.totalEarned || 0);
+  const netFlow = totalEarned - totalSpent;
+  const totalPurchaseVolume = sumActivityValue(purchases);
+  const totalSaleVolume = sumActivityValue(sales);
+  const averagePurchase = averageActivityValue(purchases);
+  const averageSale = averageActivityValue(sales);
 
   const quickRoutes = [
     {
@@ -243,9 +261,36 @@ export default function ProfilePage() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <OverviewCard label="Owned assets" value={ownedNFTs.length.toString()} hint="Wallet-held marketplace items" />
           <OverviewCard label="Created assets" value={createdNFTs.length.toString()} hint="Minted and published by this wallet" />
-          <OverviewCard label="Total spent" value={`${formatUSDC(BigInt(user.totalSpent || 0))} USDC`} hint="Marketplace purchases" />
-          <OverviewCard label="Total earned" value={`${formatUSDC(BigInt(user.totalEarned || 0))} USDC`} hint="Marketplace sales" />
+          <OverviewCard label="Total spent" value={`${formatUSDC(totalSpent)} USDC`} hint="Marketplace purchases" />
+          <OverviewCard label="Total earned" value={`${formatUSDC(totalEarned)} USDC`} hint="Marketplace sales" />
         </div>
+
+        <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+          <div className="mb-4">
+            <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Wallet metrics</h2>
+            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">This is the first richer computed pass using live wallet-linked purchase and sale history already available on the profile route.</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <OverviewCard label="Purchases" value={purchases.length.toString()} hint={`${formatUSDC(totalPurchaseVolume)} USDC total`} />
+            <OverviewCard label="Sales" value={sales.length.toString()} hint={`${formatUSDC(totalSaleVolume)} USDC total`} />
+            <OverviewCard label="Average buy" value={`${formatUSDC(averagePurchase)} USDC`} hint="Average marketplace purchase size" />
+            <OverviewCard label="Average sale" value={`${formatUSDC(averageSale)} USDC`} hint="Average marketplace sale size" />
+          </div>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <SignalCard
+              title="Net cash flow"
+              value={`${netFlow < 0n ? '-' : ''}${formatUSDC(netFlow < 0n ? -netFlow : netFlow)} USDC`}
+              tone={netFlow >= 0n ? 'positive' : 'negative'}
+              description={netFlow >= 0n ? 'This wallet has earned at least as much as it has spent across indexed marketplace activity.' : 'This wallet has spent more than it has earned across indexed marketplace activity.'}
+            />
+            <SignalCard
+              title="Activity density"
+              value={activities.length.toString()}
+              tone="neutral"
+              description="Combined purchase and sale events now give the profile a clearer live account signal instead of relying only on static holdings counts."
+            />
+          </div>
+        </section>
 
         <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
           <div className="mb-4">
@@ -410,6 +455,22 @@ function OverviewCard({ label, value, hint }: { label: string; value: string; hi
       <div className="text-sm text-neutral-500 dark:text-neutral-400">{label}</div>
       <div className="mt-1 text-3xl font-bold text-neutral-900 dark:text-white">{value}</div>
       <div className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">{hint}</div>
+    </div>
+  );
+}
+
+function SignalCard({ title, value, description, tone }: { title: string; value: string; description: string; tone: 'positive' | 'negative' | 'neutral' }) {
+  const toneClasses = {
+    positive: 'border-green-200 bg-green-50/70 dark:border-green-500/20 dark:bg-green-500/10',
+    negative: 'border-red-200 bg-red-50/70 dark:border-red-500/20 dark:bg-red-500/10',
+    neutral: 'border-neutral-200 bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60',
+  } as const;
+
+  return (
+    <div className={`rounded-3xl border p-5 ${toneClasses[tone]}`}>
+      <div className="text-sm text-neutral-500 dark:text-neutral-400">{title}</div>
+      <div className="mt-1 text-3xl font-bold text-neutral-900 dark:text-white">{value}</div>
+      <div className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">{description}</div>
     </div>
   );
 }
