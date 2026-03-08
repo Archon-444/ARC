@@ -6,12 +6,16 @@ import Link from 'next/link';
 import { formatUnits, parseEther } from 'viem';
 import { useAccount, useConnect, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import {
+  AlertCircle,
   ArrowUpRight,
   BarChart3,
+  CheckCircle2,
   Clock3,
   Flame,
   Globe,
+  Loader2,
   MessageSquare,
+  RefreshCw,
   Rocket,
   Shield,
   TrendingUp,
@@ -164,6 +168,8 @@ export default function TokenDetailPage({ params }: { params: { address: string 
   const marketAddress = isTokenRoute ? (resolvedMarketAddress === routeContractAddress ? '' : resolvedMarketAddress) : resolvedMarketAddress;
   const routeResolved = Boolean(marketAddress) && (!isResolvingRoute && (!isTokenRoute || !isResolvingAmm));
   const routeMode = isTokenRoute ? 'Token route resolved to AMM' : 'Direct AMM route';
+  const invalidRoute = Boolean(routeAddress) && !routeContractAddress;
+  const routeResolutionFailed = Boolean(routeContractAddress) && !isResolvingRoute && (!isTokenRoute || !isResolvingAmm) && !marketAddress;
 
   const shortAddress = routeAddress ? `${routeAddress.slice(0, 6)}…${routeAddress.slice(-4)}` : 'Unknown market';
   const marketShortAddress = marketAddress ? `${marketAddress.slice(0, 6)}…${marketAddress.slice(-4)}` : 'Resolving...';
@@ -393,6 +399,59 @@ export default function TokenDetailPage({ params }: { params: { address: string 
     ? projectedBuy.feeFormatted || '0'
     : projectedSell.feeFormatted || '0';
 
+  const actionBusy = approval.isLoading || buy.isLoading || sell.isLoading || isSellApprovalPending || isSellApprovalConfirming;
+  const statusTone = invalidRoute || routeResolutionFailed || buy.error || sell.error || sellApprovalError || walletError
+    ? 'red'
+    : approval.isSuccess || isSellApprovalSuccess || buy.isSuccess || sell.isSuccess
+      ? 'green'
+      : actionBusy || isResolvingRoute || isResolvingAmm
+        ? 'blue'
+        : 'neutral';
+
+  const statusTitle = invalidRoute
+    ? 'Invalid token route'
+    : routeResolutionFailed
+      ? 'Market route unavailable'
+      : approval.isLoading
+        ? 'Approving USDC'
+        : isSellApprovalPending || isSellApprovalConfirming
+          ? `Approving ${symbolSeed}`
+          : buy.isLoading
+            ? 'Submitting buy'
+            : sell.isLoading
+              ? 'Submitting sell'
+              : approval.isSuccess || isSellApprovalSuccess || buy.isSuccess || sell.isSuccess
+                ? 'Last action completed'
+                : isResolvingRoute || isResolvingAmm
+                  ? 'Resolving market route'
+                  : tradeIntent === 'buy'
+                    ? 'Buy flow ready'
+                    : 'Sell flow ready';
+
+  const statusDescription = invalidRoute
+    ? 'This URL is not a valid ARC token or AMM address. Open a token from explore or from the launch success state.'
+    : routeResolutionFailed
+      ? 'ARC could not resolve this token route into a live AMM market yet. Wait for indexing or return from explore.'
+      : tradeStatus || walletError || buy.error?.message || sell.error?.message || sellApprovalError?.message || (
+        tradeIntent === 'buy'
+          ? buyApprovalRequired
+            ? 'Approve USDC, then execute the buy transaction.'
+            : 'Wallet, quote, and allowance checks are in place for a direct market entry.'
+          : sellApprovalSupported
+            ? sellApprovalRequired
+              ? `Approve ${symbolSeed}, then execute the sell transaction.`
+              : 'Token allowance is satisfied and the sell path is ready.'
+            : 'Open this page from a token-native route to enable sell-side token approvals.'
+      );
+
+  const statusIcon = invalidRoute || routeResolutionFailed || buy.error || sell.error || sellApprovalError || walletError
+    ? <AlertCircle className="h-5 w-5" />
+    : approval.isSuccess || isSellApprovalSuccess || buy.isSuccess || sell.isSuccess
+      ? <CheckCircle2 className="h-5 w-5" />
+      : actionBusy || isResolvingRoute || isResolvingAmm
+        ? <Loader2 className="h-5 w-5 animate-spin" />
+        : <Shield className="h-5 w-5" />;
+
   if (!routeAddress) {
     return (
       <div className="container mx-auto max-w-4xl px-4 py-16">
@@ -402,6 +461,30 @@ export default function TokenDetailPage({ params }: { params: { address: string 
           <div className="mt-6 flex justify-center gap-3">
             <Link href="/explore" className="rounded-2xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700">
               Explore tokens
+            </Link>
+            <Link href="/launch" className="rounded-2xl border border-neutral-200 bg-white px-5 py-3 font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
+              Launch a token
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (invalidRoute) {
+    return (
+      <div className="container mx-auto max-w-4xl px-4 py-16">
+        <div className="rounded-3xl border border-red-200 bg-white p-8 shadow-sm dark:border-red-500/20 dark:bg-slate-900/70">
+          <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300">
+            <AlertCircle className="h-6 w-6" />
+          </div>
+          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">This token route is not valid</h1>
+          <p className="mt-2 text-neutral-600 dark:text-neutral-400">
+            ARC expects a full on-chain address in this route. Open a token from explore, or jump here directly from the launch success state.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/explore?tab=tokens" className="rounded-2xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700">
+              Browse token markets
             </Link>
             <Link href="/launch" className="rounded-2xl border border-neutral-200 bg-white px-5 py-3 font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
               Launch a token
@@ -482,6 +565,36 @@ export default function TokenDetailPage({ params }: { params: { address: string 
         </div>
       </div>
 
+      <div className="mb-8 rounded-3xl border p-5 shadow-sm backdrop-blur dark:bg-slate-900/70 lg:p-6">
+        <div className={cn(
+          'flex items-start gap-3 rounded-2xl border p-4',
+          statusTone === 'red'
+            ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300'
+            : statusTone === 'green'
+              ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300'
+              : statusTone === 'blue'
+                ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300'
+                : 'border-neutral-200 bg-white text-neutral-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-300'
+        )}>
+          <div className="mt-0.5">{statusIcon}</div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold uppercase tracking-wide">Market state</span>
+              <span className="rounded-full border border-current/10 bg-white/60 px-2.5 py-1 text-xs font-semibold dark:bg-white/5">{statusTitle}</span>
+            </div>
+            <p className="mt-2 text-sm leading-6">{statusDescription}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => recentTrades.refetch()}
+            className="inline-flex items-center gap-2 rounded-xl border border-current/10 bg-white/70 px-3 py-2 text-sm font-semibold transition hover:bg-white dark:bg-white/5 dark:hover:bg-white/10"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </button>
+        </div>
+      </div>
+
       <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-6">
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
@@ -515,10 +628,16 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                 <span>Time</span>
               </div>
               {recentTrades.isLoading && !recentTrades.trades.length && (
-                <div className="px-4 py-6 text-sm text-neutral-500 dark:text-neutral-400">Loading recent market activity...</div>
+                <div className="flex items-center gap-2 px-4 py-6 text-sm text-neutral-500 dark:text-neutral-400">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading recent market activity...
+                </div>
               )}
               {!recentTrades.isLoading && !recentTrades.trades.length && !recentTrades.error && (
-                <div className="px-4 py-6 text-sm text-neutral-500 dark:text-neutral-400">No trade events have been indexed for this market yet.</div>
+                <div className="px-4 py-6 text-sm text-neutral-500 dark:text-neutral-400">
+                  <div className="font-medium text-neutral-900 dark:text-white">No trades indexed yet</div>
+                  <p className="mt-1">This usually means the market is fresh. The first buy or sell will appear here once indexed.</p>
+                </div>
               )}
               {recentTrades.error && !recentTrades.trades.length && (
                 <div className="px-4 py-6 text-sm text-red-600 dark:text-red-400">Unable to load recent trades right now.</div>
@@ -564,7 +683,7 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                 <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
                   <p>Buy flow resolves token routes into AMM routes, checks live USDC allowance, then gates approval only when it is actually needed.</p>
                   <p>Sell flow reads token allowance when the route is token-native and asks for approval before execution only when the position requires it.</p>
-                  <p>{tokenConfig ? 'Header, creator details, and the recent trades feed are now hydrated from live factory and AMM data for token-native routes.' : 'Open this page from a token route to hydrate launch metadata directly from the token factory.'}</p>
+                  <p>{tokenConfig ? 'Header, creator details, and the recent trades feed are hydrated from live factory and AMM data for token-native routes.' : 'Open this page from a token route to hydrate launch metadata directly from the token factory.'}</p>
                 </div>
               </div>
             </div>
@@ -670,11 +789,19 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                 </div>
               </div>
 
-              {(tradeStatus || buy.error || sell.error || sellApprovalError) && (
-                <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
-                  {tradeStatus || buy.error?.message || sell.error?.message || sellApprovalError?.message}
-                </div>
-              )}
+              <div className={cn(
+                'rounded-2xl border px-4 py-3 text-sm',
+                statusTone === 'red'
+                  ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300'
+                  : statusTone === 'green'
+                    ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300'
+                    : statusTone === 'blue'
+                      ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300'
+                      : 'border-neutral-200 bg-neutral-50 text-neutral-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-300'
+              )}>
+                <div className="font-semibold">{statusTitle}</div>
+                <div className="mt-1">{statusDescription}</div>
+              </div>
 
               {tradeIntent === 'buy' && buyApprovalRequired && (
                 <button onClick={handleApprove} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-4 text-base font-semibold text-neutral-900 hover:bg-neutral-50 disabled:opacity-60 dark:border-white/10 dark:bg-slate-950/60 dark:text-white" disabled={approval.isLoading || !routeResolved}>
@@ -741,19 +868,6 @@ export default function TokenDetailPage({ params }: { params: { address: string 
               )}
             </div>
           </section>
-
-          <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-900 dark:text-white">
-              <Clock3 className="h-4 w-4" />
-              Build sequence
-            </div>
-            <ol className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
-              <li>1. Backfill creator history and trust metrics from indexed entities.</li>
-              <li>2. Add reverse lookup support for direct AMM routes so sell-side token approvals can always be resolved.</li>
-              <li>3. Extend metadata hydration to all stats and analytics surfaces.</li>
-              <li>4. Replace polling with indexed subscriptions when a dedicated event service is available.</li>
-            </ol>
-          </section>
         </aside>
       </div>
     </div>
@@ -807,4 +921,8 @@ function RiskRow({ label, value }: { label: string; value: string }) {
       </div>
     </div>
   );
+}
+
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(' ');
 }
