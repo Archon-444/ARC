@@ -41,13 +41,13 @@ export default function Footer() {
               <Hexagon className="h-5 w-5 fill-white" />
             </div>
             <div>
-              <div className="text-lg font-bold text-gray-900 dark:text-white">ArcMarket</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">ARC marketplace and launchpad</div>
+              <div className="text-lg font-bold text-gray-900 dark:text-white">ARC</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">Marketplace, launchpad, and token discovery</div>
             </div>
           </div>
 
           <p className="mt-4 text-sm leading-6 text-gray-600 dark:text-gray-400">
-            Unified discovery for marketplace inventory, token launches, and live market activity across the ARC experience.
+            ARC unifies marketplace discovery, token launches, and wallet-native market activity into one premium on-chain platform.
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
@@ -55,7 +55,7 @@ export default function Footer() {
               Marketplace inventory
             </span>
             <span className="rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-700 dark:border-purple-500/20 dark:bg-purple-500/10 dark:text-purple-300">
-              Token markets
+              Token launches
             </span>
             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
               Wallet-native flows
@@ -88,7 +88,7 @@ export default function Footer() {
       </div>
 
       <div className="mx-auto mt-10 flex max-w-7xl flex-col gap-3 border-t border-gray-200/70 px-4 pt-6 text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-        <div>© {new Date().getFullYear()} ArcMarket. Built for premium discovery, launch, and trading workflows on ARC.</div>
+        <div>© {new Date().getFullYear()} ARC. Built for marketplace discovery, token launches, and live on-chain trading workflows.</div>
         <div className="flex flex-wrap gap-4">
           <Link href="/explore" className="transition-colors hover:text-primary-500">Explore</Link>
           <Link href="/launch" className="transition-colors hover:text-primary-500">Launch</Link>

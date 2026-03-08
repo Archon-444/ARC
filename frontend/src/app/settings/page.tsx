@@ -49,13 +49,13 @@ export default function SettingsPage() {
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
               <Settings className="h-3.5 w-3.5" />
-              Account settings
+              ARC settings
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-5xl">
               Connect your wallet to manage ARC preferences.
             </h1>
             <p className="mt-4 max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
-              Settings bring profile identity, notifications, privacy controls, and appearance guidance into one wallet-linked account surface.
+              Settings bring profile identity, notifications, privacy controls, and appearance guidance into one wallet-linked ARC account surface.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -89,7 +89,7 @@ export default function SettingsPage() {
               <FeatureCard
                 icon={<User className="h-4 w-4" />}
                 title="Profile identity"
-                description="Set a display name, bio, and recovery email around your connected wallet identity."
+                description="Set a display name, bio, and recovery email around your connected ARC wallet identity."
               />
               <FeatureCard
                 icon={<Bell className="h-4 w-4" />}
@@ -99,7 +99,7 @@ export default function SettingsPage() {
               <FeatureCard
                 icon={<Shield className="h-4 w-4" />}
                 title="Privacy and appearance"
-                description="Control visibility of activity and collections while keeping the shell experience consistent."
+                description="Control visibility of activity and collections while keeping the ARC shell experience consistent."
               />
             </div>
           </div>
@@ -115,11 +115,11 @@ export default function SettingsPage() {
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
               <Settings className="h-3.5 w-3.5" />
-              Wallet-linked settings
+              Wallet-linked ARC settings
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-5xl">Manage your ARC account preferences.</h1>
             <p className="mt-4 max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
-              Keep profile identity, notifications, privacy, and shell appearance aligned with your connected wallet experience.
+              Keep profile identity, notifications, privacy, and shell appearance aligned with your connected ARC wallet experience.
             </p>
           </div>
 
@@ -196,7 +196,7 @@ export default function SettingsPage() {
                         className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-neutral-900 placeholder-neutral-400 focus:border-primary-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
                       />
                       <p className="mt-1 text-xs text-neutral-500">
-                        This name appears across your profile and marketplace surfaces.
+                        This name appears across your ARC profile and marketplace surfaces.
                       </p>
                     </div>
 
@@ -239,7 +239,7 @@ export default function SettingsPage() {
                   <div className="space-y-6">
                     <ToggleOption
                       label="Email notifications"
-                      description="Receive major account and market updates by email."
+                      description="Receive major ARC account and market updates by email."
                       enabled={emailNotifications}
                       onChange={setEmailNotifications}
                     />
@@ -283,7 +283,7 @@ export default function SettingsPage() {
                   <div className="space-y-6">
                     <ToggleOption
                       label="Show activity"
-                      description="Allow others to view your marketplace activity."
+                      description="Allow others to view your ARC marketplace activity."
                       enabled={showActivity}
                       onChange={setShowActivity}
                     />
@@ -305,7 +305,7 @@ export default function SettingsPage() {
                     <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
                       <div className="font-medium text-neutral-900 dark:text-white">Theme control</div>
                       <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                        Use the navigation-bar theme toggle to move between light and dark shell modes.
+                        Use the navigation-bar theme toggle to move between light and dark ARC shell modes.
                       </p>
                     </div>
                     <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">

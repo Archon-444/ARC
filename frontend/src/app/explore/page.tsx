@@ -1,7 +1,7 @@
 /**
  * Explore Page
  *
- * Upgraded discovery surface for NFTs, auctions, and launched tokens.
+ * Discovery surface for marketplace inventory, auctions, and launched tokens.
  */
 
 'use client';
@@ -206,13 +206,13 @@ function ExploreContent() {
         <div>
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
             <Sparkles className="h-3.5 w-3.5" />
-            ARC discovery hub
+            ARC marketplace + launchpad
           </div>
           <h1 className="mb-4 text-4xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-5xl">
             Explore marketplace inventory and live token markets in one place.
           </h1>
           <p className="max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
-            ARC now brings listings, auctions, and launched tokens into a single discovery layer so users can move from browsing to trading without friction.
+            ARC brings listings, auctions, and launched tokens into one discovery layer so users can move from browsing to trading without friction.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href="/launch" className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700">
@@ -248,7 +248,7 @@ function ExploreContent() {
               {tokensLoading ? 'Loading...' : launchedTokens.length.toLocaleString()}
             </div>
             <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-              Token discovery is now treated as a first-class part of the marketplace flow.
+              Token discovery now sits alongside ARC marketplace inventory as a first-class experience.
             </div>
           </div>
         </div>
@@ -260,7 +260,7 @@ function ExploreContent() {
             <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Discovery controls</h2>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">Search, sort, and switch across listings, auctions, and launched tokens.</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">Search, sort, and switch across listings, auctions, and launched tokens on ARC.</p>
               </div>
               <div className="flex gap-3">
                 <select
@@ -308,7 +308,7 @@ function ExploreContent() {
 
             {showFilters && (
               <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-400">
-                Start broad with All, then switch to Listings, Auctions, or Tokens to tighten the surface. Use the search bar to match names, collection labels, token IDs, or wallet owners.
+                Start broad with All, then switch to Listings, Auctions, or Tokens to tighten the ARC discovery surface. Use the search bar to match names, collection labels, token IDs, or wallet owners.
               </div>
             )}
           </section>
@@ -321,8 +321,8 @@ function ExploreContent() {
                 </h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">
                   {viewMode === 'tokens'
-                    ? 'Launched tokens now sit inside the same discovery system as NFT inventory.'
-                    : 'A cleaner browsing surface for listings and auctions with stronger navigation context.'}
+                    ? 'Launched tokens now sit inside the same ARC discovery system as marketplace inventory.'
+                    : 'A cleaner browsing surface for listings and auctions with stronger ARC navigation context.'}
                 </p>
               </div>
               <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
@@ -384,9 +384,9 @@ function ExploreContent() {
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
             <h2 className="mb-4 text-2xl font-semibold text-neutral-900 dark:text-white">Quick routes</h2>
             <div className="space-y-3">
-              <ShortcutCard icon={<Rocket className="h-4 w-4" />} title="Launch flow" description="Create with the guided token launch page." href="/launch" />
+              <ShortcutCard icon={<Rocket className="h-4 w-4" />} title="Launch flow" description="Create with the guided ARC token launch flow." href="/launch" />
               <ShortcutCard icon={<Wallet className="h-4 w-4" />} title="Token markets" description="Jump directly into the launched-token discovery view." href="/explore?tab=tokens" />
-              <ShortcutCard icon={<TrendingUp className="h-4 w-4" />} title="Analytics" description="Review the stats surface for momentum and volume signals." href="/stats" />
+              <ShortcutCard icon={<TrendingUp className="h-4 w-4" />} title="Analytics" description="Review the ARC stats surface for momentum and volume signals." href="/stats" />
               <ShortcutCard icon={<Gavel className="h-4 w-4" />} title="Auction mode" description="Switch into active auction inventory instantly." href="/explore?tab=auctions" />
             </div>
           </section>

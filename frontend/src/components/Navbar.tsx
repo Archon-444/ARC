@@ -139,7 +139,7 @@ export default function Navbar() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-secondary-500 text-white shadow-lg shadow-primary-500/30">
               <Hexagon className="h-4 w-4 fill-white" />
             </div>
-            <span className="text-lg font-bold text-neutral-900 dark:text-white">ArcMarket</span>
+            <span className="text-lg font-bold text-neutral-900 dark:text-white">ARC</span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1">
@@ -222,7 +222,7 @@ export default function Navbar() {
               onFocus={open}
               readOnly
               className="w-64 cursor-pointer rounded-full bg-gray-100 py-2 pl-10 pr-16 text-sm text-gray-700 outline-none placeholder-gray-500 focus:ring-2 focus:ring-primary-500 dark:bg-surface-dark dark:text-gray-200"
-              placeholder="Search markets, collections, users..."
+              placeholder="Search ARC markets, collections, users..."
             />
             <kbd className="absolute right-3 rounded border border-gray-300 px-1.5 py-0.5 font-mono text-xs text-gray-500 dark:border-gray-600">⌘K</kbd>
           </div>

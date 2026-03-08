@@ -37,7 +37,7 @@ export default function ProfileIndexPage() {
             Connect your wallet to open your ARC profile.
           </h1>
           <p className="mt-4 max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
-            Your profile brings together marketplace activity, launched assets, and wallet-linked identity in one account surface.
+            Your ARC profile brings together marketplace activity, launched assets, and wallet-linked identity in one account surface.
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
@@ -76,7 +76,7 @@ export default function ProfileIndexPage() {
             <FeatureRow
               icon={<Sparkles className="h-4 w-4" />}
               title="Studio and launch flows"
-              description="Move from browsing into creation and launch workflows without leaving the shell."
+              description="Move from browsing into ARC creation and launch workflows without leaving the shell."
             />
             <FeatureRow
               icon={<ArrowRight className="h-4 w-4" />}

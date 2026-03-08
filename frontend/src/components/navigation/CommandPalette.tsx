@@ -26,21 +26,21 @@ const quickActions: CommandPaletteItem[] = [
   },
   {
     title: 'Explore token markets',
-    subtitle: 'Browse launched token markets',
+    subtitle: 'Browse launched token markets on ARC',
     href: '/explore?tab=tokens',
     icon: <Search className="h-4 w-4" />,
     category: 'routes',
   },
   {
     title: 'Launch a token',
-    subtitle: 'Open the launch flow',
+    subtitle: 'Open the ARC launch flow',
     href: '/launch',
     icon: <Rocket className="h-4 w-4" />,
     category: 'routes',
   },
   {
     title: 'Open stats',
-    subtitle: 'Review platform analytics',
+    subtitle: 'Review ARC analytics and market activity',
     href: '/stats',
     icon: <BarChart3 className="h-4 w-4" />,
     category: 'routes',
@@ -234,7 +234,7 @@ export default function CommandPalette() {
                   ref={inputRef}
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search markets, collections, NFTs, users"
+                  placeholder="Search ARC markets, collections, NFTs, users"
                   className="flex-1 bg-transparent text-base text-neutral-900 placeholder:text-neutral-400 focus:outline-none dark:text-white"
                   role="combobox"
                   aria-expanded="true"
@@ -294,7 +294,7 @@ export default function CommandPalette() {
                   >
                     <X className="h-10 w-10" />
                     <p className="text-base font-medium">No matches</p>
-                    <p className="text-sm">Try a different query or jump to a quick action.</p>
+                    <p className="text-sm">Try a different query or jump to an ARC quick action.</p>
                   </motion.div>
                 ) : (
                   <div
