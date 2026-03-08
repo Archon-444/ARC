@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, Flame, Folder, Users, Sparkles, X } from 'lucide-react';
-import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { Search, Flame, Folder, Users, Sparkles, X, Compass, Rocket, BarChart3 } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCommandPalette } from '@/hooks/useCommandPalette';
 import { typesenseClient } from '@/lib/typesense';
@@ -13,8 +13,39 @@ type CommandPaletteItem = {
   href: string;
   icon: ReactNode;
   metric?: string;
-  category: 'collections' | 'items' | 'users' | 'chains';
+  category: 'collections' | 'items' | 'users' | 'chains' | 'routes';
 };
+
+const quickActions: CommandPaletteItem[] = [
+  {
+    title: 'Home',
+    subtitle: 'Return to the ARC landing page',
+    href: '/',
+    icon: <Compass className="h-4 w-4" />,
+    category: 'routes',
+  },
+  {
+    title: 'Explore token markets',
+    subtitle: 'Browse launched token markets',
+    href: '/explore?tab=tokens',
+    icon: <Search className="h-4 w-4" />,
+    category: 'routes',
+  },
+  {
+    title: 'Launch a token',
+    subtitle: 'Open the launch flow',
+    href: '/launch',
+    icon: <Rocket className="h-4 w-4" />,
+    category: 'routes',
+  },
+  {
+    title: 'Open stats',
+    subtitle: 'Review platform analytics',
+    href: '/stats',
+    icon: <BarChart3 className="h-4 w-4" />,
+    category: 'routes',
+  },
+];
 
 export default function CommandPalette() {
   const { isOpen, query, setQuery, close, recentSearches, trendingSearches, addRecentSearch } = useCommandPalette();
@@ -24,7 +55,6 @@ export default function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  // Search Typesense
   useEffect(() => {
     const search = async () => {
       if (!query) {
@@ -59,7 +89,6 @@ export default function CommandPalette() {
 
         const items: CommandPaletteItem[] = [];
 
-        // Process Collections
         if (searchResults.results[0]?.hits) {
           searchResults.results[0].hits.forEach((hit: any) => {
             items.push({
@@ -73,7 +102,6 @@ export default function CommandPalette() {
           });
         }
 
-        // Process NFTs
         if (searchResults.results[1]?.hits) {
           searchResults.results[1].hits.forEach((hit: any) => {
             items.push({
@@ -87,7 +115,6 @@ export default function CommandPalette() {
           });
         }
 
-        // Process Users
         if (searchResults.results[2]?.hits) {
           searchResults.results[2].hits.forEach((hit: any) => {
             items.push({
@@ -112,24 +139,33 @@ export default function CommandPalette() {
     return () => clearTimeout(debounce);
   }, [query]);
 
+  const visibleItems = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    const matchingQuickActions = normalized
+      ? quickActions.filter((item) => {
+          const haystack = `${item.title} ${item.subtitle || ''}`.toLowerCase();
+          return haystack.includes(normalized);
+        })
+      : quickActions;
+
+    return normalized ? [...matchingQuickActions, ...results] : matchingQuickActions;
+  }, [query, results]);
+
   const handleSelect = (value: string) => {
     addRecentSearch(value);
     close();
   };
 
-  // Reset selected index when query changes
   useEffect(() => {
     setSelectedIndex(0);
   }, [query]);
 
-  // Focus input when modal opens
   useEffect(() => {
     if (isOpen && inputRef.current) {
       inputRef.current.focus();
     }
   }, [isOpen]);
 
-  // Keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
 
@@ -137,17 +173,17 @@ export default function CommandPalette() {
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setSelectedIndex((prev) => (prev + 1) % (results.length || 1));
+          setSelectedIndex((prev) => (prev + 1) % (visibleItems.length || 1));
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setSelectedIndex((prev) => (prev - 1 + (results.length || 1)) % (results.length || 1));
+          setSelectedIndex((prev) => (prev - 1 + (visibleItems.length || 1)) % (visibleItems.length || 1));
           break;
         case 'Enter':
           e.preventDefault();
-          if (results[selectedIndex]) {
-            handleSelect(results[selectedIndex].title);
-            window.location.href = results[selectedIndex].href;
+          if (visibleItems[selectedIndex]) {
+            handleSelect(visibleItems[selectedIndex].title);
+            window.location.href = visibleItems[selectedIndex].href;
           }
           break;
       }
@@ -155,9 +191,8 @@ export default function CommandPalette() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, results, selectedIndex]);
+  }, [isOpen, selectedIndex, visibleItems]);
 
-  // Scroll selected item into view
   useEffect(() => {
     if (resultsRef.current) {
       const selectedElement = resultsRef.current.children[selectedIndex] as HTMLElement;
@@ -165,7 +200,7 @@ export default function CommandPalette() {
         selectedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
     }
-  }, [selectedIndex]);
+  }, [selectedIndex, visibleItems]);
 
   return (
     <AnimatePresence>
@@ -176,7 +211,6 @@ export default function CommandPalette() {
           aria-modal="true"
           aria-label="Command palette"
         >
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -186,7 +220,6 @@ export default function CommandPalette() {
             onClick={close}
           />
 
-          {/* Modal */}
           <div className="absolute left-1/2 top-20 w-full max-w-3xl -translate-x-1/2 px-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: -20 }}
@@ -201,14 +234,14 @@ export default function CommandPalette() {
                   ref={inputRef}
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search collections, NFTs, users or chains"
+                  placeholder="Search markets, collections, NFTs, users"
                   className="flex-1 bg-transparent text-base text-neutral-900 placeholder:text-neutral-400 focus:outline-none dark:text-white"
                   role="combobox"
                   aria-expanded="true"
                   aria-controls="command-palette-results"
-                  aria-activedescendant={results[selectedIndex] ? `result-${selectedIndex}` : undefined}
+                  aria-activedescendant={visibleItems[selectedIndex] ? `result-${selectedIndex}` : undefined}
                 />
-                <kbd className="hidden sm:inline-flex items-center gap-1 rounded border border-neutral-300 bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
+                <kbd className="hidden items-center gap-1 rounded border border-neutral-300 bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 sm:inline-flex">
                   ESC
                 </kbd>
               </div>
@@ -248,12 +281,12 @@ export default function CommandPalette() {
                 </div>
               )}
 
-              <div className="max-h-[420px] overflow-y-auto min-h-[100px]">
+              <div className="max-h-[420px] min-h-[100px] overflow-y-auto">
                 {isLoading ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
                   </div>
-                ) : query && results.length === 0 ? (
+                ) : query && visibleItems.length === 0 ? (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -261,7 +294,7 @@ export default function CommandPalette() {
                   >
                     <X className="h-10 w-10" />
                     <p className="text-base font-medium">No matches</p>
-                    <p className="text-sm">Try a different query or explore trending searches.</p>
+                    <p className="text-sm">Try a different query or jump to a quick action.</p>
                   </motion.div>
                 ) : (
                   <div
@@ -270,7 +303,7 @@ export default function CommandPalette() {
                     role="listbox"
                     className="divide-y divide-neutral-100/70 dark:divide-neutral-800"
                   >
-                    {results.map((item, index) => (
+                    {visibleItems.map((item, index) => (
                       <Link
                         key={item.title + index}
                         id={`result-${index}`}

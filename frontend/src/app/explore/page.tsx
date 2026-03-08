@@ -12,7 +12,6 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
   ArrowRight,
-  Clock3,
   Flame,
   Gavel,
   Package,
@@ -185,7 +184,7 @@ function ExploreContent() {
       id: listing.id,
       name: listing.nft?.name || `Token #${listing.tokenId}`,
       price: formatUSDC(BigInt(listing.price)),
-      status: index % 2 === 0 ? 'Fresh listing' : 'Hot watch',
+      status: index % 2 === 0 ? 'Latest listing' : 'Watchlist pickup',
     }));
   }, [listings]);
 
@@ -284,7 +283,7 @@ function ExploreContent() {
                   className="inline-flex items-center gap-2 rounded-2xl border border-neutral-300 bg-white px-4 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"
                 >
                   <SlidersHorizontal className="h-4 w-4" />
-                  {showFilters ? 'Hide filters' : 'Filters'}
+                  {showFilters ? 'Hide guidance' : 'Search tips'}
                 </button>
               </div>
             </div>
@@ -293,7 +292,7 @@ function ExploreContent() {
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400" />
               <input
                 type="text"
-                placeholder="Search by name, collection, token ID, or owner..."
+                placeholder="Search names, collections, token IDs, or wallet owners..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full rounded-2xl border border-neutral-300 bg-white py-3 pl-12 pr-4 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white dark:placeholder-neutral-500"
@@ -309,7 +308,7 @@ function ExploreContent() {
 
             {showFilters && (
               <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-400">
-                Additional collection, price band, and creator reputation filters can plug into this panel next.
+                Start broad with All, then switch to Listings, Auctions, or Tokens to tighten the surface. Use the search bar to match names, collection labels, token IDs, or wallet owners.
               </div>
             )}
           </section>
@@ -355,10 +354,10 @@ function ExploreContent() {
         <aside className="space-y-6">
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Live activity</h2>
+              <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Market watch</h2>
               <span className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-300">
                 <Radio className="h-3.5 w-3.5" />
-                Streaming
+                Live
               </span>
             </div>
             <div className="space-y-3">
@@ -385,19 +384,19 @@ function ExploreContent() {
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
             <h2 className="mb-4 text-2xl font-semibold text-neutral-900 dark:text-white">Quick routes</h2>
             <div className="space-y-3">
-              <ShortcutCard icon={<Rocket className="h-4 w-4" />} title="Launch flow" description="Create with the new guided token launch page." href="/launch" />
-              <ShortcutCard icon={<Wallet className="h-4 w-4" />} title="Token markets" description="Open the upgraded trader-facing token detail pages." href="/token/demo-market" />
+              <ShortcutCard icon={<Rocket className="h-4 w-4" />} title="Launch flow" description="Create with the guided token launch page." href="/launch" />
+              <ShortcutCard icon={<Wallet className="h-4 w-4" />} title="Token markets" description="Jump directly into the launched-token discovery view." href="/explore?tab=tokens" />
               <ShortcutCard icon={<TrendingUp className="h-4 w-4" />} title="Analytics" description="Review the stats surface for momentum and volume signals." href="/stats" />
               <ShortcutCard icon={<Gavel className="h-4 w-4" />} title="Auction mode" description="Switch into active auction inventory instantly." href="/explore?tab=auctions" />
             </div>
           </section>
 
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
-            <h2 className="mb-4 text-2xl font-semibold text-neutral-900 dark:text-white">Build queue</h2>
+            <h2 className="mb-4 text-2xl font-semibold text-neutral-900 dark:text-white">Discovery guide</h2>
             <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
-              <QueueRow icon={<Clock3 className="h-4 w-4" />} title="Plug real launch entities into token-market routes" />
-              <QueueRow icon={<TrendingUp className="h-4 w-4" />} title="Connect live volume, price, and curve status into the new cards" />
-              <QueueRow icon={<Rocket className="h-4 w-4" />} title="Route launch success directly to the created token page" />
+              <GuideRow title="Start with All" description="Use the combined view when you want the widest picture of what is active on ARC right now." />
+              <GuideRow title="Switch into Tokens" description="Move into token mode when you want launchpad-native markets and trader-facing routes." />
+              <GuideRow title="Use search with tabs" description="Search becomes more useful after narrowing into listings, auctions, or tokens." />
             </div>
           </section>
         </aside>
@@ -432,11 +431,11 @@ function ShortcutCard({ icon, title, description, href }: { icon: ReactNode; tit
   );
 }
 
-function QueueRow({ icon, title }: { icon: ReactNode; title: string }) {
+function GuideRow({ title, description }: { title: string; description: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-300">{icon}</div>
+    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
       <div className="font-medium text-neutral-900 dark:text-white">{title}</div>
+      <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</div>
     </div>
   );
 }
