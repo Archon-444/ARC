@@ -9,7 +9,6 @@ import { SessionProvider } from 'next-auth/react';
 import { config } from '@/lib/wagmi';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { BottomNavigation } from '@/components/layout/BottomNavigation';
 import { ToastProvider } from '@/hooks/useToast';
 import { CircleWalletProvider } from '@/hooks/useCircleWallet';
 import CommandPalette from '@/components/navigation/CommandPalette';
@@ -75,7 +74,6 @@ export default function RootLayout({
                             <main id="main-content" className="relative pb-24">
                               {children}
                             </main>
-                            <BottomNavigation />
                             <Footer />
                             <InstallPrompt />
                             <WebVitalsReporter />
