@@ -12,6 +12,7 @@ import {
   Package,
   Rocket,
   Search,
+  Settings,
   ShieldCheck,
   Sparkles,
   Trophy,
@@ -103,8 +104,23 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-primary-500"></div>
+      <div className="min-h-screen px-4 py-8 lg:px-6 lg:py-10">
+        <div className="mx-auto max-w-7xl space-y-6">
+          <div className="grid gap-6 rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:grid-cols-[1.15fr_0.85fr] lg:p-8">
+            <div className="space-y-3">
+              <div className="h-6 w-32 rounded-full bg-neutral-200/80 dark:bg-white/10" />
+              <div className="h-12 w-72 rounded-2xl bg-neutral-200/80 dark:bg-white/10" />
+              <div className="h-5 w-full max-w-2xl rounded-xl bg-neutral-200/60 dark:bg-white/5" />
+              <div className="h-5 w-2/3 rounded-xl bg-neutral-200/60 dark:bg-white/5" />
+            </div>
+            <div className="h-48 rounded-3xl bg-neutral-200/70 dark:bg-white/5" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="h-32 rounded-3xl border border-neutral-200/60 bg-white/80 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -122,13 +138,13 @@ export default function ProfilePage() {
               This wallet has not created a visible ARC profile state yet, or it has not interacted with the marketplace surfaces that populate this view.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Link href="/explore" className="inline-flex items-center gap-2 rounded-2xl bg-primary-500 px-5 py-3 font-semibold text-white transition hover:bg-primary-600">
+              <Link href="/profile" className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-5 py-3 font-semibold text-white transition hover:bg-neutral-800 dark:bg-white dark:text-black">
+                <User className="h-4 w-4" />
+                Open account gateway
+              </Link>
+              <Link href="/explore" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
                 <Search className="h-4 w-4" />
                 Explore markets
-              </Link>
-              <Link href="/rewards" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
-                <Trophy className="h-4 w-4" />
-                Open rewards
               </Link>
             </div>
           </div>
@@ -152,30 +168,30 @@ export default function ProfilePage() {
 
   const quickRoutes = [
     {
-      title: 'Open token markets',
-      description: 'Jump from wallet identity into launched-token discovery and live ARC market routes.',
-      href: '/explore?tab=tokens',
-      icon: <Wallet className="h-4 w-4" />,
+      title: 'Account gateway',
+      description: 'Return to the top-level account entry and profile handoff surface.',
+      href: '/profile',
+      icon: <User className="h-4 w-4" />,
     },
     {
-      title: 'Review stats',
-      description: 'Use analytics before returning to account, trading, or launch actions.',
-      href: '/stats',
-      icon: <BarChart3 className="h-4 w-4" />,
-    },
-    {
-      title: 'Open rewards',
-      description: 'Check loyalty, quests, and progression from the same connected shell.',
+      title: 'Rewards',
+      description: 'Keep loyalty, quests, and progression connected to your account.',
       href: '/rewards',
       icon: <Trophy className="h-4 w-4" />,
     },
     {
-      title: isOwnProfile ? 'Open studio' : 'Explore markets',
+      title: 'Settings',
+      description: 'Manage your account utilities from the shared ARC shell.',
+      href: '/settings',
+      icon: <Settings className="h-4 w-4" />,
+    },
+    {
+      title: isOwnProfile ? 'Launch' : 'Explore',
       description: isOwnProfile
-        ? 'Move from profile into ARC creation and listing workflows.'
+        ? 'Move from wallet identity into ARC creation and listing workflows.'
         : 'Return to discovery and browse the broader ARC marketplace.',
-      href: isOwnProfile ? '/studio' : '/explore',
-      icon: isOwnProfile ? <Sparkles className="h-4 w-4" /> : <Search className="h-4 w-4" />,
+      href: isOwnProfile ? '/launch' : '/explore',
+      icon: isOwnProfile ? <Rocket className="h-4 w-4" /> : <Search className="h-4 w-4" />,
     },
   ];
 
@@ -187,13 +203,13 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="min-h-screen px-4 py-8 lg:px-6 lg:py-10">
+    <div className="min-h-screen px-4 py-8 lg:px-6 lg:py-10" data-testid="wallet-profile-page">
       <div className="mx-auto max-w-7xl space-y-8">
-        <div className="grid gap-6 rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:grid-cols-[1.1fr_0.9fr] lg:p-8">
+        <div className="grid gap-6 rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:grid-cols-[1.15fr_0.85fr] lg:p-8">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
               <User className="h-3.5 w-3.5" />
-              ARC profile
+              ARC wallet profile
             </div>
             <div className="flex items-start gap-4">
               <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary-500 to-secondary-500 text-2xl font-bold text-white shadow-lg shadow-primary-500/20 lg:h-24 lg:w-24 lg:text-3xl">
@@ -202,7 +218,7 @@ export default function ProfilePage() {
               <div>
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-4xl">
-                    {isOwnProfile ? 'Your ARC profile' : shortenAddress(profileAddress)}
+                    {isOwnProfile ? 'Your wallet profile' : shortenAddress(profileAddress)}
                   </h1>
                   {isOwnProfile && (
                     <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
@@ -221,15 +237,15 @@ export default function ProfilePage() {
                   </button>
                 </div>
                 <p className="mt-4 max-w-2xl text-neutral-600 dark:text-neutral-400">
-                  ARC now treats the wallet profile as a connected shell destination, combining holdings, creation, listings, and activity with faster routes into discovery, rewards, analytics, and launch flows.
+                  This is the richer ARC account destination, bringing together holdings, created assets, listings, activity, and wallet metrics under the same utility-first account model.
                 </p>
               </div>
             </div>
           </div>
 
           <div className="rounded-3xl border border-neutral-200 bg-neutral-50/80 p-5 dark:border-white/10 dark:bg-slate-950/60">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Profile state</h2>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Account state</h2>
               <span className={cn(
                 'inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold',
                 isOwnProfile
@@ -242,17 +258,17 @@ export default function ProfilePage() {
             </div>
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
               {isOwnProfile
-                ? 'You are viewing your wallet-linked account surface, with direct continuity into creation, loyalty, analytics, and token-market routes.'
-                : 'You are viewing a public ARC wallet surface, with routes back into discovery, rewards, and broader product navigation.'}
+                ? 'Your gateway and wallet destination are now aligned. Keep using this page for deeper account detail while shared utilities remain easy to reach.'
+                : 'This public wallet view keeps the destination workspace intact while matching the same account utility language used in the gateway.'}
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <Link href="/settings" className="inline-flex items-center justify-between rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 transition hover:border-primary-400 hover:text-primary-600 dark:border-white/10 dark:bg-slate-900/80 dark:text-white">
-                Settings
+              <Link href="/profile" className="inline-flex items-center justify-between rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 transition hover:border-primary-400 hover:text-primary-600 dark:border-white/10 dark:bg-slate-900/80 dark:text-white">
+                Account gateway
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link href="/launch" className="inline-flex items-center justify-between rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 transition hover:border-primary-400 hover:text-primary-600 dark:border-white/10 dark:bg-slate-900/80 dark:text-white">
-                Launch a token
-                <Rocket className="h-4 w-4" />
+              <Link href="/settings" className="inline-flex items-center justify-between rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 transition hover:border-primary-400 hover:text-primary-600 dark:border-white/10 dark:bg-slate-900/80 dark:text-white">
+                Settings
+                <Settings className="h-4 w-4" />
               </Link>
             </div>
           </div>
@@ -268,7 +284,7 @@ export default function ProfilePage() {
         <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
           <div className="mb-4">
             <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Wallet metrics</h2>
-            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">This is the first richer computed pass using live wallet-linked purchase and sale history already available on the profile route.</p>
+            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">This destination keeps the richer computed wallet view, using indexed purchase and sale history to add live account signal beyond static holdings counts.</p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <OverviewCard label="Purchases" value={purchases.length.toString()} hint={`${formatUSDC(totalPurchaseVolume)} USDC total`} />
@@ -287,15 +303,15 @@ export default function ProfilePage() {
               title="Activity density"
               value={activities.length.toString()}
               tone="neutral"
-              description="Combined purchase and sale events now give the profile a clearer live account signal instead of relying only on static holdings counts."
+              description="Combined purchase and sale events keep the account surface meaningfully alive and aligned with the richer gateway promise." 
             />
           </div>
         </section>
 
         <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
           <div className="mb-4">
-            <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Shell routes</h2>
-            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Move directly from profile into the highest-value ARC product surfaces.</p>
+            <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Account utilities</h2>
+            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Move directly between the wallet destination and the highest-value ARC product surfaces.</p>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             {quickRoutes.map((route) => (
@@ -349,9 +365,9 @@ export default function ProfilePage() {
               <EmptyState
                 icon={<Sparkles className="h-6 w-6" />}
                 title="No created assets"
-                description={isOwnProfile ? 'Use Studio and launch workflows to publish your first ARC asset.' : 'This wallet has not created ARC assets yet.'}
-                href={isOwnProfile ? '/studio' : '/explore'}
-                cta={isOwnProfile ? 'Open studio' : 'Explore markets'}
+                description={isOwnProfile ? 'Use launch workflows to publish your first ARC asset.' : 'This wallet has not created ARC assets yet.'}
+                href={isOwnProfile ? '/launch' : '/explore'}
+                cta={isOwnProfile ? 'Open launch' : 'Explore markets'}
               />
             ) : (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -370,8 +386,8 @@ export default function ProfilePage() {
                 icon={<Wallet className="h-6 w-6" />}
                 title="No active listings"
                 description={isOwnProfile ? 'Create or list assets to surface sell-side activity in your ARC profile.' : 'This wallet has no active ARC listings right now.'}
-                href={isOwnProfile ? '/studio' : '/explore'}
-                cta={isOwnProfile ? 'Open studio' : 'Explore markets'}
+                href={isOwnProfile ? '/launch' : '/explore'}
+                cta={isOwnProfile ? 'Open launch' : 'Explore markets'}
               />
             ) : (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
