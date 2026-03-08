@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   Award,
+  BarChart3,
   ChevronRight,
   Crown,
   Gift,
@@ -48,9 +49,18 @@ const LEADERBOARD = [
   { rank: 5, address: '0x5555...6666', xp: 17200, level: 14, badge: 'offer_master' },
 ];
 
+const TAB_CONFIG = [
+  { id: 'overview', label: 'Overview', icon: Sparkles },
+  { id: 'badges', label: 'Badges', icon: Award },
+  { id: 'quests', label: 'Quests', icon: Target },
+  { id: 'leaderboard', label: 'Leaderboard', icon: Crown },
+] as const;
+
 export default function RewardsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const tier = getLevelTier(mockUserData.level);
+
+  const completedQuests = useMemo(() => QUESTS.filter((quest) => quest.completed).length, []);
 
   return (
     <div className="min-h-screen">
@@ -124,101 +134,149 @@ export default function RewardsPage() {
           </div>
         </div>
 
-        <div className="mb-8 flex flex-wrap gap-2 border-b border-neutral-200 dark:border-neutral-800">
-          {([
-            { id: 'overview', label: 'Overview', icon: Sparkles },
-            { id: 'badges', label: 'Badges', icon: Award },
-            { id: 'quests', label: 'Quests', icon: Target },
-            { id: 'leaderboard', label: 'Leaderboard', icon: Crown },
-          ] as const).map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                'flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors',
-                activeTab === tab.id
-                  ? 'border-primary-500 text-primary-500'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
-              )}
-            >
-              <tab.icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          ))}
+        <div className="mb-8 rounded-3xl border border-neutral-200/60 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:p-6">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div className="mb-1 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
+                  <Sparkles className="h-4 w-4" />
+                  Rewards state
+                </div>
+                <div className="text-lg font-semibold text-neutral-900 dark:text-white">Preview progression active</div>
+                <p className="mt-1 max-w-3xl text-sm text-current">
+                  This rewards surface is visually aligned with the upgraded ARC shell and currently presents a preview-style progression layer while wallet-linked reward computation matures.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Link href="/explore?tab=tokens" className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-white dark:text-black">
+                  <Wallet className="h-4 w-4" />
+                  Token markets
+                </Link>
+                <Link href="/stats" className="inline-flex items-center gap-2 rounded-2xl border border-current/10 bg-white/70 px-4 py-2.5 text-sm font-semibold text-current dark:bg-white/5">
+                  <BarChart3 className="h-4 w-4" />
+                  Stats
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-8 rounded-3xl border border-neutral-200/60 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+          <div className="flex flex-wrap gap-2">
+            {TAB_CONFIG.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors',
+                  activeTab === tab.id
+                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-black'
+                    : 'border border-neutral-200 bg-white text-neutral-600 hover:text-neutral-900 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-300 dark:hover:text-white'
+                )}
+              >
+                <tab.icon className="h-4 w-4" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {activeTab === 'overview' && (
-          <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-            <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
-              <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">How XP is earned</h2>
-              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Progress should feel connected to real ARC participation, not bolted on.</p>
-              <div className="mt-4 space-y-3">
-                {Object.entries(XP_REWARDS).map(([action, xp]) => (
-                  <div key={action} className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-neutral-50 p-3 dark:border-white/10 dark:bg-slate-950/60">
-                    <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                      {action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase())}
-                    </span>
-                    <span className="rounded-full bg-primary-100 px-2.5 py-0.5 text-sm font-semibold text-primary-600 dark:bg-primary-500/20 dark:text-primary-400">
-                      +{xp} XP
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="space-y-6">
+            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <OverviewMetric label="Unlocked badges" value={mockUserData.badges.length.toString()} hint="Visible reward status" />
+              <OverviewMetric label="Completed quests" value={completedQuests.toString()} hint="Finished progression tasks" />
+              <OverviewMetric label="Next level gap" value={`${mockUserData.xpToNextLevel} XP`} hint="Needed to level up" />
+              <OverviewMetric label="Global rank" value={`#${mockUserData.rank.toLocaleString()}`} hint="Leaderboard preview" />
+            </section>
 
-            <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
-              <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Tier ladder</h2>
-              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">A clearer progression view that matches the upgraded shell styling.</p>
-              <div className="mt-4 space-y-3">
-                {[
-                  { name: 'Common', levels: '1-4', gradient: 'from-neutral-400 to-neutral-500' },
-                  { name: 'Rare', levels: '5-9', gradient: 'from-blue-400 to-cyan-500' },
-                  { name: 'Epic', levels: '10-14', gradient: 'from-purple-400 to-pink-500' },
-                  { name: 'Legendary', levels: '15+', gradient: 'from-yellow-400 to-orange-500' },
-                ].map((tierInfo) => (
-                  <div
-                    key={tierInfo.name}
-                    className={cn(
-                      'flex items-center justify-between rounded-2xl p-4',
-                      mockUserData.level >= parseInt(tierInfo.levels) || tierInfo.name === tier.name
-                        ? `bg-gradient-to-r ${tierInfo.gradient} text-white`
-                        : 'border border-neutral-200 bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60'
-                    )}
-                  >
-                    <span className="font-medium">{tierInfo.name}</span>
-                    <span className="text-sm opacity-80">Level {tierInfo.levels}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:col-span-2">
-              <div className="flex items-center justify-between gap-4">
+            <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+              <div className="mb-4 flex items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Recent badge unlocks</h2>
-                  <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">A quicker snapshot of earned status inside the ARC account layer.</p>
+                  <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Next best actions</h2>
+                  <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Use rewards as a routing layer into the highest-value ARC behaviors.</p>
                 </div>
-                <button
-                  onClick={() => setActiveTab('badges')}
-                  className="inline-flex items-center gap-1 text-sm font-medium text-primary-500 hover:text-primary-600"
-                >
-                  View all
-                  <ChevronRight className="h-4 w-4" />
-                </button>
               </div>
-              <div className="mt-4 flex flex-wrap gap-3">
-                {mockUserData.badges.map((badgeId) => {
-                  const badge = BADGES[badgeId];
-                  return (
-                    <div key={badgeId} className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3 dark:border-white/10 dark:bg-slate-950/60">
-                      <span className="text-2xl">{badge.icon}</span>
-                      <div>
-                        <p className="font-medium text-neutral-900 dark:text-white">{badge.name}</p>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400">{badge.description}</p>
-                      </div>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <ActionCard icon={<Search className="h-4 w-4" />} title="Explore inventory" description="Browse listings and auctions to drive wallet activity." href="/explore" />
+                <ActionCard icon={<Wallet className="h-4 w-4" />} title="Open token markets" description="Jump into launchpad-native discovery and live trading routes." href="/explore?tab=tokens" />
+                <ActionCard icon={<Rocket className="h-4 w-4" />} title="Launch flow" description="Create a token and connect launch activity to progression." href="/launch" />
+                <ActionCard icon={<BarChart3 className="h-4 w-4" />} title="Analytics" description="Review momentum and market context before taking action." href="/stats" />
+              </div>
+            </section>
+
+            <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+              <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+                <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">How XP is earned</h2>
+                <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Progress should feel connected to real ARC participation, not bolted on.</p>
+                <div className="mt-4 space-y-3">
+                  {Object.entries(XP_REWARDS).map(([action, xp]) => (
+                    <div key={action} className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-neutral-50 p-3 dark:border-white/10 dark:bg-slate-950/60">
+                      <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                        {action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase())}
+                      </span>
+                      <span className="rounded-full bg-primary-100 px-2.5 py-0.5 text-sm font-semibold text-primary-600 dark:bg-primary-500/20 dark:text-primary-400">
+                        +{xp} XP
+                      </span>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+                <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Tier ladder</h2>
+                <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">A clearer progression view that matches the upgraded shell styling.</p>
+                <div className="mt-4 space-y-3">
+                  {[
+                    { name: 'Common', levels: '1-4', gradient: 'from-neutral-400 to-neutral-500' },
+                    { name: 'Rare', levels: '5-9', gradient: 'from-blue-400 to-cyan-500' },
+                    { name: 'Epic', levels: '10-14', gradient: 'from-purple-400 to-pink-500' },
+                    { name: 'Legendary', levels: '15+', gradient: 'from-yellow-400 to-orange-500' },
+                  ].map((tierInfo) => (
+                    <div
+                      key={tierInfo.name}
+                      className={cn(
+                        'flex items-center justify-between rounded-2xl p-4',
+                        mockUserData.level >= parseInt(tierInfo.levels) || tierInfo.name === tier.name
+                          ? `bg-gradient-to-r ${tierInfo.gradient} text-white`
+                          : 'border border-neutral-200 bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60'
+                      )}
+                    >
+                      <span className="font-medium">{tierInfo.name}</span>
+                      <span className="text-sm opacity-80">Level {tierInfo.levels}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:col-span-2">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Recent badge unlocks</h2>
+                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">A quicker snapshot of earned status inside the ARC account layer.</p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('badges')}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-primary-500 hover:text-primary-600"
+                  >
+                    View all
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {mockUserData.badges.map((badgeId) => {
+                    const badge = BADGES[badgeId];
+                    return (
+                      <div key={badgeId} className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3 dark:border-white/10 dark:bg-slate-950/60">
+                        <span className="text-2xl">{badge.icon}</span>
+                        <div>
+                          <p className="font-medium text-neutral-900 dark:text-white">{badge.name}</p>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400">{badge.description}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -371,5 +429,32 @@ export default function RewardsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+function OverviewMetric({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+      <div className="text-sm text-neutral-500 dark:text-neutral-400">{label}</div>
+      <div className="mt-1 text-3xl font-bold text-neutral-900 dark:text-white">{value}</div>
+      <div className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">{hint}</div>
+    </div>
+  );
+}
+
+function ActionCard({ icon, title, description, href }: { icon: JSX.Element; title: string; description: string; href: string }) {
+  return (
+    <Link href={href} className="block rounded-2xl border border-neutral-200 bg-neutral-50 p-4 transition hover:border-primary-400 hover:bg-white dark:border-white/10 dark:bg-slate-950/60">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-primary-500/10 text-primary-500">
+            {icon}
+          </div>
+          <div className="font-semibold text-neutral-900 dark:text-white">{title}</div>
+          <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</div>
+        </div>
+        <ChevronRight className="mt-1 h-4 w-4 text-neutral-400" />
+      </div>
+    </Link>
   );
 }
