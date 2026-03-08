@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, type ComponentType } from 'react';
+import { useCallback, useEffect, useState, type ComponentType, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import {
@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Clock,
   DollarSign,
+  Home,
   Loader2,
   Package,
   Radio,
@@ -21,18 +22,18 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
+import { LoadingPage } from '@/components/ui/LoadingSpinner';
 import { fetchMarketplaceStats } from '@/lib/graphql-client';
 import { formatCompactUSDC, formatNumber } from '@/lib/utils';
-import { LoadingPage } from '@/components/ui/LoadingSpinner';
 import type { MarketplaceStats } from '@/types';
 
-type TimeRange = '24h' | '7d' | '30d' | 'all';
+type AnalyticsLens = 'overview' | 'inventory' | 'flow' | 'shell';
 
-const RANGE_LABELS: Record<TimeRange, string> = {
-  '24h': '24H',
-  '7d': '7D',
-  '30d': '30D',
-  all: 'All time',
+const LENS_LABELS: Record<AnalyticsLens, string> = {
+  overview: 'Overview',
+  inventory: 'Inventory',
+  flow: 'Flow',
+  shell: 'Shell routes',
 };
 
 function shortenAddress(address?: string | null) {
@@ -44,14 +45,10 @@ export default function StatsPage() {
   const { address, isConnected } = useAccount();
   const [stats, setStats] = useState<MarketplaceStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState<TimeRange>('7d');
+  const [analyticsLens, setAnalyticsLens] = useState<AnalyticsLens>('overview');
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadStats();
-  }, [timeRange]);
-
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -63,7 +60,11 @@ export default function StatsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void loadStats();
+  }, [loadStats]);
 
   if (isLoading && !stats) {
     return <LoadingPage label="Loading ARC stats..." />;
@@ -80,6 +81,10 @@ export default function StatsPage() {
       : stats.activeListings > stats.activeAuctions * 2
         ? 'Listing-heavy'
         : 'Balanced inventory';
+  const dailyVolumeShare =
+    stats && stats.totalVolume !== '0'
+      ? `${Math.min(100, Math.round((Number(stats.dailyVolume) / Number(stats.totalVolume)) * 100))}%`
+      : '0%';
 
   const statCards = [
     {
@@ -137,6 +142,12 @@ export default function StatsPage() {
 
   const shellRoutes = [
     {
+      title: 'Open home',
+      description: 'Return to the connected ARC entry surface after reviewing analytics.',
+      href: '/',
+      icon: <Home className="h-4 w-4" />,
+    },
+    {
       title: 'Open profile',
       description: 'Return to the wallet-linked account surface from analytics.',
       href: address ? `/profile/${address}` : '/profile',
@@ -147,12 +158,6 @@ export default function StatsPage() {
       description: 'Move from market context into loyalty and wallet-linked progression.',
       href: '/rewards',
       icon: <Trophy className="h-4 w-4" />,
-    },
-    {
-      title: 'Open studio',
-      description: 'Jump from analytics into creator workflows and collection routes.',
-      href: '/studio',
-      icon: <Sparkles className="h-4 w-4" />,
     },
     {
       title: 'Token markets',
@@ -199,8 +204,15 @@ export default function StatsPage() {
     : isLoading
       ? 'ARC is refreshing marketplace totals and activity signals for this analytics view.'
       : stats
-        ? 'This surface now pushes beyond shell polish by adding computed market-composition signals and stronger continuity into profile, rewards, studio, and token-market routes.'
+        ? 'This surface now acts as the Phase 1 analytics destination, tying computed market signals back into the connected shell and its highest-value follow-on routes.'
         : 'Stats will appear here once marketplace data is available.';
+
+  const lensSummary = {
+    overview: 'See the broad marketplace picture first, then branch into action.',
+    inventory: 'Focus on supply mix, market shape, and inventory composition.',
+    flow: 'Center on velocity, turnover, and how volume translates into activity.',
+    shell: 'Use stats as a routing surface back into home, profile, rewards, and token discovery.',
+  }[analyticsLens];
 
   return (
     <div className="min-h-screen">
@@ -212,16 +224,23 @@ export default function StatsPage() {
               ARC analytics
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-5xl">
-              Review marketplace, launchpad, and trading momentum in one ARC stats surface.
+              Review marketplace, launchpad, and shell momentum in one ARC stats surface.
             </h1>
             <p className="mt-4 max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
-              The stats layer now does more than present totals, adding computed market-shape signals while keeping users inside the connected ARC shell.
+              The stats route now works as the analytics layer for Phase 1, connecting live totals, computed composition signals, and the next best ARC route from a single destination.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
-                href="/explore"
+                href="/"
                 className="inline-flex items-center gap-2 rounded-2xl bg-primary-500 px-6 py-3 font-semibold text-white transition hover:bg-primary-600"
+              >
+                <Home className="h-4 w-4" />
+                Back to home
+              </Link>
+              <Link
+                href="/explore"
+                className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white"
               >
                 <Search className="h-4 w-4" />
                 Explore markets
@@ -263,17 +282,27 @@ export default function StatsPage() {
         </div>
 
         <div className="mb-8 rounded-3xl border border-neutral-200/60 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:p-6">
-          <div className={stateTone === 'red'
-            ? 'rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300'
-            : stateTone === 'blue'
-              ? 'rounded-2xl border border-blue-200 bg-blue-50 p-4 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300'
-              : stateTone === 'green'
-                ? 'rounded-2xl border border-green-200 bg-green-50 p-4 text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300'
-                : 'rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-neutral-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-300'}>
+          <div
+            className={
+              stateTone === 'red'
+                ? 'rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300'
+                : stateTone === 'blue'
+                  ? 'rounded-2xl border border-blue-200 bg-blue-50 p-4 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300'
+                  : stateTone === 'green'
+                    ? 'rounded-2xl border border-green-200 bg-green-50 p-4 text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300'
+                    : 'rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-neutral-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-300'
+            }
+          >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <div className="mb-1 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
-                  {stateTone === 'red' ? <Activity className="h-4 w-4" /> : stateTone === 'blue' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  {stateTone === 'red' ? (
+                    <Activity className="h-4 w-4" />
+                  ) : stateTone === 'blue' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
                   Analytics state
                 </div>
                 <div className="text-lg font-semibold text-neutral-900 dark:text-white">{stateTitle}</div>
@@ -281,13 +310,18 @@ export default function StatsPage() {
               </div>
               <div className="flex flex-wrap gap-3">
                 <button
-                  onClick={loadStats}
+                  onClick={() => {
+                    void loadStats();
+                  }}
                   className="inline-flex items-center gap-2 rounded-2xl border border-current/10 bg-white/70 px-4 py-2.5 text-sm font-semibold text-current dark:bg-white/5"
                 >
                   <Activity className="h-4 w-4" />
                   Refresh stats
                 </button>
-                <Link href="/explore?tab=tokens" className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-white dark:text-black">
+                <Link
+                  href="/explore?tab=tokens"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-white dark:text-black"
+                >
                   <Wallet className="h-4 w-4" />
                   Token markets
                 </Link>
@@ -309,16 +343,22 @@ export default function StatsPage() {
                 </div>
                 <p className="mt-1 max-w-3xl text-sm text-current">
                   {isConnected
-                    ? `Analytics is currently aligned with ${shortenAddress(address)} so users can move from stats into profile, rewards, studio, and token markets without losing shell context.`
-                    : 'Analytics is now wired as a stronger shell destination, with route continuity into profile, rewards, studio, token markets, and launch flows.'}
+                    ? `Analytics is currently aligned with ${shortenAddress(address)} so users can move from stats into profile, rewards, home, and token markets without losing shell context.`
+                    : 'Analytics is now wired as a stronger shell destination, with route continuity into home, profile, rewards, token markets, and launch flows.'}
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
-                <Link href={address ? `/profile/${address}` : '/profile'} className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-white dark:text-black">
+                <Link
+                  href={address ? `/profile/${address}` : '/profile'}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-white dark:text-black"
+                >
                   <User className="h-4 w-4" />
                   Profile
                 </Link>
-                <Link href="/rewards" className="inline-flex items-center gap-2 rounded-2xl border border-current/10 bg-white/70 px-4 py-2.5 text-sm font-semibold text-current dark:bg-white/5">
+                <Link
+                  href="/rewards"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-current/10 bg-white/70 px-4 py-2.5 text-sm font-semibold text-current dark:bg-white/5"
+                >
                   <Trophy className="h-4 w-4" />
                   Rewards
                 </Link>
@@ -329,21 +369,41 @@ export default function StatsPage() {
 
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-neutral-200/60 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
           <div>
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Time range</h2>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Switch the analytics window while keeping the ARC shell layout consistent.</p>
+            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Analytics lens</h2>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              Switch the interpretation mode without implying separate backend time windows.
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {(['24h', '7d', '30d', 'all'] as TimeRange[]).map((range) => (
+            {(['overview', 'inventory', 'flow', 'shell'] as AnalyticsLens[]).map((lens) => (
               <button
-                key={range}
-                onClick={() => setTimeRange(range)}
-                className={timeRange === range
-                  ? 'rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black'
-                  : 'rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-600 transition hover:text-neutral-900 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-300 dark:hover:text-white'}
+                key={lens}
+                onClick={() => setAnalyticsLens(lens)}
+                className={
+                  analyticsLens === lens
+                    ? 'rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black'
+                    : 'rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-600 transition hover:text-neutral-900 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-300 dark:hover:text-white'
+                }
               >
-                {RANGE_LABELS[range]}
+                {LENS_LABELS[lens]}
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="mb-8 rounded-3xl border border-neutral-200/60 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="text-sm font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                Current lens
+              </div>
+              <div className="mt-1 text-lg font-semibold text-neutral-900 dark:text-white">{LENS_LABELS[analyticsLens]}</div>
+              <p className="mt-1 max-w-3xl text-sm text-neutral-500 dark:text-neutral-400">{lensSummary}</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <MiniSignal label="Market mode" value={marketMode} />
+              <MiniSignal label="24h volume share" value={dailyVolumeShare} />
+            </div>
           </div>
         </div>
 
@@ -356,11 +416,18 @@ export default function StatsPage() {
         <section className="mt-8 rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
           <div className="mb-4">
             <h3 className="text-2xl font-semibold text-neutral-900 dark:text-white">Computed signals</h3>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">These derived reads turn the stats route into a more decision-useful analytics destination.</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              These derived reads turn the stats route into a more decision-useful analytics destination.
+            </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {computedSignals.map((signal) => (
-              <InsightCard key={signal.title} title={signal.title} value={signal.value} description={signal.description} />
+              <InsightCard
+                key={signal.title}
+                title={signal.title}
+                value={signal.value}
+                description={signal.description}
+              />
             ))}
           </div>
         </section>
@@ -370,7 +437,9 @@ export default function StatsPage() {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h3 className="text-2xl font-semibold text-neutral-900 dark:text-white">Market interpretation</h3>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">A clearer computed read on what today’s ARC market shape suggests.</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  A clearer computed read on what today’s ARC market shape suggests.
+                </p>
               </div>
               <Activity className="h-5 w-5 text-neutral-400" />
             </div>
@@ -402,13 +471,21 @@ export default function StatsPage() {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h3 className="text-2xl font-semibold text-neutral-900 dark:text-white">Analytics routes</h3>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">Move directly from stats into the highest-value ARC flows.</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  Move directly from stats into the highest-value ARC flows.
+                </p>
               </div>
               <Sparkles className="h-5 w-5 text-neutral-400" />
             </div>
             <div className="space-y-3">
               {shellRoutes.map((route) => (
-                <RouteCard key={route.title} title={route.title} description={route.description} href={route.href} icon={route.icon} />
+                <RouteCard
+                  key={route.title}
+                  title={route.title}
+                  description={route.description}
+                  href={route.href}
+                  icon={route.icon}
+                />
               ))}
             </div>
           </section>
@@ -418,24 +495,38 @@ export default function StatsPage() {
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h3 className="text-2xl font-semibold text-neutral-900 dark:text-white">Actionable reads</h3>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">Short summaries that turn live totals into immediate product interpretation.</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                Short summaries that turn live totals into immediate product interpretation.
+              </p>
             </div>
             <Users className="h-5 w-5 text-neutral-400" />
           </div>
           <div className="grid gap-3 lg:grid-cols-3">
             <ActionReadCard
               title="Liquidity posture"
-              description={stats ? `${formatCompactUSDC(stats.totalVolume)} in total volume is currently visible across ARC marketplace activity.` : 'Waiting on live volume.'}
+              description={
+                stats
+                  ? `${formatCompactUSDC(stats.totalVolume)} in total volume is currently visible across ARC marketplace activity.`
+                  : 'Waiting on live volume.'
+              }
               badge="Live"
             />
             <ActionReadCard
               title="Inventory balance"
-              description={stats ? `${listingShare}% of active inventory is fixed-price while ${auctionShare}% is auction-driven.` : 'Waiting on inventory mix.'}
+              description={
+                stats
+                  ? `${listingShare}% of active inventory is fixed-price while ${auctionShare}% is auction-driven.`
+                  : 'Waiting on inventory mix.'
+              }
               badge="Computed"
             />
             <ActionReadCard
               title="Route priority"
-              description={isConnected ? 'Profile, rewards, studio, and token markets are now the best follow-on routes from analytics for the connected shell.' : 'Explore, launch, rewards, and token markets remain the best follow-on routes from analytics.'}
+              description={
+                isConnected
+                  ? 'Home, profile, rewards, and token markets are now the best follow-on routes from analytics for the connected shell.'
+                  : 'Home, explore, launch, rewards, and token markets remain the best follow-on routes from analytics.'
+              }
               badge="Shell"
             />
           </div>
@@ -489,9 +580,22 @@ function InsightCard({ title, value, description }: { title: string; value: stri
   );
 }
 
-function RouteCard({ title, description, href, icon }: { title: string; description: string; href: string; icon: JSX.Element }) {
+function RouteCard({
+  title,
+  description,
+  href,
+  icon,
+}: {
+  title: string;
+  description: string;
+  href: string;
+  icon: ReactNode;
+}) {
   return (
-    <Link href={href} className="block rounded-2xl border border-neutral-200 bg-neutral-50 p-4 transition hover:border-primary-400 hover:bg-white dark:border-white/10 dark:bg-slate-950/60">
+    <Link
+      href={href}
+      className="block rounded-2xl border border-neutral-200 bg-neutral-50 p-4 transition hover:border-primary-400 hover:bg-white dark:border-white/10 dark:bg-slate-950/60"
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-primary-500/10 text-primary-500">
@@ -518,6 +622,15 @@ function ActionReadCard({ title, description, badge }: { title: string; descript
           {badge}
         </span>
       </div>
+    </div>
+  );
+}
+
+function MiniSignal({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-white/10 dark:bg-slate-950/60">
+      <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">{label}</div>
+      <div className="mt-1 text-sm font-semibold text-neutral-900 dark:text-white">{value}</div>
     </div>
   );
 }
