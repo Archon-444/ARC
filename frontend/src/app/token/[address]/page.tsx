@@ -18,7 +18,10 @@ import {
   RefreshCw,
   Rocket,
   Shield,
+  Sparkles,
   TrendingUp,
+  Trophy,
+  User,
   Wallet,
 } from 'lucide-react';
 import { CONTRACTS } from '@/lib/contracts';
@@ -262,6 +265,42 @@ export default function TokenDetailPage({ params }: { params: { address: string 
   const sellApprovalSupported = Boolean(tokenAddress);
   const sellApprovalRequired = tradeIntent === 'sell' && sellApprovalSupported && sellAllowance < requiredSellAmount;
   const sellAllowanceFormatted = tradeIntent === 'sell' && sellApprovalSupported ? formatUnits(sellAllowance, 18) : '0';
+
+  const creatorProfileHref = tokenConfig?.creator
+    ? `/profile/${tokenConfig.creator}`
+    : walletAddress
+      ? `/profile/${walletAddress}`
+      : '/profile';
+  const creatorProfileLabel = tokenConfig?.creator ? 'Creator profile' : 'Wallet profile';
+  const connectedRoutes = [
+    {
+      title: 'Explore markets',
+      description: 'Return to the broader discovery surface for listings, auctions, and tokens.',
+      href: '/explore?tab=tokens',
+      icon: <TrendingUp className="h-4 w-4" />,
+    },
+    {
+      title: 'Launch flow',
+      description: 'Create the next token without leaving the ARC shell.',
+      href: '/launch',
+      icon: <Rocket className="h-4 w-4" />,
+    },
+    {
+      title: 'Rewards',
+      description: 'Stay inside wallet-linked progression after trading activity.',
+      href: '/rewards',
+      icon: <Trophy className="h-4 w-4" />,
+    },
+    {
+      title: creatorProfileLabel,
+      description: tokenConfig?.creator
+        ? 'Open the creator identity connected to this token route.'
+        : 'Open the connected wallet identity for the current session.',
+      href: creatorProfileHref,
+      icon: <User className="h-4 w-4" />,
+    },
+  ];
+  const shellRouteCount = connectedRoutes.length;
 
   useEffect(() => {
     setTradeStatus(null);
@@ -540,6 +579,14 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                     Launch another token
                     <ArrowUpRight className="h-4 w-4" />
                   </Link>
+                  <Link href="/rewards" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
+                    <Trophy className="h-4 w-4" />
+                    Rewards
+                  </Link>
+                  <Link href={creatorProfileHref} className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
+                    <User className="h-4 w-4" />
+                    {creatorProfileLabel}
+                  </Link>
                 </div>
               </div>
             </div>
@@ -592,6 +639,25 @@ export default function TokenDetailPage({ params }: { params: { address: string 
             <RefreshCw className="h-4 w-4" />
             Refresh
           </button>
+        </div>
+      </div>
+
+      <div className="mb-8 rounded-3xl border border-blue-200 bg-blue-50/80 p-5 shadow-sm dark:border-blue-500/20 dark:bg-blue-500/10 lg:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="mb-1 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-200">
+              <Sparkles className="h-4 w-4" />
+              Shell continuity
+            </div>
+            <div className="text-lg font-semibold text-neutral-900 dark:text-white">This token page now behaves like a connected ARC route, not an isolated trade screen.</div>
+            <p className="mt-1 max-w-3xl text-sm text-blue-800 dark:text-blue-200">
+              Traders can move from the live market into explore, launch, rewards, and creator identity surfaces without losing context, while route resolution and allowance checks stay central to execution.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-blue-200 bg-white/70 px-4 py-3 text-sm text-blue-900 dark:border-blue-500/20 dark:bg-slate-950/40 dark:text-blue-200">
+            <div className="font-semibold">Connected routes</div>
+            <div className="mt-1">{shellRouteCount} high-intent paths from token market</div>
+          </div>
         </div>
       </div>
 
@@ -677,6 +743,16 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                   <div className="flex items-center justify-between"><span>Total supply</span><span className="font-medium text-neutral-900 dark:text-white">{totalSupplyFormatted ? Number(totalSupplyFormatted).toLocaleString() : 'Loading...'}</span></div>
                   <div className="flex items-center justify-between"><span>Graduation target</span><span className="font-medium text-neutral-900 dark:text-white">{graduationThresholdFormatted ? Number(graduationThresholdFormatted).toLocaleString() : 'Loading...'}</span></div>
                 </div>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Link href={creatorProfileHref} className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-white dark:text-black">
+                    <User className="h-4 w-4" />
+                    {creatorProfileLabel}
+                  </Link>
+                  <Link href="/launch" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-900 dark:text-white">
+                    <Rocket className="h-4 w-4" />
+                    Launch flow
+                  </Link>
+                </div>
               </div>
               <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
                 <div className="mb-3 text-sm font-semibold text-neutral-900 dark:text-white">Execution path</div>
@@ -684,6 +760,7 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                   <p>Buy flow resolves token routes into AMM routes, checks live USDC allowance, then gates approval only when it is actually needed.</p>
                   <p>Sell flow reads token allowance when the route is token-native and asks for approval before execution only when the position requires it.</p>
                   <p>{tokenConfig ? 'Header, creator details, and the recent trades feed are hydrated from live factory and AMM data for token-native routes.' : 'Open this page from a token route to hydrate launch metadata directly from the token factory.'}</p>
+                  <p>This screen now keeps the rest of the ARC shell nearby, so market activity can hand off cleanly into explore, rewards, launch, and creator identity routes.</p>
                 </div>
               </div>
             </div>
@@ -827,6 +904,20 @@ export default function TokenDetailPage({ params }: { params: { address: string 
           </section>
 
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Connected routes</h2>
+              <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+                Connected shell
+              </span>
+            </div>
+            <div className="space-y-3">
+              {connectedRoutes.map((route) => (
+                <RouteCard key={route.title} title={route.title} description={route.description} href={route.href} icon={route.icon} />
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
             <h2 className="mb-4 text-xl font-semibold text-neutral-900 dark:text-white">Distribution risk view</h2>
             <div className="space-y-3">
               <RiskRow label="Creator allocation" value="Config-driven launches" />
@@ -920,6 +1011,18 @@ function RiskRow({ label, value }: { label: string; value: string }) {
         <span className="font-semibold text-neutral-900 dark:text-white">{value}</span>
       </div>
     </div>
+  );
+}
+
+function RouteCard({ title, description, href, icon }: { title: string; description: string; href: string; icon: ReactNode }) {
+  return (
+    <Link href={href} className="block rounded-2xl border border-neutral-200 bg-neutral-50 p-4 transition hover:border-blue-300 hover:bg-white dark:border-white/10 dark:bg-slate-950/60 dark:hover:border-blue-500/40">
+      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-300">
+        {icon}
+      </div>
+      <div className="font-semibold text-neutral-900 dark:text-white">{title}</div>
+      <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</div>
+    </Link>
   );
 }
 
