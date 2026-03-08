@@ -1,14 +1,15 @@
 /**
  * Token Launch Page
  *
- * Upgraded launch experience with guided sections, live preview,
- * creator socials, fee visibility, and stronger transaction-state UX.
+ * ARC launch workflow with stronger transaction-state feedback,
+ * clearer recovery actions, and a shell consistent with the rest of the app.
  */
 
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
+import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import {
@@ -23,12 +24,13 @@ import {
   Sparkles,
   TrendingUp,
   Twitter,
+  Wallet,
   Zap,
 } from 'lucide-react';
-import { useAllTokens, useCreateToken, useApproveFactoryUSDC, useCreationFee } from '@/hooks/useTokenFactory';
+import { useAllTokens, useApproveFactoryUSDC, useCreateToken, useCreationFee } from '@/hooks/useTokenFactory';
 import { useGenerateTokenPage } from '@/hooks/useGenerateTokenPage';
 import { useUSDCBalance } from '@/hooks/useMarketplace';
-import { CurveType, CURVE_TYPE_NAMES } from '@/lib/contracts';
+import { CURVE_TYPE_NAMES, CurveType } from '@/lib/contracts';
 
 const QUICK_SUPPLY_PRESETS = ['1000000', '10000000', '100000000'];
 const QUICK_PRICE_PRESETS = ['0.005', '0.01', '0.05'];
@@ -120,6 +122,13 @@ export default function LaunchPage() {
     Boolean(website.trim() || xHandle.trim() || telegram.trim()),
   ].filter(Boolean).length;
 
+  const resetLaunchState = () => {
+    setError(null);
+    setCreatedTokenAddress(null);
+    setTokenCountBeforeLaunch(null);
+    setStep('form');
+  };
+
   useEffect(() => {
     if (isApproved && step === 'approving') {
       setStep('creating');
@@ -155,7 +164,7 @@ export default function LaunchPage() {
       }
 
       if (tokenCountBeforeLaunch !== null && refreshedTokens.length <= tokenCountBeforeLaunch) {
-        setError('Token was created, but the new token route is still indexing. You can open it from explore in a moment.');
+        setError('Token was created, but the new route is still indexing. You can open it from explore in a moment.');
       }
 
       setStep('success');
@@ -210,31 +219,104 @@ export default function LaunchPage() {
     approve(feeFormatted);
   };
 
+  const stateMeta = {
+    form: {
+      label: 'Draft ready',
+      title: 'Review details before launch',
+      description: 'Use the preview and economics panel to sanity-check your ARC token before signing.',
+      tone: 'neutral',
+    },
+    approving: {
+      label: 'Wallet action',
+      title: 'Approve the creation fee',
+      description: 'Your wallet should open first so ARC can collect the USDC creation fee.',
+      tone: 'blue',
+    },
+    creating: {
+      label: 'Onchain in progress',
+      title: 'Deploying token and market',
+      description: 'The bonding-curve market is being created now. Keep this tab open until the success state appears.',
+      tone: 'blue',
+    },
+    success: {
+      label: 'Complete',
+      title: 'Launch finished',
+      description: 'Your token is live and ready for discovery.',
+      tone: 'green',
+    },
+    error: {
+      label: 'Attention needed',
+      title: 'Launch needs another attempt',
+      description: 'Review the message below, adjust inputs if needed, and retry when ready.',
+      tone: 'red',
+    },
+  } as const;
+
   if (!isConnected) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-500 to-cyan-400 text-white shadow-lg shadow-blue-500/20">
-          <Rocket className="h-10 w-10" />
+      <div className="min-h-screen px-4 py-12 lg:py-20">
+        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+              <Zap className="h-3.5 w-3.5" />
+              ARC launch
+            </div>
+            <h1 className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-5xl">
+              Connect your wallet to open the ARC token launch flow.
+            </h1>
+            <p className="mt-4 max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
+              Launch brings token identity, bonding-curve setup, trust links, and transaction-state feedback into one market-ready ARC workflow.
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                href="/explore"
+                className="inline-flex items-center gap-2 rounded-2xl bg-primary-500 px-6 py-3 font-semibold text-white transition hover:bg-primary-600"
+              >
+                <ArrowRight className="h-4 w-4" />
+                Explore launches
+              </Link>
+              <Link
+                href="/studio"
+                className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white"
+              >
+                <Sparkles className="h-4 w-4" />
+                Open studio
+              </Link>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:p-8">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-500/10 text-primary-500">
+              <Rocket className="h-7 w-7" />
+            </div>
+            <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">What launch covers</h2>
+            <div className="mt-5 space-y-4">
+              <StateRow icon={<Coins className="h-4 w-4" />} title="Token setup" description="Define name, ticker, description, visuals, and curve configuration in one place." />
+              <StateRow icon={<Wallet className="h-4 w-4" />} title="Wallet-guided transactions" description="Clear approval, deploy, and success states keep the launch process easier to follow." />
+              <StateRow icon={<TrendingUp className="h-4 w-4" />} title="Market-ready output" description="Route traders from the launch flow directly into the live token market page." />
+            </div>
+          </div>
         </div>
-        <h1 className="mb-3 text-3xl font-bold text-neutral-900 dark:text-white">Launch your token in minutes</h1>
-        <p className="mx-auto max-w-2xl text-neutral-600 dark:text-neutral-400">
-          Connect your wallet to set token details, pick your bonding curve, preview the launch page, and create a market-ready token flow.
-        </p>
       </div>
     );
   }
 
+  const currentState = stateMeta[step];
+
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 lg:py-10">
-      <div className="mb-8 grid gap-4 rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:grid-cols-[1.4fr_0.8fr] lg:p-8">
+      <div className="mb-8 grid gap-4 rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:grid-cols-[1.35fr_0.85fr] lg:p-8">
         <div>
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
             <Zap className="h-3.5 w-3.5" />
-            Pump-style launch flow
+            ARC token launch
           </div>
-          <h1 className="mb-3 text-3xl font-bold text-neutral-900 dark:text-white lg:text-4xl">Launch a token that feels market-ready from minute one</h1>
+          <h1 className="mb-3 text-3xl font-bold text-neutral-900 dark:text-white lg:text-4xl">
+            Launch a token with clearer transaction states and a stronger ARC market entry.
+          </h1>
           <p className="max-w-3xl text-neutral-600 dark:text-neutral-400">
-            Build the token profile, shape price discovery with a bonding curve, and give traders enough context to buy immediately after launch.
+            Build the token profile, shape price discovery with a bonding curve, and move from creation into live trading without leaving the ARC shell.
           </p>
         </div>
 
@@ -244,10 +326,7 @@ export default function LaunchPage() {
             <span className="font-semibold text-neutral-900 dark:text-white">{completedSections}/4 complete</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all"
-              style={{ width: `${(completedSections / 4) * 100}%` }}
-            />
+            <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all" style={{ width: `${(completedSections / 4) * 100}%` }} />
           </div>
           <div className="grid gap-2 text-sm text-neutral-600 dark:text-neutral-400">
             <div className="flex items-center gap-2">
@@ -275,7 +354,7 @@ export default function LaunchPage() {
           <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-green-600 dark:text-green-400" />
           <h2 className="mb-2 text-2xl font-bold text-green-900 dark:text-green-200">Token launched successfully</h2>
           <p className="mx-auto mb-4 max-w-xl text-green-800 dark:text-green-300">
-            Your token has been deployed and is ready for discovery. The next step is trading directly on the token market page.
+            Your token has been deployed and is ready for discovery. The next best move is opening the live market route and checking the first trading experience.
           </p>
           <div className="mx-auto mb-6 max-w-xl rounded-2xl border border-green-200 bg-white/70 p-4 text-left text-sm text-green-900 dark:border-green-500/20 dark:bg-slate-950/40 dark:text-green-200">
             <div className="flex items-center justify-between">
@@ -283,7 +362,7 @@ export default function LaunchPage() {
               <span className="font-semibold">{formatAddress(createdTokenAddress)}</span>
             </div>
             <div className="mt-2 text-green-700 dark:text-green-300">
-              {createdTokenAddress ? 'Primary action now opens the live token market page.' : 'Route indexing is still catching up, so explore remains available as fallback.'}
+              {createdTokenAddress ? 'Primary action now opens the live token market page.' : 'Route indexing is still catching up, so explore remains available as the fallback action.'}
             </div>
           </div>
           <div className="flex flex-col justify-center gap-3 sm:flex-row">
@@ -294,16 +373,67 @@ export default function LaunchPage() {
               {createdTokenAddress ? 'Open token market' : 'View live tokens'}
             </button>
             <button
-              onClick={() => router.push('/explore')}
+              onClick={() => {
+                resetLaunchState();
+                router.refresh();
+              }}
               className="inline-flex items-center justify-center rounded-xl border border-green-300 bg-white px-6 py-3 font-semibold text-green-700 hover:bg-green-50 dark:border-green-500/20 dark:bg-slate-900 dark:text-green-300"
             >
-              Explore all launches
+              Launch another token
             </button>
           </div>
         </div>
       ) : (
         <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
           <form onSubmit={handleSubmit} className="space-y-6">
+            <section className={cn(
+              'rounded-3xl border p-5 shadow-sm',
+              step === 'error'
+                ? 'border-red-200 bg-red-50/80 dark:border-red-500/20 dark:bg-red-500/10'
+                : step === 'approving' || step === 'creating'
+                  ? 'border-blue-200 bg-blue-50/80 dark:border-blue-500/20 dark:bg-blue-500/10'
+                  : 'border-neutral-200/60 bg-white/80 dark:border-white/10 dark:bg-slate-900/70'
+            )}>
+              <div className="flex items-start gap-3">
+                <div className={cn(
+                  'mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl',
+                  step === 'error'
+                    ? 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-300'
+                    : step === 'approving' || step === 'creating'
+                      ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-300'
+                      : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
+                )}>
+                  {step === 'error' ? (
+                    <AlertCircle className="h-5 w-5" />
+                  ) : step === 'approving' || step === 'creating' ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Info className="h-5 w-5" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-current/10 bg-white/60 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide dark:bg-white/5">
+                      {currentState.label}
+                    </span>
+                    <span className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Current state: {step}</span>
+                  </div>
+                  <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{currentState.title}</h2>
+                  <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">{currentState.description}</p>
+                  {error && <p className="mt-3 text-sm text-red-700 dark:text-red-300">{error}</p>}
+                </div>
+                {step === 'error' && (
+                  <button
+                    type="button"
+                    onClick={resetLaunchState}
+                    className="rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 dark:border-red-500/20 dark:bg-slate-950 dark:text-red-300"
+                  >
+                    Return to draft
+                  </button>
+                )}
+              </div>
+            </section>
+
             <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
               <div className="mb-5 flex items-center justify-between">
                 <div>
@@ -563,7 +693,7 @@ export default function LaunchPage() {
                   <p className="font-semibold">Launch cost and payout model</p>
                   <p>Creation fee: ${feeFormatted} USDC. Wallet balance: ${balanceFormatted} USDC.</p>
                   <p>Graduation model: 50% creator treasury, 25% staking rewards, 25% platform allocation.</p>
-                  <p>Use the preview panel to sanity-check positioning before you sign the approval transaction.</p>
+                  <p>Use the preview and transaction panels to validate positioning before you sign anything.</p>
                 </div>
               </div>
             </section>
@@ -577,37 +707,38 @@ export default function LaunchPage() {
               </div>
             )}
 
-            {error && (
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-500/20 dark:bg-red-500/10">
-                <div className="flex items-start gap-2 text-sm text-red-700 dark:text-red-300">
-                  <AlertCircle className="mt-0.5 h-4 w-4" />
-                  <span>{error}</span>
-                </div>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={hasInsufficientBalance || isApproving || isCreating || !isFormReady}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-lg font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isApproving ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Approving USDC
-                </>
-              ) : isCreating ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Creating token
-                </>
-              ) : (
-                <>
-                  <Rocket className="h-5 w-5" />
-                  Launch token for ${feeFormatted}
-                </>
-              )}
-            </button>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                type="submit"
+                disabled={hasInsufficientBalance || isApproving || isCreating || !isFormReady}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-lg font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isApproving ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Approving USDC
+                  </>
+                ) : isCreating ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Creating token
+                  </>
+                ) : (
+                  <>
+                    <Rocket className="h-5 w-5" />
+                    Launch token for ${feeFormatted}
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={resetLaunchState}
+                disabled={isApproving || isCreating}
+                className="inline-flex items-center justify-center rounded-2xl border border-neutral-200 bg-white px-5 py-4 font-semibold text-neutral-700 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-200"
+              >
+                Reset state
+              </button>
+            </div>
           </form>
 
           <aside className="space-y-6">
@@ -666,15 +797,18 @@ export default function LaunchPage() {
             </section>
 
             <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
-              <h2 className="mb-4 text-xl font-semibold text-neutral-900 dark:text-white">Transaction flow</h2>
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Transaction flow</h2>
+                <span className="rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-500 dark:border-white/10 dark:text-neutral-400">Guided state UX</span>
+              </div>
               <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
                 <FlowStep active={step === 'approving'} complete={step === 'creating' || step === 'success'} title="Approve USDC" description="Allow the factory contract to collect the current creation fee." />
                 <FlowStep active={step === 'creating'} complete={step === 'success'} title="Deploy token" description="Create the token and initialize the bonding-curve market." />
                 <FlowStep active={step === 'success'} complete={step === 'success'} title="Open market page" description="Jump directly into the live token market once the route is indexed." />
               </div>
-              <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-                <ArrowRight className="h-3.5 w-3.5" />
-                Current state: {step}
+              <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm dark:border-neutral-800 dark:bg-neutral-950/60">
+                <div className="font-medium text-neutral-900 dark:text-white">{currentState.title}</div>
+                <div className="mt-1 text-neutral-500 dark:text-neutral-400">{currentState.description}</div>
               </div>
             </section>
           </aside>
@@ -737,6 +871,20 @@ function FlowStep({
       <div>
         <div className="font-medium text-neutral-900 dark:text-white">{title}</div>
         <div className="mt-1 text-neutral-500 dark:text-neutral-400">{description}</div>
+      </div>
+    </div>
+  );
+}
+
+function StateRow({ icon, title, description }: { icon: ReactNode; title: string; description: string }) {
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-primary-500/10 text-primary-500">{icon}</div>
+        <div>
+          <div className="font-medium text-neutral-900 dark:text-white">{title}</div>
+          <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</div>
+        </div>
       </div>
     </div>
   );
