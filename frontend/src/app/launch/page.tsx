@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
   ArrowRight,
+  BarChart3,
   CheckCircle2,
   Coins,
   Globe,
@@ -23,7 +24,9 @@ import {
   Rocket,
   Sparkles,
   TrendingUp,
+  Trophy,
   Twitter,
+  User,
   Wallet,
   Zap,
 } from 'lucide-react';
@@ -115,12 +118,50 @@ export default function LaunchPage() {
   const graduationSupply = Math.floor(totalSupplyNumber * 0.8);
   const estimatedRaise = graduationSupply * basePriceNumber;
   const isFormReady = Boolean(name.trim() && symbol.trim() && description.trim());
-  const completedSections = [
+  const hasTrustLinks = Boolean(website.trim() || xHandle.trim() || telegram.trim());
+  const launchReadinessSignals = [
     Boolean(name.trim() && symbol.trim()),
     Boolean(description.trim() && imageUrl.trim()),
     Boolean(totalSupplyNumber > 0 && basePriceNumber > 0 && slopeNumber >= 0),
-    Boolean(website.trim() || xHandle.trim() || telegram.trim()),
+    hasTrustLinks,
   ].filter(Boolean).length;
+  const launchConfidenceSignals = [
+    Boolean(name.trim() && symbol.trim()),
+    Boolean(description.trim().length >= 120),
+    Boolean(imageUrl.trim()),
+    hasTrustLinks,
+    Boolean(totalSupplyNumber > 0 && basePriceNumber > 0),
+  ].filter(Boolean).length;
+  const launchConfidence = Math.round((launchConfidenceSignals / 5) * 100);
+  const marketEntryMode = curveType === CurveType.LINEAR ? 'Predictable' : curveType === CurveType.EXPONENTIAL ? 'Momentum-led' : 'Scarcity-led';
+  const existingLaunches = tokens.length;
+
+  const creatorRoutes = [
+    {
+      title: 'Profile',
+      description: 'Review wallet identity, owned assets, and creator state.',
+      href: address ? `/profile/${address}` : '/profile',
+      icon: <User className="h-4 w-4" />,
+    },
+    {
+      title: 'Studio',
+      description: 'Return to creator workflows, collections, and publish routes.',
+      href: '/studio',
+      icon: <Sparkles className="h-4 w-4" />,
+    },
+    {
+      title: 'Rewards',
+      description: 'See how launch activity contributes to wallet-linked progression.',
+      href: '/rewards',
+      icon: <Trophy className="h-4 w-4" />,
+    },
+    {
+      title: 'Stats',
+      description: 'Check market context before or after the token goes live.',
+      href: '/stats',
+      icon: <BarChart3 className="h-4 w-4" />,
+    },
+  ];
 
   const resetLaunchState = () => {
     setError(null);
@@ -306,7 +347,7 @@ export default function LaunchPage() {
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 lg:py-10">
-      <div className="mb-8 grid gap-4 rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:grid-cols-[1.35fr_0.85fr] lg:p-8">
+      <div className="mb-8 grid gap-4 rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:grid-cols-[1.15fr_0.85fr] lg:p-8">
         <div>
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
             <Zap className="h-3.5 w-3.5" />
@@ -318,45 +359,90 @@ export default function LaunchPage() {
           <p className="max-w-3xl text-neutral-600 dark:text-neutral-400">
             Build the token profile, shape price discovery with a bonding curve, and move from creation into live trading without leaving the ARC shell.
           </p>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href={address ? `/profile/${address}` : '/profile'} className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-5 py-3 font-semibold text-white dark:bg-white dark:text-black">
+              <User className="h-4 w-4" />
+              Profile
+            </Link>
+            <Link href="/studio" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
+              <Sparkles className="h-4 w-4" />
+              Studio
+            </Link>
+            <Link href="/stats" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
+              <BarChart3 className="h-4 w-4" />
+              Stats
+            </Link>
+          </div>
         </div>
 
         <div className="grid gap-3 rounded-2xl border border-neutral-200/70 bg-neutral-50/80 p-4 dark:border-white/10 dark:bg-slate-950/60">
           <div className="flex items-center justify-between text-sm">
             <span className="text-neutral-500 dark:text-neutral-400">Launch readiness</span>
-            <span className="font-semibold text-neutral-900 dark:text-white">{completedSections}/4 complete</span>
+            <span className="font-semibold text-neutral-900 dark:text-white">{launchReadinessSignals}/4 complete</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
-            <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all" style={{ width: `${(completedSections / 4) * 100}%` }} />
+            <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all" style={{ width: `${(launchReadinessSignals / 4) * 100}%` }} />
           </div>
           <div className="grid gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className={cn('h-4 w-4', name.trim() && symbol.trim() ? 'text-green-500' : 'text-neutral-300 dark:text-neutral-600')} />
-              <span>Name and ticker</span>
+            <div className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-slate-900/80">
+              <span>Connected wallet</span>
+              <span className="font-medium text-neutral-900 dark:text-white">{formatAddress(address)}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className={cn('h-4 w-4', description.trim() && imageUrl.trim() ? 'text-green-500' : 'text-neutral-300 dark:text-neutral-600')} />
-              <span>Story and visual</span>
+            <div className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-slate-900/80">
+              <span>Wallet balance</span>
+              <span className="font-medium text-neutral-900 dark:text-white">${balanceFormatted} USDC</span>
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className={cn('h-4 w-4', totalSupplyNumber > 0 && basePriceNumber > 0 ? 'text-green-500' : 'text-neutral-300 dark:text-neutral-600')} />
-              <span>Curve configuration</span>
+            <div className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-slate-900/80">
+              <span>Creation fee</span>
+              <span className="font-medium text-neutral-900 dark:text-white">${feeFormatted} USDC</span>
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className={cn('h-4 w-4', website.trim() || xHandle.trim() || telegram.trim() ? 'text-green-500' : 'text-neutral-300 dark:text-neutral-600')} />
-              <span>Creator trust links</span>
+            <div className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-slate-900/80">
+              <span>Launch confidence</span>
+              <span className="font-medium text-neutral-900 dark:text-white">{launchConfidence}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-8 rounded-3xl border border-neutral-200/60 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:p-6">
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-blue-900 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="mb-1 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
+                <Sparkles className="h-4 w-4" />
+                Shell continuity
+              </div>
+              <div className="text-lg font-semibold text-neutral-900 dark:text-white">Creator flow stays connected</div>
+              <p className="mt-1 max-w-3xl text-sm text-current">
+                Launch now behaves more like the rest of the connected ARC shell, keeping profile, studio, rewards, stats, and the post-launch token market route close at hand through the full creator flow.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/rewards" className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-white dark:text-black">
+                <Trophy className="h-4 w-4" />
+                Rewards
+              </Link>
+              <Link href="/explore?tab=tokens" className="inline-flex items-center gap-2 rounded-2xl border border-current/10 bg-white/70 px-4 py-2.5 text-sm font-semibold text-current dark:bg-white/5">
+                <Wallet className="h-4 w-4" />
+                Token markets
+              </Link>
             </div>
           </div>
         </div>
       </div>
 
       {step === 'success' ? (
-        <div className="mx-auto max-w-3xl rounded-3xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-8 text-center shadow-sm dark:border-green-500/20 dark:from-green-500/10 dark:to-emerald-500/10 dark:bg-slate-900">
-          <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-green-600 dark:text-green-400" />
-          <h2 className="mb-2 text-2xl font-bold text-green-900 dark:text-green-200">Token launched successfully</h2>
-          <p className="mx-auto mb-4 max-w-xl text-green-800 dark:text-green-300">
-            Your token has been deployed and is ready for discovery. The next best move is opening the live market route and checking the first trading experience.
-          </p>
-          <div className="mx-auto mb-6 max-w-xl rounded-2xl border border-green-200 bg-white/70 p-4 text-left text-sm text-green-900 dark:border-green-500/20 dark:bg-slate-950/40 dark:text-green-200">
+        <div className="mx-auto max-w-4xl rounded-3xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-8 shadow-sm dark:border-green-500/20 dark:from-green-500/10 dark:to-emerald-500/10 dark:bg-slate-900">
+          <div className="text-center">
+            <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-green-600 dark:text-green-400" />
+            <h2 className="mb-2 text-2xl font-bold text-green-900 dark:text-green-200">Token launched successfully</h2>
+            <p className="mx-auto mb-4 max-w-2xl text-green-800 dark:text-green-300">
+              Your token has been deployed and is ready for discovery. The next best move is opening the live market route, then reviewing how the launch fits into your profile, studio, and rewards surfaces.
+            </p>
+          </div>
+
+          <div className="mx-auto mb-6 max-w-2xl rounded-2xl border border-green-200 bg-white/70 p-4 text-left text-sm text-green-900 dark:border-green-500/20 dark:bg-slate-950/40 dark:text-green-200">
             <div className="flex items-center justify-between">
               <span>Created token route</span>
               <span className="font-semibold">{formatAddress(createdTokenAddress)}</span>
@@ -365,12 +451,31 @@ export default function LaunchPage() {
               {createdTokenAddress ? 'Primary action now opens the live token market page.' : 'Route indexing is still catching up, so explore remains available as the fallback action.'}
             </div>
           </div>
-          <div className="flex flex-col justify-center gap-3 sm:flex-row">
+
+          <div className="mb-6 grid gap-4 md:grid-cols-3">
+            <SuccessReadCard title="Creator wallet" value={formatAddress(address)} description="The connected shell keeps this creator identity active across profile and studio." />
+            <SuccessReadCard title="Market route" value={createdTokenAddress ? 'Ready' : 'Indexing'} description="The live token destination is now the primary post-launch handoff." />
+            <SuccessReadCard title="Next flow" value="Profile + rewards" description="Launch activity is now positioned as part of a broader connected creator journey." />
+          </div>
+
+          <div className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
             <button
-              onClick={() => router.push(createdTokenAddress ? `/token/${createdTokenAddress}` : '/explore')}
+              onClick={() => router.push(createdTokenAddress ? `/token/${createdTokenAddress}` : '/explore?tab=tokens')}
               className="inline-flex items-center justify-center rounded-xl bg-green-600 px-6 py-3 font-semibold text-white hover:bg-green-700"
             >
               {createdTokenAddress ? 'Open token market' : 'View live tokens'}
+            </button>
+            <button
+              onClick={() => router.push(address ? `/profile/${address}` : '/profile')}
+              className="inline-flex items-center justify-center rounded-xl border border-green-300 bg-white px-6 py-3 font-semibold text-green-700 hover:bg-green-50 dark:border-green-500/20 dark:bg-slate-900 dark:text-green-300"
+            >
+              Open profile
+            </button>
+            <button
+              onClick={() => router.push('/studio')}
+              className="inline-flex items-center justify-center rounded-xl border border-green-300 bg-white px-6 py-3 font-semibold text-green-700 hover:bg-green-50 dark:border-green-500/20 dark:bg-slate-900 dark:text-green-300"
+            >
+              Return to studio
             </button>
             <button
               onClick={() => {
@@ -693,7 +798,7 @@ export default function LaunchPage() {
                   <p className="font-semibold">Launch cost and payout model</p>
                   <p>Creation fee: ${feeFormatted} USDC. Wallet balance: ${balanceFormatted} USDC.</p>
                   <p>Graduation model: 50% creator treasury, 25% staking rewards, 25% platform allocation.</p>
-                  <p>Use the preview and transaction panels to validate positioning before you sign anything.</p>
+                  <p>Use the preview, economics, and connected-shell route cards to validate positioning before you sign anything.</p>
                 </div>
               </div>
             </section>
@@ -790,9 +895,28 @@ export default function LaunchPage() {
                 <MetricRow label="Projected graduation supply" value={formatNumber(String(graduationSupply))} />
                 <MetricRow label="Estimated raise at base price" value={`$${estimatedRaise.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} />
                 <MetricRow label="Curve slope" value={slope || '0'} />
+                <MetricRow label="Entry mode" value={marketEntryMode} />
               </div>
               <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
                 Strong launches combine a clean ticker, instant social proof, and a curve that does not punish early traders too hard.
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Creator snapshot</h2>
+                <span className="rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-500 dark:border-white/10 dark:text-neutral-400">Connected shell</span>
+              </div>
+              <div className="space-y-3 text-sm">
+                <MetricRow label="Wallet" value={formatAddress(address)} />
+                <MetricRow label="Existing launches" value={existingLaunches.toString()} />
+                <MetricRow label="Trust links" value={hasTrustLinks ? 'Added' : 'Missing'} />
+                <MetricRow label="Description quality" value={description.trim().length >= 120 ? 'Strong' : 'Needs more detail'} />
+              </div>
+              <div className="mt-4 grid gap-3">
+                {creatorRoutes.map((route) => (
+                  <RouteCard key={route.title} title={route.title} description={route.description} href={route.href} icon={route.icon} />
+                ))}
               </div>
             </section>
 
@@ -886,6 +1010,31 @@ function StateRow({ icon, title, description }: { icon: ReactNode; title: string
           <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function RouteCard({ title, description, href, icon }: { title: string; description: string; href: string; icon: ReactNode }) {
+  return (
+    <Link href={href} className="block rounded-2xl border border-neutral-200 bg-neutral-50 p-4 transition hover:border-primary-400 hover:bg-white dark:border-white/10 dark:bg-slate-950/60">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-primary-500/10 text-primary-500">{icon}</div>
+          <div className="font-semibold text-neutral-900 dark:text-white">{title}</div>
+          <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</div>
+        </div>
+        <ArrowRight className="mt-1 h-4 w-4 text-neutral-400" />
+      </div>
+    </Link>
+  );
+}
+
+function SuccessReadCard({ title, value, description }: { title: string; value: string; description: string }) {
+  return (
+    <div className="rounded-2xl border border-green-200 bg-white/70 p-4 dark:border-green-500/20 dark:bg-slate-950/40">
+      <div className="text-sm text-green-800 dark:text-green-300">{title}</div>
+      <div className="mt-1 text-xl font-bold text-green-900 dark:text-green-200">{value}</div>
+      <div className="mt-2 text-sm text-green-700 dark:text-green-300">{description}</div>
     </div>
   );
 }
