@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import {
@@ -130,11 +130,7 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [feedTab, setFeedTab] = useState<FeedTab>('new');
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -156,7 +152,11 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const cards = useMemo(() => {
     return listings.slice(0, 12).map((listing, index) => {
@@ -262,11 +262,16 @@ export default function HomePage() {
               {HERO_KPIS.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <div key={item.label} className="rounded-2xl border border-neutral-200 bg-neutral-50/80 p-4 dark:border-white/10 dark:bg-slate-950/60">
+                  <div
+                    key={item.label}
+                    className="rounded-2xl border border-neutral-200 bg-neutral-50/80 p-4 dark:border-white/10 dark:bg-slate-950/60"
+                  >
                     <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-600 dark:text-blue-300">
                       <Icon className="h-5 w-5" />
                     </div>
-                    <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">{item.label}</div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                      {item.label}
+                    </div>
                     <div className="mt-1 font-semibold text-neutral-900 dark:text-white">{item.value}</div>
                     <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{item.hint}</div>
                   </div>
@@ -284,12 +289,36 @@ export default function HomePage() {
               </span>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <PulseCard label="24h volume" value={stats ? formatCompactUSDC(stats.dailyVolume) : loading ? 'Loading...' : '—'} hint="Marketplace velocity" />
-              <PulseCard label="Total volume" value={stats ? formatCompactUSDC(stats.totalVolume) : loading ? 'Loading...' : '—'} hint="Cumulative across ARC" />
-              <PulseCard label="Active listings" value={stats ? stats.activeListings.toLocaleString() : loading ? 'Loading...' : '—'} hint="Sell-side inventory" />
-              <PulseCard label="Active auctions" value={stats ? stats.activeAuctions.toLocaleString() : loading ? 'Loading...' : '—'} hint="Discovery depth" />
-              <PulseCard label="Sales today" value={stats ? stats.dailySales.toLocaleString() : loading ? 'Loading...' : '—'} hint="Completed activity" />
-              <PulseCard label="Total sales" value={stats ? stats.totalSales.toLocaleString() : loading ? 'Loading...' : '—'} hint="Historical throughput" />
+              <PulseCard
+                label="24h volume"
+                value={stats ? formatCompactUSDC(stats.dailyVolume) : loading ? 'Loading...' : '—'}
+                hint="Marketplace velocity"
+              />
+              <PulseCard
+                label="Total volume"
+                value={stats ? formatCompactUSDC(stats.totalVolume) : loading ? 'Loading...' : '—'}
+                hint="Cumulative across ARC"
+              />
+              <PulseCard
+                label="Active listings"
+                value={stats ? stats.activeListings.toLocaleString() : loading ? 'Loading...' : '—'}
+                hint="Sell-side inventory"
+              />
+              <PulseCard
+                label="Active auctions"
+                value={stats ? stats.activeAuctions.toLocaleString() : loading ? 'Loading...' : '—'}
+                hint="Discovery depth"
+              />
+              <PulseCard
+                label="Sales today"
+                value={stats ? stats.dailySales.toLocaleString() : loading ? 'Loading...' : '—'}
+                hint="Completed activity"
+              />
+              <PulseCard
+                label="Total sales"
+                value={stats ? stats.totalSales.toLocaleString() : loading ? 'Loading...' : '—'}
+                hint="Historical throughput"
+              />
             </div>
             <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-slate-900/80">
               <div className="mb-2 flex items-center justify-between text-sm">
@@ -321,7 +350,9 @@ export default function HomePage() {
                 <Sparkles className="h-4 w-4" />
                 Phase 1 continuity
               </div>
-              <div className="text-lg font-semibold text-neutral-900 dark:text-white">Home now behaves like the ARC starting surface for both creators and traders.</div>
+              <div className="text-lg font-semibold text-neutral-900 dark:text-white">
+                Home now behaves like the ARC starting surface for both creators and traders.
+              </div>
               <p className="mt-1 max-w-3xl text-sm text-blue-800 dark:text-blue-200">
                 Discovery remains central, but the route also keeps macro stats and next-step navigation close enough to support real flow instead of forcing users back through disconnected pages.
               </p>
@@ -339,7 +370,9 @@ export default function HomePage() {
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Launch feed</h2>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">Switch between fresh launches, momentum, and near-graduation markets.</p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    Switch between fresh launches, momentum, and near-graduation markets.
+                  </p>
                 </div>
                 <div className="flex gap-2">
                   {(['new', 'hot', 'graduating'] as FeedTab[]).map((tab) => (
@@ -366,7 +399,10 @@ export default function HomePage() {
               {loading ? (
                 <div className="grid gap-4 md:grid-cols-2">
                   {Array.from({ length: 4 }).map((_, index) => (
-                    <div key={index} className="h-48 rounded-3xl border border-neutral-200 bg-neutral-100/80 dark:border-white/10 dark:bg-slate-950/60" />
+                    <div
+                      key={index}
+                      className="h-48 rounded-3xl border border-neutral-200 bg-neutral-100/80 dark:border-white/10 dark:bg-slate-950/60"
+                    />
                   ))}
                 </div>
               ) : feedCards.length > 0 ? (
@@ -450,7 +486,9 @@ export default function HomePage() {
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Connected routes</h2>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">The next best ARC surface should always be obvious from home.</p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    The next best ARC surface should always be obvious from home.
+                  </p>
                 </div>
                 <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
                   <Sparkles className="h-3.5 w-3.5" />
@@ -486,7 +524,9 @@ export default function HomePage() {
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Live tape</h2>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">A compact stream of momentum cues for traders scanning the top of the funnel.</p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    A compact stream of momentum cues for traders scanning the top of the funnel.
+                  </p>
                 </div>
                 <span className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-300">
                   <Flame className="h-3.5 w-3.5" />
@@ -523,7 +563,12 @@ export default function HomePage() {
                 {READINESS_ITEMS.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <ReadinessRow key={item.title} icon={<Icon className="h-4 w-4" />} title={item.title} detail={item.detail} />
+                    <ReadinessRow
+                      key={item.title}
+                      icon={<Icon className="h-4 w-4" />}
+                      title={item.title}
+                      detail={item.detail}
+                    />
                   );
                 })}
               </div>
