@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Clock,
   DollarSign,
+  Home,
   Loader2,
   Package,
   Radio,
@@ -26,13 +27,13 @@ import { formatCompactUSDC, formatNumber } from '@/lib/utils';
 import { LoadingPage } from '@/components/ui/LoadingSpinner';
 import type { MarketplaceStats } from '@/types';
 
-type TimeRange = '24h' | '7d' | '30d' | 'all';
+type AnalyticsLens = 'overview' | 'inventory' | 'flow' | 'shell';
 
-const RANGE_LABELS: Record<TimeRange, string> = {
-  '24h': '24H',
-  '7d': '7D',
-  '30d': '30D',
-  all: 'All time',
+const LENS_LABELS: Record<AnalyticsLens, string> = {
+  overview: 'Overview',
+  inventory: 'Inventory',
+  flow: 'Flow',
+  shell: 'Shell routes',
 };
 
 function shortenAddress(address?: string | null) {
@@ -44,12 +45,12 @@ export default function StatsPage() {
   const { address, isConnected } = useAccount();
   const [stats, setStats] = useState<MarketplaceStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState<TimeRange>('7d');
+  const [analyticsLens, setAnalyticsLens] = useState<AnalyticsLens>('overview');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadStats();
-  }, [timeRange]);
+  }, []);
 
   const loadStats = async () => {
     setIsLoading(true);
@@ -80,6 +81,9 @@ export default function StatsPage() {
       : stats.activeListings > stats.activeAuctions * 2
         ? 'Listing-heavy'
         : 'Balanced inventory';
+  const dailyVolumeShare = stats && stats.totalVolume !== '0'
+    ? `${Math.min(100, Math.round((Number(stats.dailyVolume) / Number(stats.totalVolume)) * 100))}%`
+    : '0%';
 
   const statCards = [
     {
@@ -137,6 +141,12 @@ export default function StatsPage() {
 
   const shellRoutes = [
     {
+      title: 'Open home',
+      description: 'Return to the connected ARC entry surface after reviewing analytics.',
+      href: '/',
+      icon: <Home className="h-4 w-4" />,
+    },
+    {
       title: 'Open profile',
       description: 'Return to the wallet-linked account surface from analytics.',
       href: address ? `/profile/${address}` : '/profile',
@@ -147,12 +157,6 @@ export default function StatsPage() {
       description: 'Move from market context into loyalty and wallet-linked progression.',
       href: '/rewards',
       icon: <Trophy className="h-4 w-4" />,
-    },
-    {
-      title: 'Open studio',
-      description: 'Jump from analytics into creator workflows and collection routes.',
-      href: '/studio',
-      icon: <Sparkles className="h-4 w-4" />,
     },
     {
       title: 'Token markets',
@@ -199,8 +203,15 @@ export default function StatsPage() {
     : isLoading
       ? 'ARC is refreshing marketplace totals and activity signals for this analytics view.'
       : stats
-        ? 'This surface now pushes beyond shell polish by adding computed market-composition signals and stronger continuity into profile, rewards, studio, and token-market routes.'
+        ? 'This surface now acts as the Phase 1 analytics destination, tying computed market signals back into the connected shell and its highest-value follow-on routes.'
         : 'Stats will appear here once marketplace data is available.';
+
+  const lensSummary = {
+    overview: 'See the broad marketplace picture first, then branch into action.',
+    inventory: 'Focus on supply mix, market shape, and inventory composition.',
+    flow: 'Center on velocity, turnover, and how volume translates into activity.',
+    shell: 'Use stats as a routing surface back into home, profile, rewards, and token discovery.',
+  }[analyticsLens];
 
   return (
     <div className="min-h-screen">
@@ -212,16 +223,23 @@ export default function StatsPage() {
               ARC analytics
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-5xl">
-              Review marketplace, launchpad, and trading momentum in one ARC stats surface.
+              Review marketplace, launchpad, and shell momentum in one ARC stats surface.
             </h1>
             <p className="mt-4 max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
-              The stats layer now does more than present totals, adding computed market-shape signals while keeping users inside the connected ARC shell.
+              The stats route now works as the analytics layer for Phase 1, connecting live totals, computed composition signals, and the next best ARC route from a single destination.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
-                href="/explore"
+                href="/"
                 className="inline-flex items-center gap-2 rounded-2xl bg-primary-500 px-6 py-3 font-semibold text-white transition hover:bg-primary-600"
+              >
+                <Home className="h-4 w-4" />
+                Back to home
+              </Link>
+              <Link
+                href="/explore"
+                className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white"
               >
                 <Search className="h-4 w-4" />
                 Explore markets
@@ -309,8 +327,8 @@ export default function StatsPage() {
                 </div>
                 <p className="mt-1 max-w-3xl text-sm text-current">
                   {isConnected
-                    ? `Analytics is currently aligned with ${shortenAddress(address)} so users can move from stats into profile, rewards, studio, and token markets without losing shell context.`
-                    : 'Analytics is now wired as a stronger shell destination, with route continuity into profile, rewards, studio, token markets, and launch flows.'}
+                    ? `Analytics is currently aligned with ${shortenAddress(address)} so users can move from stats into profile, rewards, home, and token markets without losing shell context.`
+                    : 'Analytics is now wired as a stronger shell destination, with route continuity into home, profile, rewards, token markets, and launch flows.'}
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -329,21 +347,35 @@ export default function StatsPage() {
 
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-neutral-200/60 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
           <div>
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Time range</h2>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Switch the analytics window while keeping the ARC shell layout consistent.</p>
+            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Analytics lens</h2>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">Switch the interpretation mode without implying separate backend time windows.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {(['24h', '7d', '30d', 'all'] as TimeRange[]).map((range) => (
+            {(['overview', 'inventory', 'flow', 'shell'] as AnalyticsLens[]).map((lens) => (
               <button
-                key={range}
-                onClick={() => setTimeRange(range)}
-                className={timeRange === range
+                key={lens}
+                onClick={() => setAnalyticsLens(lens)}
+                className={analyticsLens === lens
                   ? 'rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black'
                   : 'rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-600 transition hover:text-neutral-900 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-300 dark:hover:text-white'}
               >
-                {RANGE_LABELS[range]}
+                {LENS_LABELS[lens]}
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="mb-8 rounded-3xl border border-neutral-200/60 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="text-sm font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Current lens</div>
+              <div className="mt-1 text-lg font-semibold text-neutral-900 dark:text-white">{LENS_LABELS[analyticsLens]}</div>
+              <p className="mt-1 max-w-3xl text-sm text-neutral-500 dark:text-neutral-400">{lensSummary}</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <MiniSignal label="Market mode" value={marketMode} />
+              <MiniSignal label="24h volume share" value={dailyVolumeShare} />
+            </div>
           </div>
         </div>
 
@@ -435,7 +467,7 @@ export default function StatsPage() {
             />
             <ActionReadCard
               title="Route priority"
-              description={isConnected ? 'Profile, rewards, studio, and token markets are now the best follow-on routes from analytics for the connected shell.' : 'Explore, launch, rewards, and token markets remain the best follow-on routes from analytics.'}
+              description={isConnected ? 'Home, profile, rewards, and token markets are now the best follow-on routes from analytics for the connected shell.' : 'Home, explore, launch, rewards, and token markets remain the best follow-on routes from analytics.'}
               badge="Shell"
             />
           </div>
@@ -518,6 +550,15 @@ function ActionReadCard({ title, description, badge }: { title: string; descript
           {badge}
         </span>
       </div>
+    </div>
+  );
+}
+
+function MiniSignal({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-white/10 dark:bg-slate-950/60">
+      <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">{label}</div>
+      <div className="mt-1 text-sm font-semibold text-neutral-900 dark:text-white">{value}</div>
     </div>
   );
 }
