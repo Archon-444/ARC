@@ -2,11 +2,9 @@
 
 import './globals.css';
 import '@rainbow-me/rainbowkit/styles.css';
-import Link from 'next/link';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { SessionProvider } from 'next-auth/react';
-import { BarChart3, Home, Layers3, Rocket, Trophy, User } from 'lucide-react';
 import { WagmiProvider } from 'wagmi';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -30,15 +28,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-const SHELL_ROUTES = [
-  { title: 'Home', href: '/', icon: Home },
-  { title: 'Launch', href: '/launch', icon: Rocket },
-  { title: 'Explore', href: '/explore', icon: Layers3 },
-  { title: 'Stats', href: '/stats', icon: BarChart3 },
-  { title: 'Rewards', href: '/rewards', icon: Trophy },
-  { title: 'Profile', href: '/profile', icon: User },
-];
 
 export default function RootLayout({
   children,
@@ -84,31 +73,18 @@ export default function RootLayout({
                           <div className="relative z-10 min-h-screen bg-transparent">
                             <Navbar />
                             <div className="border-b border-neutral-200/70 bg-white/75 backdrop-blur dark:border-white/10 dark:bg-slate-900/65">
-                              <div className="container mx-auto max-w-7xl px-4 py-3">
-                                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                                  <div>
-                                    <div className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:text-blue-300">
-                                      ARC shell
-                                    </div>
-                                    <div className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
-                                      Launch, explore, stats, rewards, and profile routes stay connected across the app.
-                                    </div>
+                              <div className="container mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between">
+                                <div>
+                                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:text-blue-300">
+                                    ARC shell
                                   </div>
-                                  <div className="flex flex-wrap gap-2">
-                                    {SHELL_ROUTES.map((route) => {
-                                      const Icon = route.icon;
-                                      return (
-                                        <Link
-                                          key={route.title}
-                                          href={route.href}
-                                          className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 transition hover:border-blue-300 hover:text-blue-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-200 dark:hover:border-blue-500/40 dark:hover:text-blue-300"
-                                        >
-                                          <Icon className="h-4 w-4" />
-                                          {route.title}
-                                        </Link>
-                                      );
-                                    })}
+                                  <div className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
+                                    Primary navigation now keeps exploration, launchpad, studio, stats, and rewards in one place while wallet and profile stay in the utility area.
                                   </div>
+                                </div>
+                                <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+                                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                  One owner per destination
                                 </div>
                               </div>
                             </div>
