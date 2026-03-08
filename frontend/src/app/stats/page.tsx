@@ -6,15 +6,15 @@ import {
   Activity,
   ArrowRight,
   BarChart3,
+  CheckCircle2,
   Clock,
   DollarSign,
+  Loader2,
   Package,
   Radio,
   Rocket,
   Search,
   Sparkles,
-  TrendingDown,
-  TrendingUp,
   Users,
   Wallet,
 } from 'lucide-react';
@@ -36,6 +36,7 @@ export default function StatsPage() {
   const [stats, setStats] = useState<MarketplaceStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<TimeRange>('7d');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadStats();
@@ -43,17 +44,19 @@ export default function StatsPage() {
 
   const loadStats = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const data = await fetchMarketplaceStats();
       setStats(data);
-    } catch (error) {
-      console.error('Failed to load stats:', error);
+    } catch (loadError) {
+      console.error('Failed to load stats:', loadError);
+      setError(loadError instanceof Error ? loadError.message : 'Unable to load ARC stats right now.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !stats) {
     return <LoadingPage label="Loading ARC stats..." />;
   }
 
@@ -61,32 +64,28 @@ export default function StatsPage() {
     {
       title: 'Total volume',
       value: stats ? formatCompactUSDC(stats.totalVolume) : '$0',
-      change: '+12.5%',
-      trend: 'up' as const,
+      supportingLabel: 'Live marketplace read',
       icon: DollarSign,
       tone: 'green' as const,
     },
     {
       title: 'Total sales',
       value: stats ? formatNumber(stats.totalSales) : '0',
-      change: '+8.2%',
-      trend: 'up' as const,
+      supportingLabel: 'Marketplace transactions',
       icon: Package,
       tone: 'blue' as const,
     },
     {
       title: 'Active listings',
       value: stats ? formatNumber(stats.activeListings) : '0',
-      change: '-2.1%',
-      trend: 'down' as const,
+      supportingLabel: 'Current fixed-price inventory',
       icon: BarChart3,
       tone: 'purple' as const,
     },
     {
       title: 'Active auctions',
       value: stats ? formatNumber(stats.activeAuctions) : '0',
-      change: '+15.3%',
-      trend: 'up' as const,
+      supportingLabel: 'Current timed inventory',
       icon: Clock,
       tone: 'orange' as const,
     },
@@ -109,6 +108,22 @@ export default function StatsPage() {
       icon: <Wallet className="h-4 w-4" />,
     },
   ];
+
+  const stateTone = error ? 'red' : isLoading ? 'blue' : stats ? 'green' : 'neutral';
+  const stateTitle = error
+    ? 'Analytics unavailable'
+    : isLoading
+      ? 'Refreshing analytics'
+      : stats
+        ? 'Analytics ready'
+        : 'Waiting on analytics';
+  const stateDescription = error
+    ? 'ARC could not load the stats surface right now. You can retry below or route back into discovery and launch flows.'
+    : isLoading
+      ? 'ARC is refreshing marketplace totals and activity signals for this analytics view.'
+      : stats
+        ? 'This surface is now aligned with discovery, launch, and token-market navigation so users can move from analytics into action without losing context.'
+        : 'Stats will appear here once marketplace data is available.';
 
   return (
     <div className="min-h-screen">
@@ -170,6 +185,40 @@ export default function StatsPage() {
           </div>
         </div>
 
+        <div className="mb-8 rounded-3xl border border-neutral-200/60 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:p-6">
+          <div className={stateTone === 'red'
+            ? 'rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300'
+            : stateTone === 'blue'
+              ? 'rounded-2xl border border-blue-200 bg-blue-50 p-4 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300'
+              : stateTone === 'green'
+                ? 'rounded-2xl border border-green-200 bg-green-50 p-4 text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300'
+                : 'rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-neutral-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-300'}>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div className="mb-1 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
+                  {stateTone === 'red' ? <Activity className="h-4 w-4" /> : stateTone === 'blue' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  Analytics state
+                </div>
+                <div className="text-lg font-semibold text-neutral-900 dark:text-white">{stateTitle}</div>
+                <p className="mt-1 max-w-3xl text-sm text-current">{stateDescription}</p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={loadStats}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-current/10 bg-white/70 px-4 py-2.5 text-sm font-semibold text-current dark:bg-white/5"
+                >
+                  <Activity className="h-4 w-4" />
+                  Refresh stats
+                </button>
+                <Link href="/explore?tab=tokens" className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-white dark:text-black">
+                  <Wallet className="h-4 w-4" />
+                  Token markets
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-neutral-200/60 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
           <div>
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Time range</h2>
@@ -223,6 +272,7 @@ export default function StatsPage() {
             </div>
             <div className="space-y-3">
               <RouteCard title="Open explore" description="Return to marketplace inventory and launched token discovery." href="/explore" icon={<Search className="h-4 w-4" />} />
+              <RouteCard title="Token markets" description="Jump from analytics into launched-token discovery and live market routes." href="/explore?tab=tokens" icon={<Wallet className="h-4 w-4" />} />
               <RouteCard title="Open rewards" description="Jump into loyalty progression, quests, and leaderboard surfaces." href="/rewards" icon={<Users className="h-4 w-4" />} />
               <RouteCard title="Launch a token" description="Move from analytics into the ARC launch flow." href="/launch" icon={<Rocket className="h-4 w-4" />} />
             </div>
@@ -261,15 +311,13 @@ export default function StatsPage() {
 function StatCard({
   title,
   value,
-  change,
-  trend,
+  supportingLabel,
   icon: Icon,
   tone,
 }: {
   title: string;
   value: string;
-  change: string;
-  trend: 'up' | 'down';
+  supportingLabel: string;
   icon: ComponentType<{ className?: string }>;
   tone: 'green' | 'blue' | 'purple' | 'orange';
 }) {
@@ -289,15 +337,7 @@ function StatCard({
         </div>
       </div>
       <div className="mt-4 text-3xl font-bold text-neutral-900 dark:text-white">{value}</div>
-      <div className="mt-3 flex items-center gap-1.5 text-sm">
-        {trend === 'up' ? (
-          <TrendingUp className="h-4 w-4 text-green-500" />
-        ) : (
-          <TrendingDown className="h-4 w-4 text-red-500" />
-        )}
-        <span className={trend === 'up' ? 'font-medium text-green-500' : 'font-medium text-red-500'}>{change}</span>
-        <span className="text-neutral-500 dark:text-neutral-400">vs previous window</span>
-      </div>
+      <div className="mt-3 text-sm text-neutral-500 dark:text-neutral-400">{supportingLabel}</div>
     </div>
   );
 }
