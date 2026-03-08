@@ -2,6 +2,7 @@
 
 import { useState, useEffect, type ComponentType } from 'react';
 import Link from 'next/link';
+import { useAccount } from 'wagmi';
 import {
   Activity,
   ArrowRight,
@@ -15,6 +16,8 @@ import {
   Rocket,
   Search,
   Sparkles,
+  Trophy,
+  User,
   Users,
   Wallet,
 } from 'lucide-react';
@@ -32,7 +35,13 @@ const RANGE_LABELS: Record<TimeRange, string> = {
   all: 'All time',
 };
 
+function shortenAddress(address?: string | null) {
+  if (!address) return 'No wallet connected';
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
 export default function StatsPage() {
+  const { address, isConnected } = useAccount();
   const [stats, setStats] = useState<MarketplaceStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<TimeRange>('7d');
@@ -59,6 +68,18 @@ export default function StatsPage() {
   if (isLoading && !stats) {
     return <LoadingPage label="Loading ARC stats..." />;
   }
+
+  const totalInventory = stats ? stats.activeListings + stats.activeAuctions : 0;
+  const auctionShare = totalInventory > 0 && stats ? Math.round((stats.activeAuctions / totalInventory) * 100) : 0;
+  const listingShare = totalInventory > 0 && stats ? 100 - auctionShare : 0;
+  const salesPerInventory = totalInventory > 0 && stats ? (stats.totalSales / totalInventory).toFixed(1) : '0.0';
+  const marketMode = !stats
+    ? 'Waiting on analytics'
+    : stats.activeAuctions > stats.activeListings
+      ? 'Auction-heavy'
+      : stats.activeListings > stats.activeAuctions * 2
+        ? 'Listing-heavy'
+        : 'Balanced inventory';
 
   const statCards = [
     {
@@ -91,20 +112,76 @@ export default function StatsPage() {
     },
   ];
 
+  const computedSignals = [
+    {
+      title: 'Total inventory',
+      value: formatNumber(totalInventory),
+      description: 'Combined listings and auctions available in the current ARC market state.',
+    },
+    {
+      title: 'Listing share',
+      value: `${listingShare}%`,
+      description: 'How much of visible inventory is currently fixed-price supply.',
+    },
+    {
+      title: 'Auction share',
+      value: `${auctionShare}%`,
+      description: 'How much of visible inventory is currently timed-market supply.',
+    },
+    {
+      title: 'Sales per inventory',
+      value: salesPerInventory,
+      description: 'A simple turnover proxy using total sales divided by active inventory.',
+    },
+  ];
+
+  const shellRoutes = [
+    {
+      title: 'Open profile',
+      description: 'Return to the wallet-linked account surface from analytics.',
+      href: address ? `/profile/${address}` : '/profile',
+      icon: <User className="h-4 w-4" />,
+    },
+    {
+      title: 'Open rewards',
+      description: 'Move from market context into loyalty and wallet-linked progression.',
+      href: '/rewards',
+      icon: <Trophy className="h-4 w-4" />,
+    },
+    {
+      title: 'Open studio',
+      description: 'Jump from analytics into creator workflows and collection routes.',
+      href: '/studio',
+      icon: <Sparkles className="h-4 w-4" />,
+    },
+    {
+      title: 'Token markets',
+      description: 'Go straight from analytics into launched-token discovery.',
+      href: '/explore?tab=tokens',
+      icon: <Wallet className="h-4 w-4" />,
+    },
+  ];
+
   const pulseRows = [
     {
       title: 'Marketplace depth',
-      description: 'Track active listings and rotating auction inventory across ARC.',
+      description: stats
+        ? `${formatNumber(totalInventory)} active inventory slots are live across listings and auctions.`
+        : 'Track active listings and rotating auction inventory across ARC.',
       icon: <Package className="h-4 w-4" />,
     },
     {
       title: 'Launchpad momentum',
-      description: 'Use the stats surface as the analytics layer behind token discovery and launches.',
+      description: stats
+        ? `${formatNumber(stats.totalSales)} total sales currently underpin the ARC analytics surface.`
+        : 'Use the stats surface as the analytics layer behind token discovery and launches.',
       icon: <Rocket className="h-4 w-4" />,
     },
     {
       title: 'Wallet-native activity',
-      description: 'Keep market review, account context, and discovery behavior aligned in one shell.',
+      description: isConnected
+        ? `Analytics is currently anchored to ${shortenAddress(address)} as the active shell identity.`
+        : 'Keep market review, account context, and discovery behavior aligned in one shell.',
       icon: <Wallet className="h-4 w-4" />,
     },
   ];
@@ -122,7 +199,7 @@ export default function StatsPage() {
     : isLoading
       ? 'ARC is refreshing marketplace totals and activity signals for this analytics view.'
       : stats
-        ? 'This surface is now aligned with discovery, launch, and token-market navigation so users can move from analytics into action without losing context.'
+        ? 'This surface now pushes beyond shell polish by adding computed market-composition signals and stronger continuity into profile, rewards, studio, and token-market routes.'
         : 'Stats will appear here once marketplace data is available.';
 
   return (
@@ -138,7 +215,7 @@ export default function StatsPage() {
               Review marketplace, launchpad, and trading momentum in one ARC stats surface.
             </h1>
             <p className="mt-4 max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
-              The stats layer gives ARC users a cleaner read on volume, sales activity, listings, and auction depth without leaving the core shell.
+              The stats layer now does more than present totals, adding computed market-shape signals while keeping users inside the connected ARC shell.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -219,6 +296,37 @@ export default function StatsPage() {
           </div>
         </div>
 
+        <div className="mb-8 rounded-3xl border border-neutral-200/60 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:p-6">
+          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-blue-900 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div className="mb-1 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
+                  <Sparkles className="h-4 w-4" />
+                  Shell continuity
+                </div>
+                <div className="text-lg font-semibold text-neutral-900 dark:text-white">
+                  {isConnected ? 'Wallet-linked analytics route' : 'Analytics route ready'}
+                </div>
+                <p className="mt-1 max-w-3xl text-sm text-current">
+                  {isConnected
+                    ? `Analytics is currently aligned with ${shortenAddress(address)} so users can move from stats into profile, rewards, studio, and token markets without losing shell context.`
+                    : 'Analytics is now wired as a stronger shell destination, with route continuity into profile, rewards, studio, token markets, and launch flows.'}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Link href={address ? `/profile/${address}` : '/profile'} className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-white dark:text-black">
+                  <User className="h-4 w-4" />
+                  Profile
+                </Link>
+                <Link href="/rewards" className="inline-flex items-center gap-2 rounded-2xl border border-current/10 bg-white/70 px-4 py-2.5 text-sm font-semibold text-current dark:bg-white/5">
+                  <Trophy className="h-4 w-4" />
+                  Rewards
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-neutral-200/60 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
           <div>
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Time range</h2>
@@ -245,20 +353,48 @@ export default function StatsPage() {
           ))}
         </div>
 
+        <section className="mt-8 rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+          <div className="mb-4">
+            <h3 className="text-2xl font-semibold text-neutral-900 dark:text-white">Computed signals</h3>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">These derived reads turn the stats route into a more decision-useful analytics destination.</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {computedSignals.map((signal) => (
+              <InsightCard key={signal.title} title={signal.title} value={signal.value} description={signal.description} />
+            ))}
+          </div>
+        </section>
+
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h3 className="text-2xl font-semibold text-neutral-900 dark:text-white">Volume view</h3>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">A stronger chart layer can plug into this upgraded analytics surface next.</p>
+                <h3 className="text-2xl font-semibold text-neutral-900 dark:text-white">Market interpretation</h3>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">A clearer computed read on what today’s ARC market shape suggests.</p>
               </div>
               <Activity className="h-5 w-5 text-neutral-400" />
             </div>
-            <div className="flex h-56 items-center justify-center rounded-3xl border border-dashed border-neutral-300 bg-neutral-50 text-center dark:border-white/10 dark:bg-slate-950/60">
-              <div>
-                <p className="text-base font-medium text-neutral-900 dark:text-white">Chart module ready for upgrade</p>
-                <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">The shell is now in place for richer ARC volume and trading visualizations.</p>
-              </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <InsightCard
+                title="Inventory mode"
+                value={marketMode}
+                description="This reads the current balance between fixed-price listings and timed auctions."
+              />
+              <InsightCard
+                title="Trade depth"
+                value={stats ? formatNumber(stats.totalSales) : '0'}
+                description="Sales count remains the simplest live proxy for how much real usage has already flowed through the market."
+              />
+              <InsightCard
+                title="Listing inventory"
+                value={stats ? formatNumber(stats.activeListings) : '0'}
+                description="Fixed-price depth now feeds directly into the computed composition signal."
+              />
+              <InsightCard
+                title="Auction inventory"
+                value={stats ? formatNumber(stats.activeAuctions) : '0'}
+                description="Timed inventory gives a second view on urgency and discovery dynamics."
+              />
             </div>
           </section>
 
@@ -271,10 +407,9 @@ export default function StatsPage() {
               <Sparkles className="h-5 w-5 text-neutral-400" />
             </div>
             <div className="space-y-3">
-              <RouteCard title="Open explore" description="Return to marketplace inventory and launched token discovery." href="/explore" icon={<Search className="h-4 w-4" />} />
-              <RouteCard title="Token markets" description="Jump from analytics into launched-token discovery and live market routes." href="/explore?tab=tokens" icon={<Wallet className="h-4 w-4" />} />
-              <RouteCard title="Open rewards" description="Jump into loyalty progression, quests, and leaderboard surfaces." href="/rewards" icon={<Users className="h-4 w-4" />} />
-              <RouteCard title="Launch a token" description="Move from analytics into the ARC launch flow." href="/launch" icon={<Rocket className="h-4 w-4" />} />
+              {shellRoutes.map((route) => (
+                <RouteCard key={route.title} title={route.title} description={route.description} href={route.href} icon={route.icon} />
+              ))}
             </div>
           </section>
         </div>
@@ -282,25 +417,27 @@ export default function StatsPage() {
         <section className="mt-8 rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h3 className="text-2xl font-semibold text-neutral-900 dark:text-white">Recent activity</h3>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">A cleaner placeholder state that matches the upgraded ARC shell.</p>
+              <h3 className="text-2xl font-semibold text-neutral-900 dark:text-white">Actionable reads</h3>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">Short summaries that turn live totals into immediate product interpretation.</p>
             </div>
             <Users className="h-5 w-5 text-neutral-400" />
           </div>
           <div className="grid gap-3 lg:grid-cols-3">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold text-neutral-900 dark:text-white">Activity slot {item}</div>
-                    <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Recent fills, listings, and account-level movement can surface here.</div>
-                  </div>
-                  <span className="rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-500 dark:border-white/10 dark:bg-slate-900 dark:text-neutral-400">
-                    Soon
-                  </span>
-                </div>
-              </div>
-            ))}
+            <ActionReadCard
+              title="Liquidity posture"
+              description={stats ? `${formatCompactUSDC(stats.totalVolume)} in total volume is currently visible across ARC marketplace activity.` : 'Waiting on live volume.'}
+              badge="Live"
+            />
+            <ActionReadCard
+              title="Inventory balance"
+              description={stats ? `${listingShare}% of active inventory is fixed-price while ${auctionShare}% is auction-driven.` : 'Waiting on inventory mix.'}
+              badge="Computed"
+            />
+            <ActionReadCard
+              title="Route priority"
+              description={isConnected ? 'Profile, rewards, studio, and token markets are now the best follow-on routes from analytics for the connected shell.' : 'Explore, launch, rewards, and token markets remain the best follow-on routes from analytics.'}
+              badge="Shell"
+            />
           </div>
         </section>
       </div>
@@ -342,6 +479,16 @@ function StatCard({
   );
 }
 
+function InsightCard({ title, value, description }: { title: string; value: string; description: string }) {
+  return (
+    <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-5 dark:border-white/10 dark:bg-slate-950/60">
+      <div className="text-sm text-neutral-500 dark:text-neutral-400">{title}</div>
+      <div className="mt-1 text-3xl font-bold text-neutral-900 dark:text-white">{value}</div>
+      <div className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">{description}</div>
+    </div>
+  );
+}
+
 function RouteCard({ title, description, href, icon }: { title: string; description: string; href: string; icon: JSX.Element }) {
   return (
     <Link href={href} className="block rounded-2xl border border-neutral-200 bg-neutral-50 p-4 transition hover:border-primary-400 hover:bg-white dark:border-white/10 dark:bg-slate-950/60">
@@ -356,5 +503,21 @@ function RouteCard({ title, description, href, icon }: { title: string; descript
         <ArrowRight className="mt-1 h-4 w-4 text-neutral-400" />
       </div>
     </Link>
+  );
+}
+
+function ActionReadCard({ title, description, badge }: { title: string; description: string; badge: string }) {
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-semibold text-neutral-900 dark:text-white">{title}</div>
+          <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</div>
+        </div>
+        <span className="rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-500 dark:border-white/10 dark:bg-slate-900 dark:text-neutral-400">
+          {badge}
+        </span>
+      </div>
+    </div>
   );
 }
