@@ -9,7 +9,6 @@ import { SessionProvider } from 'next-auth/react';
 import { config } from '@/lib/wagmi';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { BottomNavigation } from '@/components/layout/BottomNavigation';
 import { ToastProvider } from '@/hooks/useToast';
 import { CircleWalletProvider } from '@/hooks/useCircleWallet';
 import CommandPalette from '@/components/navigation/CommandPalette';
@@ -41,14 +40,16 @@ export default function RootLayout({
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#6366f1" />
-        <meta name="description" content="Premier NFT marketplace on Circle Arc blockchain with instant USDC settlements" />
+        <meta
+          name="description"
+          content="ARC brings marketplace discovery, token launches, and live token-market activity into one wallet-native platform."
+        />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
-        <title>ArcMarket - NFT Marketplace</title>
+        <title>ARC | Marketplace, Launchpad, and Token Discovery</title>
       </head>
       <body>
-        {/* ===== ANIMATED BACKGROUND — fixed layer, always behind all content ===== */}
         <div
           id="animated-bg"
           aria-hidden="true"
@@ -75,7 +76,6 @@ export default function RootLayout({
                             <main id="main-content" className="relative pb-24">
                               {children}
                             </main>
-                            <BottomNavigation />
                             <Footer />
                             <InstallPrompt />
                             <WebVitalsReporter />

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import {
+  BarChart3,
   Bell,
   ChevronDown,
   CircleDollarSign,
@@ -25,7 +26,7 @@ import {
 import { useCircleWallet } from '@/hooks/useCircleWallet';
 import { WalletManagementModal } from '@/components/circle/WalletManagementModal';
 import { CreateWalletModal } from '@/components/circle/CreateWalletModal';
-import { truncateAddress } from '@/lib/utils';
+import { truncateAddress, cn } from '@/lib/utils';
 import { useCommandPalette } from '@/hooks/useCommandPalette';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -37,37 +38,56 @@ const primaryNav = [
 
 const exploreSections = [
   {
-    title: 'Collections',
+    title: 'Marketplace',
     links: [
-      { label: 'Trending', href: '/explore?sort=trending' },
-      { label: 'New & Notable', href: '/explore?filter=new' },
-      { label: 'Verified', href: '/explore?filter=verified' },
+      { label: 'All inventory', href: '/explore?tab=all' },
+      { label: 'Listings', href: '/explore?tab=listings' },
+      { label: 'Auctions', href: '/explore?tab=auctions' },
     ],
   },
   {
-    title: 'Categories',
+    title: 'Launchpad',
     links: [
-      { label: 'Art', href: '/explore?category=art' },
-      { label: 'Gaming', href: '/explore?category=gaming' },
-      { label: 'Music', href: '/explore?category=music' },
-      { label: 'Photography', href: '/explore?category=photography' },
+      { label: 'Token markets', href: '/explore?tab=tokens' },
+      { label: 'Launch a token', href: '/launch' },
+      { label: 'Open stats', href: '/stats' },
     ],
   },
   {
-    title: 'Token Launchpad',
+    title: 'Account',
     links: [
-      { label: 'Browse Tokens', href: '/explore?tab=tokens' },
-      { label: 'Launch a Token', href: '/launch' },
+      { label: 'Studio', href: '/studio' },
+      { label: 'Rewards', href: '/rewards' },
+      { label: 'Profile', href: '/profile' },
     ],
   },
+];
+
+const shellQuickRoutes = [
+  { label: 'Explore', href: '/explore', icon: <Compass className="h-3.5 w-3.5" /> },
+  { label: 'Token markets', href: '/explore?tab=tokens', icon: <Wallet className="h-3.5 w-3.5" /> },
+  { label: 'Launch', href: '/launch', icon: <Rocket className="h-3.5 w-3.5" /> },
+  { label: 'Stats', href: '/stats', icon: <BarChart3 className="h-3.5 w-3.5" /> },
+  { label: 'Rewards', href: '/rewards', icon: <Trophy className="h-3.5 w-3.5" /> },
 ];
 
 const mobileNav = [
   { label: 'Home', href: '/', icon: <Compass className="h-5 w-5" /> },
   { label: 'Explore', href: '/explore', icon: <Search className="h-5 w-5" /> },
   { label: 'Launch', href: '/launch', icon: <Rocket className="h-5 w-5" /> },
-  { label: 'Create', href: '/studio', icon: <Sparkles className="h-5 w-5" /> },
+  { label: 'Studio', href: '/studio', icon: <Sparkles className="h-5 w-5" /> },
   { label: 'Profile', href: '/profile', icon: <User className="h-5 w-5" /> },
+];
+
+const mobileMenuLinks = [
+  { label: 'Home', href: '/' },
+  { label: 'Explore', href: '/explore' },
+  { label: 'Launch', href: '/launch' },
+  { label: 'Studio', href: '/studio' },
+  { label: 'Stats', href: '/stats' },
+  { label: 'Rewards', href: '/rewards' },
+  { label: 'Profile', href: '/profile' },
+  { label: 'Settings', href: '/settings' },
 ];
 
 export default function Navbar() {
@@ -85,12 +105,53 @@ export default function Navbar() {
 
   const loyaltyTier = useMemo(() => {
     if (!isConnected) return null;
-    // Future: fetch from loyalty API when available
     return null;
   }, [isConnected]);
   const cartCount = 0;
 
-  // Close dropdowns when clicking outside
+  const shellContext = useMemo(() => {
+    if (pathname.startsWith('/launch')) {
+      return {
+        title: 'Launch flow active',
+        description: 'Create and route new token launches into live ARC market pages.',
+      };
+    }
+    if (pathname.startsWith('/stats')) {
+      return {
+        title: 'Analytics active',
+        description: 'Review ARC performance signals, then route back into discovery or launches.',
+      };
+    }
+    if (pathname.startsWith('/rewards')) {
+      return {
+        title: 'Rewards active',
+        description: 'Track loyalty, quests, and status while staying connected to the core ARC shell.',
+      };
+    }
+    if (pathname.startsWith('/explore')) {
+      return {
+        title: 'Discovery active',
+        description: 'Move from marketplace inventory into token markets, launches, and analytics.',
+      };
+    }
+    if (pathname.startsWith('/token/')) {
+      return {
+        title: 'Token market active',
+        description: 'Trade launched tokens with quicker return paths into discovery and shell routes.',
+      };
+    }
+    if (pathname.startsWith('/studio')) {
+      return {
+        title: 'Studio active',
+        description: 'Build inside ARC with the same connected shell used across discovery and markets.',
+      };
+    }
+    return {
+      title: 'ARC shell active',
+      description: 'One navigation layer for discovery, launches, trading, analytics, and rewards.',
+    };
+  }, [pathname]);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (walletMenuRef.current && !walletMenuRef.current.contains(event.target as Node)) {
@@ -125,26 +186,27 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-neutral-200/60 bg-white/95 backdrop-blur-xl dark:border-neutral-800 dark:bg-background-dark/95">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-6">
-        {/* Left: Logo + Navigation */}
         <div className="flex items-center gap-10">
-          {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-secondary-500 text-white shadow-lg shadow-primary-500/30">
               <Hexagon className="h-4 w-4 fill-white" />
             </div>
-            <span className="text-lg font-bold text-neutral-900 dark:text-white">ArcMarket</span>
+            <div>
+              <span className="text-lg font-bold text-neutral-900 dark:text-white">ARC</span>
+              <div className="hidden text-[11px] font-medium uppercase tracking-[0.18em] text-neutral-400 lg:block">
+                Connected shell
+              </div>
+            </div>
           </Link>
 
-          {/* Primary Navigation */}
           <nav className="hidden lg:flex items-center gap-1">
-            {/* Explore Dropdown */}
             <div
               className="relative"
               onMouseEnter={() => setExploreOpen(true)}
               onMouseLeave={() => setExploreOpen(false)}
             >
               <button className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
-                exploreOpen
+                exploreOpen || pathname.startsWith('/explore')
                   ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white'
                   : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
               }`}>
@@ -152,7 +214,6 @@ export default function Navbar() {
                 <ChevronDown className={`h-4 w-4 transition-transform ${exploreOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Explore Dropdown Menu */}
               <div
                 className={`absolute left-0 top-full pt-2 transition-all duration-150 ${
                   exploreOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
@@ -160,7 +221,7 @@ export default function Navbar() {
               >
                 <div className="w-72 rounded-xl border border-neutral-200 bg-white p-3 shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
                   {exploreSections.map((section, idx) => (
-                    <div key={section.title} className={idx > 0 ? 'mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-800' : ''}>
+                    <div key={section.title} className={idx > 0 ? 'mt-3 border-t border-neutral-100 pt-3 dark:border-neutral-800' : ''}>
                       <p className="px-2 text-xs font-medium uppercase tracking-wide text-neutral-400">{section.title}</p>
                       <div className="mt-1.5 space-y-0.5">
                         {section.links.map((link) => (
@@ -179,7 +240,6 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Other Nav Items */}
             {primaryNav.filter((item) => item.label !== 'Explore').map((item) => (
               <Link
                 key={item.label}
@@ -195,76 +255,69 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-3">
             <Link
               href="/launch"
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-purple-500/50 text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 text-sm font-medium transition-all"
+              className="flex items-center gap-1.5 rounded-full border border-purple-500/50 bg-purple-500/10 px-4 py-1.5 text-sm font-medium text-purple-400 transition-all hover:bg-purple-500/20"
             >
               <Rocket className="h-3.5 w-3.5" /> Launch
             </Link>
             <Link
               href="/studio"
-              className="px-5 py-1.5 rounded-full bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium shadow-lg shadow-primary-500/25 transition-all"
+              className="flex items-center gap-1.5 rounded-full bg-primary-500 px-5 py-1.5 text-sm font-medium text-white shadow-lg shadow-primary-500/25 transition-all hover:bg-primary-600"
             >
-              Create
+              <Sparkles className="h-3.5 w-3.5" /> Studio
             </Link>
           </div>
         </div>
 
-        {/* Right: Actions */}
         <div className="flex items-center gap-2">
-          {/* Inline Search Input (lg+) */}
           <div className="hidden lg:flex items-center relative">
             <Search className="absolute left-3 h-4 w-4 text-gray-400" />
             <input
               onClick={open}
               onFocus={open}
               readOnly
-              className="pl-10 pr-16 py-2 w-64 bg-gray-100 dark:bg-surface-dark rounded-full text-sm focus:ring-2 focus:ring-primary-500 placeholder-gray-500 dark:text-gray-200 cursor-pointer outline-none"
-              placeholder="Search collections..."
+              className="w-64 cursor-pointer rounded-full bg-gray-100 py-2 pl-10 pr-16 text-sm text-gray-700 outline-none placeholder-gray-500 focus:ring-2 focus:ring-primary-500 dark:bg-surface-dark dark:text-gray-200"
+              placeholder="Search ARC markets, collections, users..."
             />
-            <kbd className="absolute right-3 px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-xs text-gray-500 font-mono">⌘K</kbd>
+            <kbd className="absolute right-3 rounded border border-gray-300 px-1.5 py-0.5 font-mono text-xs text-gray-500 dark:border-gray-600">⌘K</kbd>
           </div>
 
-          {/* Mobile Search */}
           <button
             onClick={open}
-            className="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800 lg:hidden"
+            aria-label="Open search"
           >
             <Search className="h-5 w-5" />
           </button>
 
-          {/* Notification Bell with red dot */}
-          <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:text-primary-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800">
+          <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-primary-500 dark:text-neutral-400 dark:hover:bg-neutral-800" aria-label="Notifications">
             <Bell className="h-5 w-5" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full" />
+            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
           </button>
 
-          {/* Theme Toggle */}
           <ThemeToggle />
 
-          {/* Unified Wallet Button */}
           <div className="relative hidden lg:block" ref={walletMenuRef}>
             <button
               onClick={() => setWalletMenuOpen(!walletMenuOpen)}
               className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 isWalletConnected
-                  ? 'bg-primary-500 text-white hover:bg-primary-600 shadow-lg shadow-primary-500/25'
-                  : 'border border-gray-300 dark:border-gray-700 hover:border-primary-500 bg-white dark:bg-surface-dark'
+                  ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25 hover:bg-primary-600'
+                  : 'border border-gray-300 bg-white hover:border-primary-500 dark:border-gray-700 dark:bg-surface-dark'
               }`}
             >
               <Wallet className="h-4 w-4" />
               {isWalletConnected ? truncateAddress(activeWallet.address as `0x${string}`) : 'Connect Wallet'}
             </button>
 
-            {/* Wallet Dropdown */}
             {walletMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-neutral-200 bg-white p-2 shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
                 {isWalletConnected ? (
                   <>
-                    <div className="px-3 py-2 border-b border-neutral-100 dark:border-neutral-800">
-                      <p className="text-xs text-neutral-400 uppercase tracking-wide">Connected</p>
+                    <div className="border-b border-neutral-100 px-3 py-2 dark:border-neutral-800">
+                      <p className="text-xs uppercase tracking-wide text-neutral-400">Connected</p>
                       <p className="mt-1 text-sm font-medium text-neutral-900 dark:text-white">
                         {truncateAddress(activeWallet.address as `0x${string}`)}
                       </p>
@@ -300,12 +353,11 @@ export default function Navbar() {
                       <div className="absolute inset-x-0 top-0 flex items-center justify-center">
                         <span className="bg-white px-2 text-xs text-neutral-400 dark:bg-neutral-900">or</span>
                       </div>
-                      <div className="border-t border-neutral-100 dark:border-neutral-800 my-2"></div>
+                      <div className="my-2 border-t border-neutral-100 dark:border-neutral-800"></div>
                     </div>
                     <div className="[&>div]:w-full [&_button]:w-full [&_button]:justify-center">
                       <ConnectButton.Custom>
-                        {({ account, chain, openConnectModal, mounted }) => {
-                          const _connected = mounted && account && chain;
+                        {({ openConnectModal }) => {
                           return (
                             <button
                               onClick={openConnectModal}
@@ -324,19 +376,16 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Profile Menu (contains secondary items: XP, Cart, Settings) */}
           <div className="relative hidden lg:block" ref={profileMenuRef}>
             <button
               onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-              className="w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 ring-2 ring-transparent hover:ring-primary-500 transition-all"
+              className="h-8 w-8 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 ring-2 ring-transparent transition-all hover:ring-primary-500"
               aria-label="Profile"
             />
 
-            {/* Profile Dropdown */}
             {profileMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-neutral-200 bg-white p-2 shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
-                {/* XP Progress */}
-                <div className="px-3 py-2 border-b border-neutral-100 dark:border-neutral-800">
+                <div className="border-b border-neutral-100 px-3 py-2 dark:border-neutral-800">
                   {loyaltyTier ? (
                     <>
                       <div className="flex items-center justify-between">
@@ -362,7 +411,6 @@ export default function Navbar() {
                   )}
                 </div>
 
-                {/* Menu Items */}
                 <div className="mt-2 space-y-0.5">
                   <Link
                     href="/profile"
@@ -408,18 +456,52 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800 lg:hidden"
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white/95 backdrop-blur-xl shadow-lg dark:border-neutral-800 dark:bg-background-dark/95 lg:hidden safe-area-inset-bottom">
+      <div className="border-t border-neutral-200/60 bg-white/70 dark:border-neutral-800 dark:bg-background-dark/70">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 lg:px-6 lg:py-2.5">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">Current route</div>
+              <div className="text-sm font-semibold text-neutral-900 dark:text-white">{shellContext.title}</div>
+              <div className="text-sm text-neutral-500 dark:text-neutral-400">{shellContext.description}</div>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0">
+              {shellQuickRoutes.map((route) => {
+                const isActive = route.href === '/explore?tab=tokens'
+                  ? pathname.startsWith('/explore')
+                  : pathname === route.href || pathname.startsWith(route.href + '/');
+
+                return (
+                  <Link
+                    key={route.label}
+                    href={route.href}
+                    className={cn(
+                      'inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-2 text-xs font-semibold transition-colors',
+                      isActive
+                        ? 'border-primary-500/20 bg-primary-500/10 text-primary-600 dark:text-primary-300'
+                        : 'border-neutral-200 bg-white text-neutral-600 hover:text-neutral-900 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-300 dark:hover:text-white'
+                    )}
+                  >
+                    {route.icon}
+                    {route.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white/95 shadow-lg backdrop-blur-xl dark:border-neutral-800 dark:bg-background-dark/95 lg:hidden safe-area-inset-bottom">
         <div className="grid grid-cols-5">
           {mobileNav.map((item) => (
             <Link
@@ -438,7 +520,6 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile Slide-out Menu */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
@@ -446,22 +527,29 @@ export default function Navbar() {
             onClick={() => setMobileMenuOpen(false)}
           />
           <div className="absolute right-0 top-0 h-full w-80 overflow-y-auto bg-white/95 shadow-2xl backdrop-blur-xl dark:bg-background-dark/95">
-            <div className="p-4 space-y-6">
+            <div className="space-y-6 p-4">
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="ml-auto flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                aria-label="Close menu"
               >
                 <X className="h-5 w-5" />
               </button>
 
+              <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
+                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">Current route</div>
+                <div className="mt-1 font-semibold text-neutral-900 dark:text-white">{shellContext.title}</div>
+                <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{shellContext.description}</div>
+              </div>
+
               <nav className="space-y-1">
-                {primaryNav.map((item) => (
+                {mobileMenuLinks.map((item) => (
                   <Link
                     key={item.label}
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`block rounded-lg px-4 py-3 text-base font-medium transition-colors ${
-                      pathname.startsWith(item.href)
+                      pathname === item.href || pathname.startsWith(item.href + '/')
                         ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white'
                         : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
                     }`}
@@ -470,6 +558,23 @@ export default function Navbar() {
                   </Link>
                 ))}
               </nav>
+
+              <div>
+                <p className="px-4 text-xs font-medium uppercase tracking-wide text-neutral-400">Quick routes</p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {shellQuickRoutes.map((route) => (
+                    <Link
+                      key={route.label}
+                      href={route.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-3 text-sm font-medium text-neutral-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-200"
+                    >
+                      {route.icon}
+                      {route.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
 
               <div className="space-y-4">
                 {exploreSections.map((section) => (
@@ -497,7 +602,6 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* Modals */}
       <WalletManagementModal isOpen={showWalletModal} onClose={() => setShowWalletModal(false)} />
       <CreateWalletModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onSuccess={() => setShowCreateModal(false)} />
     </header>
