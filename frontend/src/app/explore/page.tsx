@@ -12,8 +12,10 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
   ArrowRight,
+  CheckCircle2,
   Flame,
   Gavel,
+  Loader2,
   Package,
   Radio,
   Rocket,
@@ -178,6 +180,7 @@ function ExploreContent() {
   });
 
   const totalPages = Math.ceil((filteredNFTs.length || ITEMS_PER_PAGE) / ITEMS_PER_PAGE);
+  const tokenMarketCount = launchedTokens.length;
 
   const activityRows = useMemo(() => {
     return listings.slice(0, 6).map((listing, index) => ({
@@ -187,6 +190,42 @@ function ExploreContent() {
       status: index % 2 === 0 ? 'Latest listing' : 'Watchlist pickup',
     }));
   }, [listings]);
+
+  const activeViewMeta = useMemo(() => {
+    if (viewMode === 'tokens') {
+      return {
+        title: 'Token discovery active',
+        description: tokensLoading
+          ? 'ARC is loading launched-token markets so users can jump from discovery into live trading.'
+          : tokenMarketCount > 0
+            ? 'Users are in launchpad mode now, with direct access to launched-token routes and live market entry.'
+            : 'No launched-token markets are indexed yet. The launch flow is the fastest way to seed this surface.',
+        tone: tokensLoading ? 'blue' : tokenMarketCount > 0 ? 'green' : 'amber',
+      } as const;
+    }
+
+    if (viewMode === 'auctions') {
+      return {
+        title: 'Auction inventory active',
+        description: 'This view narrows the ARC discovery layer to time-sensitive auction inventory.',
+        tone: 'neutral',
+      } as const;
+    }
+
+    if (viewMode === 'listings') {
+      return {
+        title: 'Listings inventory active',
+        description: 'This view keeps users focused on fixed-price marketplace inventory with cleaner search and sort control.',
+        tone: 'neutral',
+      } as const;
+    }
+
+    return {
+      title: 'Unified discovery active',
+      description: 'This is the broadest ARC discovery surface, combining listings and auctions before users narrow into tokens.',
+      tone: 'neutral',
+    } as const;
+  }, [tokenMarketCount, tokensLoading, viewMode]);
 
   if (isLoading && !listings.length && !auctions.length && viewMode !== 'tokens') {
     return <LoadingPage label="Loading NFTs..." />;
@@ -245,10 +284,41 @@ function ExploreContent() {
           <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-slate-900/80">
             <div className="text-sm font-semibold text-neutral-900 dark:text-white">Launched token markets</div>
             <div className="mt-1 text-2xl font-bold text-neutral-900 dark:text-white">
-              {tokensLoading ? 'Loading...' : launchedTokens.length.toLocaleString()}
+              {tokensLoading ? 'Loading...' : tokenMarketCount.toLocaleString()}
             </div>
             <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
               Token discovery now sits alongside ARC marketplace inventory as a first-class experience.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-8 rounded-3xl border border-neutral-200/60 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:p-6">
+        <div className={activeViewMeta.tone === 'green'
+          ? 'rounded-2xl border border-green-200 bg-green-50 p-4 text-green-800 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300'
+          : activeViewMeta.tone === 'blue'
+            ? 'rounded-2xl border border-blue-200 bg-blue-50 p-4 text-blue-800 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300'
+            : activeViewMeta.tone === 'amber'
+              ? 'rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200'
+              : 'rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-neutral-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-300'}>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="mb-1 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
+                {activeViewMeta.tone === 'green' ? <CheckCircle2 className="h-4 w-4" /> : activeViewMeta.tone === 'blue' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Flame className="h-4 w-4" />}
+                Discovery state
+              </div>
+              <div className="text-lg font-semibold text-neutral-900 dark:text-white">{activeViewMeta.title}</div>
+              <p className="mt-1 max-w-3xl text-sm text-current">{activeViewMeta.description}</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/explore?tab=tokens" className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-white dark:text-black">
+                <Wallet className="h-4 w-4" />
+                Token mode
+              </Link>
+              <Link href="/launch" className="inline-flex items-center gap-2 rounded-2xl border border-current/10 bg-white/70 px-4 py-2.5 text-sm font-semibold text-current dark:bg-white/5">
+                <Rocket className="h-4 w-4" />
+                Launch flow
+              </Link>
             </div>
           </div>
         </div>
@@ -303,7 +373,7 @@ function ExploreContent() {
               <ModePill active={viewMode === 'all'} onClick={() => { setViewMode('all'); setCurrentPage(1); }} label="All" count={allNFTs.length} />
               <ModePill active={viewMode === 'listings'} onClick={() => { setViewMode('listings'); setCurrentPage(1); }} label="Listings" count={listings.length} />
               <ModePill active={viewMode === 'auctions'} onClick={() => { setViewMode('auctions'); setCurrentPage(1); }} label="Auctions" count={auctions.length} />
-              <ModePill active={viewMode === 'tokens'} onClick={() => { setViewMode('tokens'); setCurrentPage(1); }} label="Tokens" count={launchedTokens.length} />
+              <ModePill active={viewMode === 'tokens'} onClick={() => { setViewMode('tokens'); setCurrentPage(1); }} label="Tokens" count={tokenMarketCount} />
             </div>
 
             {showFilters && (
@@ -331,8 +401,61 @@ function ExploreContent() {
               </span>
             </div>
 
+            {viewMode === 'tokens' && (
+              <div className="mb-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div className="text-sm font-semibold text-neutral-900 dark:text-white">Token route handoff</div>
+                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                      Use token mode to move directly from discovery into trader-facing market pages, or launch a new token if this surface is still empty.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <Link href="/launch" className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+                      <Rocket className="h-4 w-4" />
+                      Launch now
+                    </Link>
+                    <Link href="/stats" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-900 dark:text-white">
+                      Stats
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {viewMode === 'tokens' ? (
-              <TokenGrid tokens={launchedTokens} isLoading={tokensLoading} />
+              tokensLoading ? (
+                <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 text-sm text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading launched-token markets
+                  </div>
+                  <p className="mt-2">ARC is resolving the latest token routes so users can jump directly into live market pages.</p>
+                </div>
+              ) : tokenMarketCount === 0 ? (
+                <div>
+                  <EmptyState
+                    title="No launched token markets yet"
+                    description="Launch the first token to seed this discovery surface, or return to marketplace inventory while token routes index."
+                  />
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <Link href="/launch" className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700">
+                      <Rocket className="h-4 w-4" />
+                      Launch a token
+                    </Link>
+                    <button
+                      onClick={() => setViewMode('all')}
+                      className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3 font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white"
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                      Browse inventory
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <TokenGrid tokens={launchedTokens} isLoading={tokensLoading} />
+              )
             ) : filteredNFTs.length === 0 && !isLoading ? (
               <EmptyState
                 title="Nothing found"
