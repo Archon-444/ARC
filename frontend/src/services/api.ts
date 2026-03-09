@@ -408,4 +408,14 @@ class API {
 
 export const api = new API();
 export { API };
+
+/**
+ * Raw HTTP client for generic endpoint calls (e.g., /tokens, /nfts).
+ * Used by useBackendAPI.ts hooks that call endpoints not covered by the
+ * structured service modules (api.search, api.analytics, etc.).
+ */
+export const apiClient = new HTTPClient(
+  process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'
+);
+
 export type * from './api';

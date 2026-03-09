@@ -1,10 +1,17 @@
 /**
  * React Query Hooks for Backend API Integration
  * Provides custom hooks for all Express backend endpoints
+ *
+ * NOTE: These hooks use generic backend endpoints (e.g., /tokens, /nfts, /activities)
+ * via the HTTPClient's get/post methods. For the more structured service module hooks
+ * (api.search.*, api.analytics.*, api.offers.*, etc.), see:
+ * - useAnalytics.ts
+ * - usePriceHistory.ts
+ * - useOffers.ts
  */
 
 import { useQuery, useMutation, useQueryClient, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
-import apiClient from '../services/api';
+import { apiClient } from '@/services/api';
 
 // Types for API responses
 interface Token {
