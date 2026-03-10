@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Hexagon, ArrowUpRight, Rocket, Search, Sparkles, ShieldCheck, BarChart3, Trophy, User, Wallet, Layers3 } from 'lucide-react';
+import { Hexagon, ArrowUpRight, Rocket, Search, Sparkles, ShieldCheck, BarChart3, Trophy, User, Wallet, Layers3, FileText, Shield, Info, Mail } from 'lucide-react';
 
 const footerSections = [
   {
@@ -29,6 +29,15 @@ const footerSections = [
       { label: 'Settings', href: '/settings', icon: ShieldCheck },
       { label: 'Connect wallet', href: '/wallet/connect', icon: Wallet },
       { label: 'Launchpad', href: '/launch', icon: Rocket },
+    ],
+  },
+  {
+    title: 'Legal & company',
+    links: [
+      { label: 'Terms of Service', href: '/terms', icon: FileText },
+      { label: 'Privacy Policy', href: '/privacy', icon: Shield },
+      { label: 'About', href: '/about', icon: Info },
+      { label: 'Contact', href: '/contact', icon: Mail },
     ],
   },
 ];
@@ -77,7 +86,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr_0.85fr_0.85fr]">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.15fr_0.7fr_0.7fr_0.7fr_0.7fr]">
           <div className="max-w-md">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 text-white shadow-lg shadow-primary-500/25">
@@ -145,15 +154,8 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="mx-auto mt-10 flex max-w-7xl flex-col gap-3 border-t border-gray-200/70 px-4 pt-6 text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-        <div>© {new Date().getFullYear()} ARC. Built for marketplace discovery, token launches, live token markets, analytics, and wallet-native progression workflows.</div>
-        <div className="flex flex-wrap gap-4">
-          <Link href="/explore" className="transition-colors hover:text-primary-500">Explore</Link>
-          <Link href="/explore?tab=tokens" className="transition-colors hover:text-primary-500">Token markets</Link>
-          <Link href="/launch" className="transition-colors hover:text-primary-500">Launchpad</Link>
-          <Link href="/stats" className="transition-colors hover:text-primary-500">Stats</Link>
-          <Link href="/rewards" className="transition-colors hover:text-primary-500">Rewards</Link>
-        </div>
+      <div className="mx-auto mt-10 max-w-7xl border-t border-gray-200/70 px-4 pt-6 text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400 sm:px-6 lg:px-8">
+        © {new Date().getFullYear()} ARC. Built for marketplace discovery, token launches, live token markets, analytics, and wallet-native progression workflows.
       </div>
     </footer>
   );
