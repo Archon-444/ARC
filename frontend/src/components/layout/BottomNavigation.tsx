@@ -63,7 +63,7 @@ export function BottomNavigation({
   return (
     <nav
       className={cn(
-        'fixed bottom-0 left-0 right-0 z-40 border-t border-neutral-200 bg-white/90 backdrop-blur-lg dark:border-neutral-800 dark:bg-neutral-900/90 md:hidden',
+        'fixed bottom-0 left-0 right-0 z-40 border-t border-neutral-200 bg-white/90 backdrop-blur-lg dark:border-neutral-800 dark:bg-neutral-900/90 md:hidden pb-safeAreaBottom',
         className
       )}
       role="navigation"
@@ -130,7 +130,7 @@ export function BottomNavigation({
         </ul>
       </div>
 
-      <div className="h-safe-area-inset-bottom bg-inherit" />
+      <div className="h-safeAreaBottom bg-inherit" aria-hidden="true" />
     </nav>
   );
 }

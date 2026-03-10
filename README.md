@@ -101,6 +101,10 @@ ArcMarket/
 
 See [DAPPS_ALIGNMENT_REVIEW.md](./DAPPS_ALIGNMENT_REVIEW.md) for the full alignment audit.
 
+### Frontend shell
+
+Shell and design-system documentation lives in `frontend/docs/`: [REGRESSION_CHECKLIST.md](./frontend/docs/REGRESSION_CHECKLIST.md) (mobile nav and shell checks), [DESIGN_TOKENS.md](./frontend/docs/DESIGN_TOKENS.md) (design tokens and Tailwind usage), [BASELINE_ALIGNMENT.md](./frontend/docs/BASELINE_ALIGNMENT.md) (baseline alignment).
+
 ## Getting Started
 
 ### Prerequisites

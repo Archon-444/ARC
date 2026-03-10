@@ -180,7 +180,7 @@ export default function ProfilePage() {
     },
     {
       title: 'Settings',
-      description: 'Manage your account utilities from the shared ARC shell.',
+      description: 'Manage account utilities, privacy, and appearance in one place.',
       href: '/settings',
       icon: <Settings className="h-4 w-4" />,
     },

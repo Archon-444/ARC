@@ -5,6 +5,7 @@
  */
 
 import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 import { formatDistanceToNow } from 'date-fns';
 import { Address, USDC_DECIMALS } from '@/types';
 
@@ -13,11 +14,11 @@ import { Address, USDC_DECIMALS } from '@/types';
 // ============================================
 
 /**
- * Combine class names with clsx
- * Note: For Tailwind class merging, consider using tailwind-merge
+ * Combine class names with clsx and merge Tailwind classes with tailwind-merge
+ * so that conflicting utilities (e.g. p-4 vs p-2) resolve correctly.
  */
 export function cn(...inputs: ClassValue[]) {
-  return clsx(inputs);
+  return twMerge(clsx(inputs));
 }
 
 // ============================================

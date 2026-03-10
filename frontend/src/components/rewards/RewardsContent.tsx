@@ -159,8 +159,8 @@ export default function RewardsContent() {
                 </div>
                 <p className="mt-1 max-w-3xl text-sm text-current">
                   {isConnected
-                    ? `Rewards is using ${shortenAddress(address)} as the active shell identity and translating wallet activity into progression signals across quests, badges, and status.`
-                    : 'This rewards surface stays visually aligned with the upgraded ARC shell and shows a preview-style progression layer until a wallet is connected.'}
+                    ? `Rewards is using ${shortenAddress(address)} and translating wallet activity into progression signals across quests, badges, and status.`
+                    : 'This rewards surface shows a preview-style progression layer until a wallet is connected.'}
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">

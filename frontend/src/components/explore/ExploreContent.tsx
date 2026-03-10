@@ -515,7 +515,7 @@ export default function ExploreContent() {
               <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Creator routes</h2>
               <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
                 <Sparkles className="h-3.5 w-3.5" />
-                Connected shell
+                Discovery
               </span>
             </div>
             <div className="space-y-3">
@@ -559,7 +559,7 @@ export default function ExploreContent() {
             <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
               <GuideRow title="Start with All" description="Use the combined view when you want the widest picture of what is active on ARC right now." />
               <GuideRow title="Switch into Tokens" description="Move into token mode when you want launchpad-native markets and trader-facing routes." />
-              <GuideRow title="Follow connected routes" description="Use launch, stats, rewards, and profile to keep discovery tied to the rest of the ARC shell." />
+              <GuideRow title="Follow connected routes" description="Use Launchpad, Stats, Rewards, and Profile to move between discovery, creation, and analytics." />
             </div>
           </section>
         </aside>

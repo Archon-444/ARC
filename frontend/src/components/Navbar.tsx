@@ -11,6 +11,7 @@ import {
   CircleDollarSign,
   Compass,
   Hexagon,
+  Home,
   LogOut,
   Menu,
   Rocket,
@@ -51,11 +52,11 @@ const exploreSections = [
 ];
 
 const mobileNav = [
+  { label: 'Home', href: '/', icon: <Home className="h-5 w-5" /> },
   { label: 'Explore', href: '/explore', icon: <Compass className="h-5 w-5" /> },
   { label: 'Launchpad', href: '/launch', icon: <Rocket className="h-5 w-5" /> },
   { label: 'Studio', href: '/studio', icon: <Sparkles className="h-5 w-5" /> },
   { label: 'Stats', href: '/stats', icon: <BarChart3 className="h-5 w-5" /> },
-  { label: 'Rewards', href: '/rewards', icon: <Trophy className="h-5 w-5" /> },
 ];
 
 const mobileUtilityLinks = [
@@ -83,6 +84,14 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const walletMenuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const exploreMenuRef = useRef<HTMLDivElement>(null);
+  const exploreLinkRefs = useRef<Array<HTMLAnchorElement | null>>([]);
+  const walletFirstActionRef = useRef<HTMLButtonElement | null>(null);
+  const profileFirstActionRef = useRef<HTMLAnchorElement | null>(null);
+  const exploreTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const walletTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const profileTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const lastOpenedMenuRef = useRef<'explore' | 'wallet' | 'profile' | null>(null);
 
   const loyaltyTier = useMemo(() => {
     if (!isConnected) return null;
@@ -106,7 +115,7 @@ export default function Navbar() {
     if (pathname.startsWith('/rewards')) {
       return {
         title: 'Rewards active',
-        description: 'Track loyalty and participation while staying connected to the ARC shell.',
+        description: 'Track loyalty and participation across launch, discovery, and rewards.',
       };
     }
     if (pathname.startsWith('/explore')) {
@@ -124,7 +133,7 @@ export default function Navbar() {
     if (pathname.startsWith('/studio')) {
       return {
         title: 'Studio active',
-        description: 'Build inside ARC with the same shell used across discovery and market routes.',
+        description: 'Create and manage your work; discovery and token markets stay one click away.',
       };
     }
     if (pathname.startsWith('/profile')) {
@@ -134,8 +143,8 @@ export default function Navbar() {
       };
     }
     return {
-      title: 'ARC shell active',
-      description: 'One primary navigation for core destinations, plus one utility area for account actions.',
+      title: 'Home',
+      description: 'Primary navigation for Explore, Launchpad, Studio, Stats, and Rewards; account actions in the utility area.',
     };
   }, [pathname]);
 
@@ -149,8 +158,40 @@ export default function Navbar() {
       }
     }
 
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setExploreOpen(false);
+        setWalletMenuOpen(false);
+        setProfileMenuOpen(false);
+        const last = lastOpenedMenuRef.current;
+        lastOpenedMenuRef.current = null;
+        requestAnimationFrame(() => {
+          if (last === 'explore') exploreTriggerRef.current?.focus();
+          if (last === 'wallet') walletTriggerRef.current?.focus();
+          if (last === 'profile') profileTriggerRef.current?.focus();
+        });
+      }
+    }
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleOpenWalletMenu() {
+      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+        setMobileMenuOpen(true);
+        return;
+      }
+      setWalletMenuOpen(true);
+    }
+
+    window.addEventListener('arc:open-wallet-menu', handleOpenWalletMenu as EventListener);
+    return () => window.removeEventListener('arc:open-wallet-menu', handleOpenWalletMenu as EventListener);
   }, []);
 
   const handleCircleWalletClick = async () => {
@@ -177,8 +218,8 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-neutral-200/60 bg-white/95 backdrop-blur-xl dark:border-neutral-800 dark:bg-background-dark/95">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-6">
+    <header className="sticky top-0 z-40 w-full border-b border-neutral-200/60 bg-white dark:border-neutral-800 dark:bg-background-dark lg:bg-white/95 lg:backdrop-blur-xl lg:dark:bg-background-dark/95">
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 lg:h-16 lg:px-6">
         <div className="flex items-center gap-10">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-secondary-500 text-white shadow-lg shadow-primary-500/30">
@@ -187,7 +228,7 @@ export default function Navbar() {
             <div>
               <span className="text-lg font-bold text-neutral-900 dark:text-white">ARC</span>
               <div className="hidden text-[11px] font-medium uppercase tracking-[0.18em] text-neutral-400 lg:block">
-                Connected shell
+                Marketplace
               </div>
             </div>
           </Link>
@@ -195,10 +236,38 @@ export default function Navbar() {
           <nav className="hidden items-center gap-1 lg:flex">
             <div
               className="relative"
+              ref={exploreMenuRef}
               onMouseEnter={() => setExploreOpen(true)}
               onMouseLeave={() => setExploreOpen(false)}
+              onFocusCapture={() => setExploreOpen(true)}
+              onBlurCapture={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                  setExploreOpen(false);
+                }
+              }}
             >
               <button
+                ref={exploreTriggerRef}
+                type="button"
+                onClick={() => setExploreOpen((prev) => !prev)}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setExploreOpen(true);
+                    lastOpenedMenuRef.current = 'explore';
+                    requestAnimationFrame(() => exploreLinkRefs.current[0]?.focus());
+                    return;
+                  }
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setExploreOpen((prev) => !prev);
+                    lastOpenedMenuRef.current = 'explore';
+                  }
+                }}
+                aria-expanded={exploreOpen}
+                aria-haspopup="true"
+                aria-controls="arc-explore-menu"
+                aria-label="Explore menu"
                 className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
                   exploreOpen || isNavActive('/explore')
                     ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white'
@@ -210,11 +279,48 @@ export default function Navbar() {
               </button>
 
               <div
+                id="arc-explore-menu"
                 className={`absolute left-0 top-full pt-2 transition-all duration-150 ${
                   exploreOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
                 }`}
               >
-                <div className="w-72 rounded-xl border border-neutral-200 bg-white p-3 shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
+                <div
+                  className="w-72 rounded-xl border border-neutral-200 bg-white p-3 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+                  role="menu"
+                  aria-label="Explore shortcuts"
+                  onKeyDown={(e) => {
+                    const links = exploreLinkRefs.current.filter(Boolean) as HTMLAnchorElement[];
+                    const currentIndex = links.findIndex((link) => link === document.activeElement);
+                    if (e.key === 'Escape') {
+                      e.preventDefault();
+                      setExploreOpen(false);
+                      lastOpenedMenuRef.current = null;
+                      requestAnimationFrame(() => exploreTriggerRef.current?.focus());
+                      return;
+                    }
+                    if (e.key === 'Home') {
+                      e.preventDefault();
+                      links[0]?.focus();
+                      return;
+                    }
+                    if (e.key === 'End') {
+                      e.preventDefault();
+                      links[links.length - 1]?.focus();
+                      return;
+                    }
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      const next = links[Math.min(currentIndex + 1, links.length - 1)] ?? links[0];
+                      next?.focus();
+                      return;
+                    }
+                    if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      const prev = links[Math.max(currentIndex - 1, 0)] ?? links[links.length - 1];
+                      prev?.focus();
+                    }
+                  }}
+                >
                   {exploreSections.map((section, idx) => (
                     <div
                       key={section.title}
@@ -224,10 +330,18 @@ export default function Navbar() {
                         {section.title}
                       </p>
                       <div className="mt-1.5 space-y-0.5">
-                        {section.links.map((link) => (
+                        {section.links.map((link, linkIdx) => (
                           <Link
                             key={link.label}
                             href={link.href}
+                            ref={(el) => {
+                              exploreLinkRefs.current[linkIdx] = el;
+                            }}
+                            role="menuitem"
+                            onClick={() => {
+                              setExploreOpen(false);
+                              lastOpenedMenuRef.current = null;
+                            }}
                             className="block rounded-lg px-2 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
                           >
                             {link.label}
@@ -284,14 +398,34 @@ export default function Navbar() {
             aria-label="Notifications"
           >
             <Bell className="h-5 w-5" />
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
           </button>
 
           <ThemeToggle />
 
-          <div className="relative hidden lg:block" ref={walletMenuRef}>
+          <div
+            className="relative hidden lg:block"
+            ref={walletMenuRef}
+            onBlurCapture={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                setWalletMenuOpen(false);
+                lastOpenedMenuRef.current = null;
+              }
+            }}
+          >
             <button
+              ref={walletTriggerRef}
               onClick={() => setWalletMenuOpen(!walletMenuOpen)}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setWalletMenuOpen(true);
+                  lastOpenedMenuRef.current = 'wallet';
+                  requestAnimationFrame(() => walletFirstActionRef.current?.focus());
+                }
+              }}
+              aria-expanded={walletMenuOpen}
+              aria-haspopup="true"
+              aria-controls="arc-wallet-menu"
               className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 isWalletConnected
                   ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25 hover:bg-primary-600'
@@ -303,7 +437,56 @@ export default function Navbar() {
             </button>
 
             {walletMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-neutral-200 bg-white p-2 shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
+              <div
+                id="arc-wallet-menu"
+                className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-neutral-200 bg-white p-2 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+                role="menu"
+                aria-label="Wallet menu"
+                onKeyDown={(e) => {
+                  const menu = e.currentTarget;
+                  const items = Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"]'));
+                  const currentIndex = items.indexOf(document.activeElement as HTMLElement);
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setWalletMenuOpen(false);
+                    lastOpenedMenuRef.current = null;
+                    requestAnimationFrame(() => walletTriggerRef.current?.focus());
+                    return;
+                  }
+                  if (e.key === 'Home' && items.length > 0) {
+                    e.preventDefault();
+                    items[0].focus();
+                    return;
+                  }
+                  if (e.key === 'End' && items.length > 0) {
+                    e.preventDefault();
+                    items[items.length - 1].focus();
+                    return;
+                  }
+                  if (e.key === 'ArrowDown' && items.length > 0) {
+                    e.preventDefault();
+                    const nextIndex = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, items.length - 1);
+                    items[nextIndex].focus();
+                    return;
+                  }
+                  if (e.key === 'ArrowUp' && items.length > 0) {
+                    e.preventDefault();
+                    const prevIndex = currentIndex <= 0 ? items.length - 1 : currentIndex - 1;
+                    items[prevIndex].focus();
+                    return;
+                  }
+                  if (e.key === 'Tab' && items.length > 0) {
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                      const prevIndex = currentIndex <= 0 ? items.length - 1 : currentIndex - 1;
+                      items[prevIndex].focus();
+                    } else {
+                      const nextIndex = currentIndex < 0 ? 0 : currentIndex + 1 >= items.length ? 0 : currentIndex + 1;
+                      items[nextIndex].focus();
+                    }
+                  }
+                }}
+              >
                 {isWalletConnected ? (
                   <>
                     <div className="border-b border-neutral-100 px-3 py-2 dark:border-neutral-800">
@@ -314,6 +497,9 @@ export default function Navbar() {
                     </div>
                     <div className="mt-2 space-y-0.5">
                       <button
+                        ref={walletFirstActionRef}
+                        type="button"
+                        role="menuitem"
                         onClick={() => {
                           setShowWalletModal(true);
                           setWalletMenuOpen(false);
@@ -324,6 +510,8 @@ export default function Navbar() {
                         Manage Wallets
                       </button>
                       <button
+                        type="button"
+                        role="menuitem"
                         onClick={() => {
                           disconnectWallet();
                           setWalletMenuOpen(false);
@@ -338,6 +526,9 @@ export default function Navbar() {
                 ) : (
                   <div className="space-y-1">
                     <button
+                      ref={walletFirstActionRef}
+                      type="button"
+                      role="menuitem"
                       onClick={handleCircleWalletClick}
                       disabled={loading}
                       className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
@@ -355,6 +546,8 @@ export default function Navbar() {
                       <ConnectButton.Custom>
                         {({ openConnectModal }) => (
                           <button
+                            type="button"
+                            role="menuitem"
                             onClick={openConnectModal}
                             className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
                           >
@@ -370,15 +563,85 @@ export default function Navbar() {
             )}
           </div>
 
-          <div className="relative hidden lg:block" ref={profileMenuRef}>
+          <div
+            className="relative hidden lg:block"
+            ref={profileMenuRef}
+            onBlurCapture={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                setProfileMenuOpen(false);
+                lastOpenedMenuRef.current = null;
+              }
+            }}
+          >
             <button
+              ref={profileTriggerRef}
               onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setProfileMenuOpen(true);
+                  lastOpenedMenuRef.current = 'profile';
+                  requestAnimationFrame(() => profileFirstActionRef.current?.focus());
+                }
+              }}
               className="h-8 w-8 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 ring-2 ring-transparent transition-all hover:ring-primary-500"
               aria-label="Profile"
+              aria-expanded={profileMenuOpen}
+              aria-haspopup="true"
+              aria-controls="arc-profile-menu"
             />
 
             {profileMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-neutral-200 bg-white p-2 shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
+              <div
+                id="arc-profile-menu"
+                className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-neutral-200 bg-white p-2 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+                role="menu"
+                aria-label="Profile menu"
+                onKeyDown={(e) => {
+                  const menu = e.currentTarget;
+                  const items = Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"]'));
+                  const currentIndex = items.indexOf(document.activeElement as HTMLElement);
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setProfileMenuOpen(false);
+                    lastOpenedMenuRef.current = null;
+                    requestAnimationFrame(() => profileTriggerRef.current?.focus());
+                    return;
+                  }
+                  if (e.key === 'Home' && items.length > 0) {
+                    e.preventDefault();
+                    items[0].focus();
+                    return;
+                  }
+                  if (e.key === 'End' && items.length > 0) {
+                    e.preventDefault();
+                    items[items.length - 1].focus();
+                    return;
+                  }
+                  if (e.key === 'ArrowDown' && items.length > 0) {
+                    e.preventDefault();
+                    const nextIndex = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, items.length - 1);
+                    items[nextIndex].focus();
+                    return;
+                  }
+                  if (e.key === 'ArrowUp' && items.length > 0) {
+                    e.preventDefault();
+                    const prevIndex = currentIndex <= 0 ? items.length - 1 : currentIndex - 1;
+                    items[prevIndex].focus();
+                    return;
+                  }
+                  if (e.key === 'Tab' && items.length > 0) {
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                      const prevIndex = currentIndex <= 0 ? items.length - 1 : currentIndex - 1;
+                      items[prevIndex].focus();
+                    } else {
+                      const nextIndex = currentIndex < 0 ? 0 : currentIndex + 1 >= items.length ? 0 : currentIndex + 1;
+                      items[nextIndex].focus();
+                    }
+                  }
+                }}
+              >
                 <div className="border-b border-neutral-100 px-3 py-2 dark:border-neutral-800">
                   {loyaltyTier ? (
                     <>
@@ -411,6 +674,8 @@ export default function Navbar() {
                   <Link
                     href="/profile"
                     onClick={() => setProfileMenuOpen(false)}
+                    ref={profileFirstActionRef}
+                    role="menuitem"
                     className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
                   >
                     <User className="h-4 w-4" />
@@ -418,6 +683,7 @@ export default function Navbar() {
                   </Link>
                   <Link
                     href="/cart"
+                    role="menuitem"
                     onClick={() => setProfileMenuOpen(false)}
                     className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
                   >
@@ -433,6 +699,7 @@ export default function Navbar() {
                   </Link>
                   <Link
                     href="/settings"
+                    role="menuitem"
                     onClick={() => setProfileMenuOpen(false)}
                     className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
                   >
@@ -454,43 +721,32 @@ export default function Navbar() {
         </div>
       </div>
 
-      <div className="border-t border-neutral-200/60 bg-white/70 dark:border-neutral-800 dark:bg-background-dark/70">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-3 lg:px-6 lg:py-2.5 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">Current route</div>
-            <div className="text-sm font-semibold text-neutral-900 dark:text-white">{shellContext.title}</div>
-            <div className="text-sm text-neutral-500 dark:text-neutral-400">{shellContext.description}</div>
-          </div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-600 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-300">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            Primary nav + utility split
-          </div>
-        </div>
-      </div>
-
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white/95 shadow-lg backdrop-blur-xl dark:border-neutral-800 dark:bg-background-dark/95 lg:hidden safe-area-inset-bottom">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-background-dark lg:hidden safe-bottom" aria-label="Primary navigation">
         <div className="grid grid-cols-5">
-          {mobileNav.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition-colors ${
-                isNavActive(item.href)
-                  ? 'text-primary-500'
-                  : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200'
-              }`}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </Link>
-          ))}
+          {mobileNav.map((item) => {
+            const isActive = item.href === '/' ? pathname === '/' : isNavActive(item.href);
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition-colors ${
+                  isActive
+                    ? 'text-primary-500'
+                    : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200'
+                }`}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </div>
       </nav>
 
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
-          <div className="absolute right-0 top-0 h-full w-80 overflow-y-auto bg-white/95 shadow-2xl backdrop-blur-xl dark:bg-background-dark/95">
+          <div className="absolute right-0 top-0 h-full w-80 overflow-y-auto bg-white shadow-2xl dark:bg-background-dark">
             <div className="space-y-6 p-4">
               <button
                 onClick={() => setMobileMenuOpen(false)}
@@ -504,6 +760,28 @@ export default function Navbar() {
                 <div className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">Current route</div>
                 <div className="mt-1 font-semibold text-neutral-900 dark:text-white">{shellContext.title}</div>
                 <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{shellContext.description}</div>
+              </div>
+
+              <div className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-slate-950/60">
+                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">Quick actions</div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <Link
+                    href="/rewards"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-primary-500 px-3 py-2.5 text-sm font-semibold text-white"
+                  >
+                    <Trophy className="h-4 w-4" />
+                    Rewards
+                  </Link>
+                  <Link
+                    href="/launch"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm font-semibold text-neutral-900 dark:border-white/10 dark:bg-slate-950/60 dark:text-white"
+                  >
+                    <Rocket className="h-4 w-4" />
+                    Launchpad
+                  </Link>
+                </div>
               </div>
 
               <div>
@@ -542,9 +820,51 @@ export default function Navbar() {
                 </div>
               </div>
 
+              {isConnected && activeWallet && (
+                <div>
+                  <p className="px-4 text-xs font-medium uppercase tracking-wide text-neutral-400">Wallet</p>
+                  <div className="mt-2 space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowWalletModal(true);
+                        setMobileMenuOpen(false);
+                      }}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-4 py-3 text-left text-base font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                    >
+                      <CircleDollarSign className="h-4 w-4" />
+                      Manage Wallets
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        disconnectWallet();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-4 py-3 text-left text-base font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Disconnect
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <p className="px-4 text-xs font-medium uppercase tracking-wide text-neutral-400">Utility</p>
                 <div className="mt-2 space-y-1">
+                  {!isConnected && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await handleCircleWalletClick();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="block w-full rounded-lg px-4 py-3 text-left text-base font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                    >
+                      Connect wallet
+                    </button>
+                  )}
                   {mobileUtilityLinks.map((item) => (
                     <Link
                       key={item.label}

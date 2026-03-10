@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { Hexagon, ArrowUpRight, Rocket, Search, Sparkles, ShieldCheck, BarChart3, Trophy, User, Wallet, Layers3 } from 'lucide-react';
 
@@ -6,7 +8,7 @@ const footerSections = [
     title: 'Platform',
     links: [
       { label: 'Explore', href: '/explore', icon: Search },
-      { label: 'Launch', href: '/launch', icon: Rocket },
+      { label: 'Launchpad', href: '/launch', icon: Rocket },
       { label: 'Studio', href: '/studio', icon: Sparkles },
       { label: 'Stats', href: '/stats', icon: BarChart3 },
     ],
@@ -25,8 +27,8 @@ const footerSections = [
     links: [
       { label: 'Profile', href: '/profile', icon: User },
       { label: 'Settings', href: '/settings', icon: ShieldCheck },
-      { label: 'Connect wallet', href: '/profile', icon: Wallet },
-      { label: 'Launch again', href: '/launch', icon: Rocket },
+      { label: 'Connect wallet', href: '/wallet/connect', icon: Wallet },
+      { label: 'Launchpad', href: '/launch', icon: Rocket },
     ],
   },
 ];
@@ -34,12 +36,16 @@ const footerSections = [
 const shellRoutes = [
   { label: 'Explore', href: '/explore' },
   { label: 'Token markets', href: '/explore?tab=tokens' },
-  { label: 'Launch', href: '/launch' },
+  { label: 'Launchpad', href: '/launch' },
   { label: 'Stats', href: '/stats' },
   { label: 'Rewards', href: '/rewards' },
 ];
 
 export default function Footer() {
+  const openWalletMenu = () => {
+    window.dispatchEvent(new CustomEvent('arc:open-wallet-menu'));
+  };
+
   return (
     <footer className="mt-20 border-t border-gray-200/60 bg-white/85 py-14 backdrop-blur-md dark:border-gray-800 dark:bg-background-dark/85">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -48,13 +54,13 @@ export default function Footer() {
             <div className="max-w-3xl">
               <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary-700 dark:border-primary-500/20 dark:bg-primary-500/10 dark:text-primary-300">
                 <Layers3 className="h-3.5 w-3.5" />
-                ARC shell
+                Platform
               </div>
               <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">
-                Keep discovery, launch, trading, analytics, and rewards connected from every ARC surface.
+                Discovery, launchpad, trading, analytics, and rewards—all from one place.
               </h2>
               <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-                The shared footer now mirrors the upgraded shell language so users can always jump back into the highest-value ARC flows.
+                Use the links above to jump to Explore, Launchpad, Studio, Stats, or Rewards from anywhere.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -108,6 +114,20 @@ export default function Footer() {
               <div className="mt-4 space-y-3">
                 {section.links.map((link) => {
                   const Icon = link.icon;
+                  if (link.href === '/wallet/connect') {
+                    return (
+                      <button
+                        key={link.label}
+                        type="button"
+                        onClick={openWalletMenu}
+                        className="group flex items-center gap-2 text-sm text-gray-600 transition-colors hover:text-primary-500 dark:text-gray-300 dark:hover:text-primary-400"
+                      >
+                        <Icon className="h-4 w-4 opacity-70 transition-opacity group-hover:opacity-100" />
+                        <span>{link.label}</span>
+                      </button>
+                    );
+                  }
+
                   return (
                     <Link
                       key={link.label}
@@ -130,7 +150,7 @@ export default function Footer() {
         <div className="flex flex-wrap gap-4">
           <Link href="/explore" className="transition-colors hover:text-primary-500">Explore</Link>
           <Link href="/explore?tab=tokens" className="transition-colors hover:text-primary-500">Token markets</Link>
-          <Link href="/launch" className="transition-colors hover:text-primary-500">Launch</Link>
+          <Link href="/launch" className="transition-colors hover:text-primary-500">Launchpad</Link>
           <Link href="/stats" className="transition-colors hover:text-primary-500">Stats</Link>
           <Link href="/rewards" className="transition-colors hover:text-primary-500">Rewards</Link>
         </div>

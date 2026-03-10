@@ -38,7 +38,7 @@ export default function HomeContent() {
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
               <Sparkles className="h-3.5 w-3.5" />
-              ARC home shell
+              Home
             </div>
             <h1 className="mb-4 text-4xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-5xl">
               Open ARC from the route that matters, then keep the next move obvious.
@@ -140,7 +140,7 @@ export default function HomeContent() {
             <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-white/10 dark:bg-slate-900/80">
               <div className="mb-2 flex items-center justify-between text-sm">
                 <span className="text-neutral-500 dark:text-neutral-400">Homepage role</span>
-                <span className="font-semibold text-neutral-900 dark:text-white">Connected shell</span>
+                <span className="font-semibold text-neutral-900 dark:text-white">Entry point</span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
                 <div className="h-full w-[82%] rounded-full bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400" />

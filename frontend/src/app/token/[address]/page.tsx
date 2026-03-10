@@ -281,7 +281,7 @@ export default function TokenDetailPage({ params }: { params: { address: string 
     },
     {
       title: 'Launch flow',
-      description: 'Create the next token without leaving the ARC shell.',
+      description: 'Create the next token and return to launch from here.',
       href: '/launch',
       icon: <Rocket className="h-4 w-4" />,
     },
@@ -760,7 +760,7 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                   <p>Buy flow resolves token routes into AMM routes, checks live USDC allowance, then gates approval only when it is actually needed.</p>
                   <p>Sell flow reads token allowance when the route is token-native and asks for approval before execution only when the position requires it.</p>
                   <p>{tokenConfig ? 'Header, creator details, and the recent trades feed are hydrated from live factory and AMM data for token-native routes.' : 'Open this page from a token route to hydrate launch metadata directly from the token factory.'}</p>
-                  <p>This screen now keeps the rest of the ARC shell nearby, so market activity can hand off cleanly into explore, rewards, launch, and creator identity routes.</p>
+                  <p>From this page you can jump to Explore, Rewards, Launchpad, or the creator profile—navigation stays available in the header and footer.</p>
                 </div>
               </div>
             </div>
@@ -907,7 +907,7 @@ export default function TokenDetailPage({ params }: { params: { address: string 
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Connected routes</h2>
               <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
-                Connected shell
+                Token market
               </span>
             </div>
             <div className="space-y-3">

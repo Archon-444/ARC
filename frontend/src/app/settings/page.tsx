@@ -47,7 +47,7 @@ const settingsRoutes = [
   },
   {
     title: 'Open rewards',
-    description: 'Track loyalty, quests, and progression from the same connected shell.',
+    description: 'Track loyalty, quests, and progression linked to your wallet.',
     href: '/rewards',
     icon: <Trophy className="h-4 w-4" />,
   },
@@ -125,7 +125,7 @@ export default function SettingsPage() {
                 <FeatureCard
                   icon={<Shield className="h-4 w-4" />}
                   title="Privacy and appearance"
-                  description="Control visibility of activity and collections while keeping the ARC shell experience consistent."
+                  description="Control visibility of activity and collections while keeping your experience consistent across the app."
                 />
               </div>
             </div>
@@ -141,7 +141,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="text-lg font-semibold text-neutral-900 dark:text-white">Wallet connection required</div>
                   <p className="mt-1 max-w-3xl text-sm text-current">
-                    This settings entry surface now acts as a clearer shell handoff, explaining the wallet requirement while keeping users connected to profile, rewards, analytics, and token-market routes.
+                    Connect a wallet to manage settings; from here you can reach Profile, Rewards, Stats, and token markets via the navigation.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-3">
@@ -196,7 +196,7 @@ export default function SettingsPage() {
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-5xl">Manage your ARC account preferences.</h1>
             <p className="mt-4 max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
-              Keep profile identity, notifications, privacy, and shell appearance aligned with your connected ARC wallet experience.
+              Keep profile identity, notifications, privacy, and appearance aligned with your connected wallet.
             </p>
           </div>
 
@@ -234,7 +234,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="text-lg font-semibold text-neutral-900 dark:text-white">Connected preferences active</div>
                 <p className="mt-1 max-w-3xl text-sm text-current">
-                  This settings surface now behaves more like a shell-level account hub, with clearer continuity into profile, rewards, analytics, and token-market workflows.
+                  Settings acts as your account hub, with quick access to Profile, Rewards, Stats, and token markets.
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -255,7 +255,7 @@ export default function SettingsPage() {
           <OverviewCard label="Connected wallet" value={shortenAddress(address)} hint="Active account context" />
           <OverviewCard label="Profile route" value="Ready" hint="Open wallet identity" />
           <OverviewCard label="Rewards route" value="Ready" hint="Review quests and loyalty" />
-          <OverviewCard label="Theme control" value="Navbar toggle" hint="Light and dark shell modes" />
+          <OverviewCard label="Theme control" value="Navbar toggle" hint="Light and dark mode" />
         </div>
 
         <div className="grid gap-8 lg:grid-cols-4">
@@ -416,13 +416,13 @@ export default function SettingsPage() {
                     <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
                       <div className="font-medium text-neutral-900 dark:text-white">Theme control</div>
                       <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                        Use the navigation-bar theme toggle to move between light and dark ARC shell modes.
+                        Use the navigation-bar theme toggle to switch between light and dark mode.
                       </p>
                     </div>
                     <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
-                      <div className="font-medium text-neutral-900 dark:text-white">Consistent shell experience</div>
+                      <div className="font-medium text-neutral-900 dark:text-white">Consistent experience</div>
                       <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                        ARC keeps navigation, footer, and discovery surfaces aligned so your account context stays consistent across the platform.
+                        Navigation, footer, and discovery stay aligned so your account context is consistent across the platform.
                       </p>
                     </div>
                   </div>

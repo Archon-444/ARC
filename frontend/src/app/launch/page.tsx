@@ -357,7 +357,7 @@ export default function LaunchPage() {
             Launch a token with clearer transaction states and a stronger ARC market entry.
           </h1>
           <p className="max-w-3xl text-neutral-600 dark:text-neutral-400">
-            Build the token profile, shape price discovery with a bonding curve, and move from creation into live trading without leaving the ARC shell.
+            Build the token profile, shape price discovery with a bonding curve, and move from creation into live trading—all from this page.
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
@@ -411,11 +411,11 @@ export default function LaunchPage() {
             <div>
               <div className="mb-1 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
                 <Sparkles className="h-4 w-4" />
-                Shell continuity
+                Creator flow
               </div>
-              <div className="text-lg font-semibold text-neutral-900 dark:text-white">Creator flow stays connected</div>
+              <div className="text-lg font-semibold text-neutral-900 dark:text-white">Profile, Studio, Rewards, and Stats stay one click away</div>
               <p className="mt-1 max-w-3xl text-sm text-current">
-                Launch now behaves more like the rest of the connected ARC shell, keeping profile, studio, rewards, stats, and the post-launch token market route close at hand through the full creator flow.
+                From here you can jump to Profile, Studio, Rewards, Stats, or the token market after launch—all from the same navigation.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -905,7 +905,7 @@ export default function LaunchPage() {
             <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Creator snapshot</h2>
-                <span className="rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-500 dark:border-white/10 dark:text-neutral-400">Connected shell</span>
+                <span className="rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-500 dark:border-white/10 dark:text-neutral-400">Creator</span>
               </div>
               <div className="space-y-3 text-sm">
                 <MetricRow label="Wallet" value={formatAddress(address)} />

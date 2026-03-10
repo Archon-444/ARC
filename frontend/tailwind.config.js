@@ -1,4 +1,8 @@
-/** @type {import('tailwindcss').Config} */
+/**
+ * Tailwind config – canonical source for color palette, spacing, radius,
+ * shadows, and animation. See frontend/docs/DESIGN_TOKENS.md for token strategy.
+ * @type {import('tailwindcss').Config}
+ */
 module.exports = {
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
@@ -127,6 +131,10 @@ module.exports = {
         '16': '4rem',    // 64px
         '20': '5rem',    // 80px
         '24': '6rem',    // 96px
+        safeAreaTop: 'env(safe-area-inset-top)',
+        safeAreaBottom: 'env(safe-area-inset-bottom)',
+        safeAreaLeft: 'env(safe-area-inset-left)',
+        safeAreaRight: 'env(safe-area-inset-right)',
       },
       borderRadius: {
         'none': '0',

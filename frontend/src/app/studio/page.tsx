@@ -262,7 +262,7 @@ export default function StudioPage() {
                 <FeatureRow
                   icon={<Wallet className="h-4 w-4" />}
                   title="Wallet-native continuity"
-                  description="Keep creation, discovery, profile, and launch actions aligned across the same ARC shell."
+                  description="Creation, discovery, profile, and launch stay one click away from the same navigation."
                 />
               </div>
             </div>

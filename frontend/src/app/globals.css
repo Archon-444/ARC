@@ -13,14 +13,14 @@
   --color-accent-50: #ecfeff;
   --color-accent-500: #06b6d4;
   --color-accent-600: #0891b2;
-  --color-neutral-0: transparent;
-  --color-neutral-50: transparent;
+  --color-neutral-0: #FFFFFF;
+  --color-neutral-50: #F9FAFB;
   --color-neutral-100: #F3F4F6;
   --color-neutral-200: #E5E7EB;
   --color-neutral-400: #9CA3AF;
   --color-neutral-600: #4B5563;
   --color-neutral-800: #1F2937;
-  --color-neutral-900: transparent;
+  --color-neutral-900: #111827;
   --color-success: #10B981;
   --color-warning: #F59E0B;
   --color-error: #EF4444;
@@ -29,7 +29,7 @@
   /* ========================================
      SEMANTIC TOKENS (Application Colors)
      ======================================== */
-  --color-bg-primary: transparent;
+  --color-bg-primary: #F9FAFB;
   --color-bg-secondary: #FFFFFF;
   --color-bg-tertiary: #F3F4F6;
   --color-surface: rgba(255, 255, 255, 0.6);
@@ -113,17 +113,17 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /* Override primitive tokens */
-    --color-neutral-0: transparent;
-    --color-neutral-50: transparent;
+    --color-neutral-0: #0f172a;
+    --color-neutral-50: #1e293b;
     --color-neutral-100: #334155;
     --color-neutral-200: #475569;
     --color-neutral-400: #94a3b8;
     --color-neutral-600: #cbd5e1;
     --color-neutral-800: #e2e8f0;
-    --color-neutral-900: transparent;
+    --color-neutral-900: #f8fafc;
 
     /* Override semantic tokens */
-    --color-bg-primary: transparent;
+    --color-bg-primary: #0f172a;
     --color-bg-secondary: #1e293b;
     --color-bg-tertiary: #334155;
     --color-surface: rgba(30, 41, 59, 0.4);
@@ -146,16 +146,16 @@
 
 [data-theme="dark"], .dark {
   /* Same as dark mode media query, but manually triggered */
-  --color-neutral-0: transparent;
-  --color-neutral-50: transparent;
+  --color-neutral-0: #0f172a;
+  --color-neutral-50: #1e293b;
   --color-neutral-100: #334155;
   --color-neutral-200: #475569;
   --color-neutral-400: #94a3b8;
   --color-neutral-600: #cbd5e1;
   --color-neutral-800: #e2e8f0;
-  --color-neutral-900: transparent;
+  --color-neutral-900: #f8fafc;
 
-  --color-bg-primary: transparent;
+  --color-bg-primary: #0f172a;
   --color-bg-secondary: #1e293b;
   --color-bg-tertiary: #334155;
   --color-surface: rgba(30, 41, 59, 0.4);
@@ -250,8 +250,24 @@
     @apply inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-200;
   }
 
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-neutral-200 bg-neutral-100 px-6 py-3 text-sm font-semibold text-neutral-700 transition-all duration-200 hover:bg-neutral-200 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700;
+  }
+
   .btn-outline {
     @apply inline-flex items-center justify-center gap-2 rounded-full border border-neutral-200 px-6 py-3 text-sm font-semibold text-neutral-700 transition-all duration-200 hover:border-primary-500 dark:border-neutral-700 dark:text-neutral-200;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-neutral-700 transition-all duration-200 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800;
+  }
+
+  .btn-sm {
+    @apply px-4 py-2 text-xs;
+  }
+
+  .btn-lg {
+    @apply px-8 py-4 text-base;
   }
 
   .input {
@@ -455,7 +471,7 @@
     mask-composite: exclude;
   }
 
-  /* Safe area padding (for mobile devices) */
+  /* Safe area padding for fixed top/bottom chrome (e.g. bottom nav on notched devices). Prefer these or Tailwind pb-safeAreaBottom / pt-safeAreaTop. */
   .safe-top { padding-top: env(safe-area-inset-top); }
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
   .safe-left { padding-left: env(safe-area-inset-left); }
