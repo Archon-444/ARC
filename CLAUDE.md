@@ -50,9 +50,66 @@ Always use shared components instead of raw HTML elements for consistency.
 - E2E tests: `npx playwright test` (Playwright)
 - Visual regression: `npx playwright test visual-regression --project=chromium`
 
+## Service Layer Conventions
+
+All data access follows a layered architecture. Components never call `fetch()` directly.
+
+### Data Flow
+
+```
+React Component → Hook → Service/Lib → External Source
+```
+
+### Layers
+
+| Layer | Location | Responsibility |
+|-------|----------|----------------|
+| **REST API** | `frontend/src/services/api.ts` | All calls to the Express backend (`NEXT_PUBLIC_BACKEND_URL`) |
+| **GraphQL** | `frontend/src/lib/graphql-client.ts` | All calls to The Graph subgraph (`NEXT_PUBLIC_GRAPHQL_ENDPOINT`) |
+| **WebSocket** | `frontend/src/services/websocket.ts` | Real-time subscriptions (NFT activity, offers, user notifications) |
+| **React Query hooks** | `frontend/src/hooks/useSubgraphQueries.ts` | Cached wrappers for GraphQL queries |
+| **REST hooks** | `frontend/src/hooks/useAnalytics.ts`, `useOffers.ts`, `usePriceHistory.ts` | Cached wrappers for REST API modules |
+
+### Rules
+
+1. **No direct `fetch()` in components or pages** — use hooks that wrap service modules
+2. **REST access** → import `api` from `@/services/api`, wrap in React Query hook
+3. **Subgraph access** → import query functions from `@/lib/graphql-client`, wrap in React Query hook
+4. **WebSocket access** → import hooks from `@/services/websocket` (`useActivityFeed`, `useOfferNotifications`, etc.)
+5. **Blockchain reads/writes** → use wagmi hooks (`useReadContract`, `useWriteContract`)
+
+### Documented Exceptions
+
+- `useBuyNFT.ts` — uses direct `fetch('/api/circle/transaction')` because Circle SDK requires a specific challenge/execution flow that doesn't fit the generic service pattern
+- `MediaViewer.tsx` — uses direct `fetch(src)` for media blob validation (not an API call)
+
+### Reference Architecture
+
+The profile domain demonstrates the canonical pattern:
+
+- **Route:** `frontend/src/app/profile/[address]/page.tsx` (thin, ~10 lines)
+- **Components:** `frontend/src/components/profile/` (domain UI)
+- **Hook:** `frontend/src/hooks/useProfileGateway.ts` (data orchestration)
+- **Lib:** `frontend/src/lib/profile.ts` (pure helpers, types)
+
 ## Key Conventions
 
 - Path alias: `@/` maps to `frontend/src/`
 - Design tokens: use `primary-*`, `accent-*`, `error-*` instead of raw Tailwind colors
 - Mobile-first: use `sm:`, `md:`, `lg:` breakpoints
 - Web3: wagmi + viem + RainbowKit for wallet connection
+
+## Route Architecture
+
+Every route should follow the thin-route pattern:
+
+```
+app/[domain]/page.tsx          → thin wrapper (< 20 lines)
+components/[domain]/           → domain-specific components
+hooks/use[Domain]*.ts          → data fetching + state
+lib/[domain].ts                → pure types, constants, helpers
+```
+
+Routes must include:
+- `error.tsx` — per-route error boundary using `ErrorPage` from shared UI
+- `loading.tsx` — skeleton loading state using `Skeleton` from shared UI
