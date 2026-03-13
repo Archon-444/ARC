@@ -393,47 +393,45 @@ Brief description of changes
 
 ```
 ARC/
-├── contracts/               # Smart contracts
+├── contracts/               # Smart contracts (Solidity, Hardhat)
 │   ├── contracts/
-│   │   ├── NFTMarketplace.sol
+│   │   ├── ArcMarketplace.sol
 │   │   ├── FeeVault.sol
+│   │   ├── ArcTokenFactory.sol
+│   │   ├── ArcBondingCurveAMM.sol
 │   │   └── ...
-│   ├── test/               # Contract tests
-│   └── scripts/            # Deployment scripts
+│   ├── test/
+│   └── scripts/
 │
-├── frontend/               # Next.js frontend
+├── frontend/               # Next.js (App Router)
 │   ├── src/
-│   │   ├── app/           # Next.js 14+ app router
-│   │   │   ├── page.tsx   # Homepage
-│   │   │   ├── layout.tsx # Root layout
-│   │   │   └── ...
-│   │   ├── components/    # React components
-│   │   │   ├── ui/        # Reusable UI components
-│   │   │   ├── nft/       # NFT-specific components
-│   │   │   └── ...
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── lib/          # Utilities and configuration
-│   │   └── types/        # TypeScript types
-│   ├── public/           # Static assets
-│   └── __tests__/        # Test files
+│   │   ├── app/           # Pages: launch, token/[address], explore, ...
+│   │   ├── components/    # ui/, nft/, token/ (TokenCard, LauncherTokenCard), explore/, home/
+│   │   ├── hooks/         # useTokenFactory, useTokenAMM, useTokenActivity, useSubgraphQueries, ...
+│   │   ├── lib/           # graphql-client, contracts, utils
+│   │   └── services/      # api, websocket (subscribeToToken)
+│   └── e2e/
 │
-├── subgraph/              # TheGraph indexer
-│   ├── schema.graphql
-│   └── src/mappings/
+├── backend/                # Express REST + WebSocket
+│   ├── src/               # routes (activity, including token), websocket (token + NFT rooms)
+│   └── TOKEN_ACTIVITY_BROADCAST.md
 │
-└── docs/                  # Documentation
-    ├── GAP_ANALYSIS.md
-    ├── TESTING.md
-    └── ACCESSIBILITY.md
+├── subgraph/              # The Graph (marketplace + token launcher)
+│   ├── schema.graphql     # LaunchedToken, TokenTrade, TokenGraduation, ...
+│   ├── DEPLOY.md          # Set ArcTokenFactory address before deploy
+│   └── src/               # arc-token-factory.ts, arc-bonding-curve-amm.ts, ...
+│
+└── *.md                   # README, CLAUDE, GAP_ANALYSIS, SECURITY_AUDIT, etc.
 ```
 
 ### Key Directories
 
-- **`components/ui/`** - Reusable UI components (Button, Card, etc.)
-- **`components/nft/`** - NFT-specific components (NFTCard, NFTGrid, etc.)
-- **`hooks/`** - Custom React hooks
-- **`lib/`** - Utilities, Web3 config, helpers
-- **`types/`** - TypeScript type definitions
+- **`components/ui/`** - Reusable UI (Button, Card, etc.)
+- **`components/nft/`** - NFTCard, NFTGrid
+- **`components/token/`** - TokenCard, LauncherTokenCard, LauncherTokenGrid
+- **`hooks/`** - useTokenActivity, useLaunchedTokensQuery, useTokenConfig, useTokenAMM
+- **`lib/`** - graphql-client (fetchLaunchedTokens), contracts, utils
+- **`app/launch/`** - Token launch page; **`app/token/[address]/`** - Token market page
 
 ---
 

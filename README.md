@@ -1,22 +1,21 @@
-# ArcMarket - NFT Marketplace on Arc Blockchain
+# ARC — NFT Marketplace + Token Launchpad on Arc Blockchain
 
-A full-stack NFT marketplace built on Circle's Arc blockchain, leveraging USDC as gas and native payment currency with instant sub-second finality.
+A full-stack marketplace and **token launcher** on Circle's Arc blockchain: USDC for gas and payments, sub-second finality, and a launcher-first loop (launch → token page → discovery).
 
-## Version 0.4 - Core Complete, Production Hardening in Progress
+## Version 0.4 — Core + Token Launcher
 
-**Current Status:** 75-80% Production Ready
+**Current Status:** Core marketplace and token launcher flows implemented. Security remediation and production infra in progress.
 
-All core phases completed with comprehensive testing. Requires security remediation, infrastructure setup, and integration completion before production deployment.
+### Completed
 
-### Completed Features (November 2025)
+- **Marketplace**: Listings, auctions, collections, NFT detail pages, search, filtering
+- **Token launcher**: Short launch flow (name, ticker, image, socials; bonding curve behind “Advanced”), success → Open token market / Copy address / Share link / Launch another
+- **Token page**: Market-first layout — identity, price, graduation progress, recent trades, one buy CTA; copy contract/share and socials in hero; Connected routes, Distribution, Community in collapsible Details
+- **Token discovery**: First-class in Explore (New, Trending, Recent activity, Nearing graduation, Graduated) with launcher-native cards; Home “Explore tokens” CTA
+- **Realtime**: Backend token WebSocket room (`token:<address>`), `GET /v1/activity/token/:address`, `POST /v1/activity/token/broadcast`; frontend `useTokenActivity` and `subscribeToToken`
+- **Trust layer**: Footer Legal & company; compliance line; trust in footer/collapsible, not in main loop
 
-- **Phase 1: Foundation** - Testing infrastructure, design system, component library
-- **Phase 2: Critical Features** - Filtering, search, collection pages, NFT details
-- **Phase 3: UX Enhancements** - Animations, WebSocket real-time, PWA, toast notifications
-- **Phase 4: Performance & Polish** - Web Vitals, accessibility, SEO, bundle optimization
-- **Security Audit** - Critical vulnerabilities identified and fixed
-
-See [GAP_ANALYSIS.md](./GAP_ANALYSIS.md) for detailed progress and [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) for security findings.
+See [GAP_ANALYSIS.md](./GAP_ANALYSIS.md) for progress and [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) for security findings.
 
 ## Features
 
@@ -28,17 +27,14 @@ See [GAP_ANALYSIS.md](./GAP_ANALYSIS.md) for detailed progress and [SECURITY_AUD
 - **Transparent Royalties**: Automatic creator royalty distribution via FeeVault
 - **User Profiles**: On-chain profile registry with off-chain metadata
 - **Staking & Governance**: StakingRewards and SimpleGovernance contracts
-- **Token Launcher**: ArcTokenFactory with bonding curve AMM
+- **Token Launcher**: ArcTokenFactory + ArcBondingCurveAMM (bonding curve per token; graduation, staking, creator reserve)
 
 ### Frontend
-- **Advanced Filtering**: FilterPanel with trait filtering and rarity percentages
-- **Search**: Typesense-powered instant search with Cmd+K command palette
-- **Collection Pages**: Full collection browsing with metrics and virtual scrolling
-- **NFT Detail Pages**: Media viewer, price history charts, activity feed
-- **Animations**: Framer Motion with page transitions and micro-interactions
-- **Real-time Updates**: WebSocket-powered activity feed with mock mode
+- **Token launcher**: Launch page (compact form, live preview, advanced bonding curve), token market page (price, graduation, trades, buy/sell), discovery (New / Trending / Recent / Nearing graduation / Graduated)
+- **Marketplace**: Advanced filtering, Typesense search, collection and NFT detail pages, media viewer, price history, activity feed
+- **Real-time**: WebSocket for NFT/collection activity; token activity via `subscribeToToken` and `useTokenActivity`
 - **PWA**: Service worker, offline page, install prompts
-- **Dark Mode**: Theme toggle with system preference detection
+- **Dark mode**: Theme toggle with system preference detection
 
 ### Quality & Testing
 - **Unit Tests**: 160 frontend tests (Jest + React Testing Library), 1,354 contract tests
@@ -78,10 +74,17 @@ ArcMarket/
 │   ├── subgraph.yaml       # Data source config
 │   └── src/                # AssemblyScript event handlers
 │
-├── backend/                # Express REST API (standalone, not yet integrated)
-│   └── src/                # Routes, WebSocket server, auth
+├── backend/                # Express REST API + WebSocket
+│   ├── src/                # Routes (activity, NFT, offers, …), websocket (token + NFT rooms)
+│   ├── TOKEN_ACTIVITY_BROADCAST.md   # How to push token trade/graduation events
+│   └── README.md           # API and WebSocket docs
 │
-├── .github/workflows/      # CI/CD (ci.yml, e2e.yml, deploy.yml)
+├── subgraph/               # The Graph indexing (marketplace + token launcher)
+│   ├── DEPLOY.md           # Set ArcTokenFactory address before deploy
+│   ├── SUBGRAPH_DEPLOYMENT.md
+│   └── schema.graphql     # LaunchedToken, TokenTrade, TokenGraduation, …
+│
+├── .github/workflows/      # CI/CD
 ├── GAP_ANALYSIS.md         # Progress tracking
 └── SECURITY_AUDIT.md       # Security findings
 ```
@@ -90,14 +93,13 @@ ArcMarket/
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Smart contracts | Production-ready | All contracts tested, quorum enforcement verified |
-| Frontend UI | Production-ready | Full marketplace, collection, NFT detail pages |
+| Smart contracts | Production-ready | Marketplace + ArcTokenFactory/AMM tested |
+| Frontend UI | Production-ready | Marketplace + token launch, token page, explore tokens |
 | Circle SDK | Production-ready | Social login, wallet management, transactions |
-| Subgraph | Partially ready | ArcTokenFactory address needs deployment update |
-| Backend API | Not integrated | Express server exists but frontend uses GraphQL + Next.js API routes |
-| Real-time feed | Partial | WebSocket client exists, needs NEXT_PUBLIC_WS_URL env var |
-| Rate limiting | Dev only | In-memory; needs Redis/Upstash for production |
-| Token launcher | Contracts only | Smart contracts exist; frontend UI and subgraph indexing incomplete |
+| Subgraph | Partially ready | Set ArcTokenFactory address in `subgraph.yaml` before deploy; see [subgraph/DEPLOY.md](./subgraph/DEPLOY.md) |
+| Backend API | Standalone | Express + WebSocket; token activity: `GET /v1/activity/token/:address`, `POST /v1/activity/token/broadcast`; frontend also uses GraphQL + Next.js API routes |
+| Real-time | Partial | WebSocket token room + `useTokenActivity`; set `NEXT_PUBLIC_WS_URL` for live token updates |
+| Token launcher | Implemented | Launch flow, token page, discovery (New/Trending/Recent/Nearing/Graduated), LauncherTokenCard; indexer can call broadcast for live feed |
 
 See [DAPPS_ALIGNMENT_REVIEW.md](./DAPPS_ALIGNMENT_REVIEW.md) for the full alignment audit.
 
@@ -145,6 +147,11 @@ NEXT_PUBLIC_RPC_URL=https://rpc.testnet.arc.network
 NEXT_PUBLIC_MARKETPLACE_ADDRESS=0x...
 NEXT_PUBLIC_FEE_VAULT_ADDRESS=0x...
 NEXT_PUBLIC_USDC_ADDRESS=0x...
+NEXT_PUBLIC_TOKEN_FACTORY_ADDRESS=0x...   # For token launcher; also set in subgraph (see subgraph/DEPLOY.md)
+
+# Optional: backend + WebSocket (token activity realtime)
+NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
+NEXT_PUBLIC_WS_URL=ws://localhost:3001/ws
 
 # Auth
 NEXTAUTH_SECRET=your_random_secret
@@ -257,9 +264,12 @@ See [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) for the full security audit report.
 
 ## Documentation
 
-- [GAP_ANALYSIS.md](./GAP_ANALYSIS.md) - Progress tracking and roadmap
-- [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) - Security audit findings
-- [e2e/README.md](./frontend/e2e/README.md) - E2E testing guide
+- [GAP_ANALYSIS.md](./GAP_ANALYSIS.md) — Progress tracking and roadmap
+- [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) — Security audit findings
+- [CLAUDE.md](./CLAUDE.md) — Project context and conventions (for AI and contributors)
+- [subgraph/DEPLOY.md](./subgraph/DEPLOY.md) — Set ArcTokenFactory address before subgraph deploy
+- [backend/TOKEN_ACTIVITY_BROADCAST.md](./backend/TOKEN_ACTIVITY_BROADCAST.md) — Push token trade/graduation events to WebSocket
+- [frontend/e2e/README.md](./frontend/e2e/README.md) — E2E testing guide
 
 ## Contributing
 

@@ -10,9 +10,10 @@ This guide explains how to deploy the ArcMarket subgraph to index blockchain dat
    ```
 
 2. **Contract Addresses**: Deployed contract addresses on Arc network
-   - NFTMarketplace
+   - ArcMarketplace
    - FeeVault
    - ProfileRegistry
+   - **ArcTokenFactory** (for token launcher; see [DEPLOY.md](./DEPLOY.md) to set address in `subgraph.yaml`)
 
 3. **Start Block Numbers**: Block numbers where contracts were deployed
 
@@ -26,17 +27,8 @@ This guide explains how to deploy the ArcMarket subgraph to index blockchain dat
 
 Edit `subgraph.yaml` and replace placeholder addresses with your deployed contracts:
 
-```yaml
-dataSources:
-  - kind: ethereum
-    name: NFTMarketplace
-    network: arc-testnet
-    source:
-      address: "0xYOUR_MARKETPLACE_ADDRESS"  # Replace this
-      startBlock: 1234567                     # Replace with deployment block
-```
-
-Do the same for `FeeVault` and `ProfileRegistry` data sources.
+- **ArcMarketplace**, **FeeVault**, **ProfileRegistry**: set `source.address` and `startBlock` for each data source.
+- **ArcTokenFactory**: set `source.address` to your deployed factory (same as frontend `NEXT_PUBLIC_TOKEN_FACTORY_ADDRESS`). The default in the repo is a placeholder (`0x000...000`). See [DEPLOY.md](./DEPLOY.md) for step-by-step instructions.
 
 ### 2. Update Network Configuration
 

@@ -65,6 +65,8 @@ The API will be available at `http://localhost:3001`
 
 ### Activity
 - `GET /v1/activity` - Get activity feed
+- `GET /v1/activity/token/:address` - Recent activity for a launched token (trades, graduation). Used by token page and discovery.
+- `POST /v1/activity/token/broadcast` - **Internal**: Push a token activity event to WebSocket subscribers. Body: `{ tokenAddress, type: 'buy'|'sell'|'graduation', ... }`. Call from indexer or chain listener. See [TOKEN_ACTIVITY_BROADCAST.md](./TOKEN_ACTIVITY_BROADCAST.md).
 
 ### Search
 - `POST /v1/search/autocomplete` - Search autocomplete
@@ -86,13 +88,17 @@ Connect to `ws://localhost:3001/ws`
 
 - `/ws/activity/nft/:nftId` - NFT activity feed
 - `/ws/activity/collection/:collectionId` - Collection activity feed
+- `/ws/activity/token/:address` - **Token launcher**: activity for one token (trades, graduation). Room id: `token:<address>`.
 - `/ws/offers/nft/:nftId` - NFT offer updates
+
+Subscribe by path (auto-join) or by message: `{ "type": "subscribe", "room": "token:0x..." }`. Server accepts both `room` and `data.room`.
 
 ### Events
 
 **Client -> Server:**
 ```json
 { "type": "subscribe", "room": "nft:abc123" }
+{ "type": "subscribe", "room": "token:0x..." }
 { "type": "unsubscribe", "room": "nft:abc123" }
 { "type": "ping" }
 ```
@@ -102,7 +108,10 @@ Connect to `ws://localhost:3001/ws`
 { "type": "offer_created", "data": {...}, "room": "nft:abc123", "timestamp": 1234567890 }
 { "type": "offer_accepted", "data": {...}, "room": "nft:abc123", "timestamp": 1234567890 }
 { "type": "offer_cancelled", "data": {...}, "room": "nft:abc123", "timestamp": 1234567890 }
+{ "type": "token_activity", "data": { "type": "buy"|"sell"|"graduation", "tokenAddress", ... }, "room": "token:0x...", "timestamp": 1234567890 }
 ```
+
+To push token events from an indexer or cron, call `POST /v1/activity/token/broadcast` or use `broadcastTokenActivity(tokenAddress, event)` from `src/websocket`. See [TOKEN_ACTIVITY_BROADCAST.md](./TOKEN_ACTIVITY_BROADCAST.md).
 
 ## Authentication
 

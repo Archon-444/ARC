@@ -1,16 +1,28 @@
-# ArcMarket Subgraph
+# ARC Subgraph
 
-GraphQL API for querying ArcMarket NFT marketplace data.
+GraphQL API for querying ARC NFT marketplace and **token launcher** data.
 
 ## Overview
 
-This subgraph indexes all marketplace activity including:
+This subgraph indexes:
+
+**Marketplace**
 - NFT listings and sales
 - Auctions and bids
 - User profiles
 - Collection statistics
 - Fee distributions
 - Daily marketplace metrics
+
+**Token launcher**
+- **LaunchedToken**: token address, AMM, creator, name, symbol, totalSupply, soldSupply, totalVolume, totalTrades, isGraduated, createdAt, updatedAt
+- **TokenTrade**: buys/sells per token (trader, usdcAmount, tokenAmount, createdAt, txHash)
+- **TokenGraduation**: graduation record per token (creatorReserve, stakingRewardPool, platformFee, finalSupply)
+- **TokenStake**, **TokenRewardClaim**, **CreatorWithdrawal**
+- **AmmTokenLookup**: AMM address → token (used by AMM handlers)
+- **TokenLauncherStats**: global totals (totalTokens, totalVolume, totalTrades, totalGraduated)
+
+Data sources: **ArcMarketplace**, **FeeVault**, **ProfileRegistry**, **ArcTokenFactory**. Templates: **ArcBondingCurveAMM** (one per launched token). Before deploy, set the ArcTokenFactory contract address in `subgraph.yaml`; see [DEPLOY.md](./DEPLOY.md).
 
 ## Setup
 
@@ -21,11 +33,9 @@ npm install
 
 2. **Update contract addresses:**
 
-Edit `subgraph.yaml` and update the following:
-- NFTMarketplace address
-- FeeVault address
-- ProfileRegistry address
-- Start blocks for each contract
+Edit `subgraph.yaml` and set:
+- ArcMarketplace, FeeVault, ProfileRegistry addresses and start blocks
+- **ArcTokenFactory** `source.address` (must be your deployed factory; same as frontend `NEXT_PUBLIC_TOKEN_FACTORY_ADDRESS`). See [DEPLOY.md](./DEPLOY.md).
 
 3. **Generate code:**
 ```bash
@@ -217,6 +227,37 @@ See `schema.graphql` for the complete data schema.
 ### ProfileRegistry
 - `handleProfileUpdated` - User profile updated
 
+### ArcTokenFactory
+- `handleTokenCreated` - New token + AMM; creates LaunchedToken, AmmTokenLookup, instantiates ArcBondingCurveAMM template
+
+### ArcBondingCurveAMM (per-token template)
+- `handleTokensBought` - TokenTrade, updates LaunchedToken soldSupply/totalVolume/totalTrades
+- `handleTokensSold` - TokenTrade, updates LaunchedToken
+- `handleTokenGraduated` - TokenGraduation, sets LaunchedToken.isGraduated
+- `handleStakingStarted`, `handleStakingRewardsClaimed`, `handleCreatorReserveWithdrawn` - Staking and withdrawals
+
+### Example: Launched tokens (for discovery)
+
+```graphql
+{
+  launchedTokens(first: 20, orderBy: createdAt, orderDirection: desc) {
+    id
+    address
+    amm
+    creator
+    name
+    symbol
+    totalSupply
+    soldSupply
+    totalVolume
+    totalTrades
+    isGraduated
+    createdAt
+    updatedAt
+  }
+}
+```
+
 ## Development
 
 To modify the subgraph:
@@ -233,3 +274,4 @@ To modify the subgraph:
 - Prices are stored in USDC base units (6 decimals)
 - Addresses are stored as Bytes
 - All monetary values use BigInt to avoid precision loss
+- **Token launcher**: Set ArcTokenFactory address in `subgraph.yaml` before build/deploy; see [DEPLOY.md](./DEPLOY.md).
