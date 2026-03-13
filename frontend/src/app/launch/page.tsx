@@ -14,8 +14,8 @@ import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
-  ArrowRight,
-  BarChart3,
+  ChevronDown,
+  ChevronRight,
   CheckCircle2,
   Coins,
   Globe,
@@ -88,6 +88,7 @@ export default function LaunchPage() {
   const [error, setError] = useState<string | null>(null);
   const [createdTokenAddress, setCreatedTokenAddress] = useState<`0x${string}` | null>(null);
   const [tokenCountBeforeLaunch, setTokenCountBeforeLaunch] = useState<number | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const { generate, isLoading: isGenerating, error: generateError } = useGenerateTokenPage();
   const { fee, feeFormatted } = useCreationFee();
@@ -347,142 +348,68 @@ export default function LaunchPage() {
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 lg:py-10">
-      <div className="mb-8 grid gap-4 rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:grid-cols-[1.15fr_0.85fr] lg:p-8">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
-            <Zap className="h-3.5 w-3.5" />
-            ARC token launch
-          </div>
-          <h1 className="mb-3 text-3xl font-bold text-neutral-900 dark:text-white lg:text-4xl">
-            Launch a token with clearer transaction states and a stronger ARC market entry.
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white lg:text-3xl">
+            Launch a token
           </h1>
-          <p className="max-w-3xl text-neutral-600 dark:text-neutral-400">
-            Build the token profile, shape price discovery with a bonding curve, and move from creation into live trading—all from this page.
+          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+            Name, ticker, image, description, and socials. You pay {feeFormatted} USDC; balance: ${balanceFormatted} USDC.
           </p>
-
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link href={address ? `/profile/${address}` : '/profile'} className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-5 py-3 font-semibold text-white dark:bg-white dark:text-black">
-              <User className="h-4 w-4" />
-              Profile
-            </Link>
-            <Link href="/studio" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
-              <Sparkles className="h-4 w-4" />
-              Studio
-            </Link>
-            <Link href="/stats" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
-              <BarChart3 className="h-4 w-4" />
-              Stats
-            </Link>
-          </div>
         </div>
-
-        <div className="grid gap-3 rounded-2xl border border-neutral-200/70 bg-neutral-50/80 p-4 dark:border-white/10 dark:bg-slate-950/60">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-neutral-500 dark:text-neutral-400">Launch readiness</span>
-            <span className="font-semibold text-neutral-900 dark:text-white">{launchReadinessSignals}/4 complete</span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
-            <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all" style={{ width: `${(launchReadinessSignals / 4) * 100}%` }} />
-          </div>
-          <div className="grid gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-            <div className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-slate-900/80">
-              <span>Connected wallet</span>
-              <span className="font-medium text-neutral-900 dark:text-white">{formatAddress(address)}</span>
-            </div>
-            <div className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-slate-900/80">
-              <span>Wallet balance</span>
-              <span className="font-medium text-neutral-900 dark:text-white">${balanceFormatted} USDC</span>
-            </div>
-            <div className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-slate-900/80">
-              <span>Creation fee</span>
-              <span className="font-medium text-neutral-900 dark:text-white">${feeFormatted} USDC</span>
-            </div>
-            <div className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-slate-900/80">
-              <span>Launch confidence</span>
-              <span className="font-medium text-neutral-900 dark:text-white">{launchConfidence}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mb-8 rounded-3xl border border-neutral-200/60 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:p-6">
-        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-blue-900 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="mb-1 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
-                <Sparkles className="h-4 w-4" />
-                Creator flow
-              </div>
-              <div className="text-lg font-semibold text-neutral-900 dark:text-white">Profile, Studio, Rewards, and Stats stay one click away</div>
-              <p className="mt-1 max-w-3xl text-sm text-current">
-                From here you can jump to Profile, Studio, Rewards, Stats, or the token market after launch—all from the same navigation.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/rewards" className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-white dark:text-black">
-                <Trophy className="h-4 w-4" />
-                Rewards
-              </Link>
-              <Link href="/explore?tab=tokens" className="inline-flex items-center gap-2 rounded-2xl border border-current/10 bg-white/70 px-4 py-2.5 text-sm font-semibold text-current dark:bg-white/5">
-                <Wallet className="h-4 w-4" />
-                Token markets
-              </Link>
-            </div>
-          </div>
+        <div className="flex flex-wrap gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+          <span>{formatAddress(address)}</span>
+          <span>·</span>
+          <span>${balanceFormatted} USDC</span>
         </div>
       </div>
 
       {step === 'success' ? (
-        <div className="mx-auto max-w-4xl rounded-3xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-8 shadow-sm dark:border-green-500/20 dark:from-green-500/10 dark:to-emerald-500/10 dark:bg-slate-900">
+        <div className="mx-auto max-w-2xl rounded-3xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-8 shadow-sm dark:border-green-500/20 dark:from-green-500/10 dark:to-emerald-500/10 dark:bg-slate-900">
           <div className="text-center">
-            <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-green-600 dark:text-green-400" />
-            <h2 className="mb-2 text-2xl font-bold text-green-900 dark:text-green-200">Token launched successfully</h2>
-            <p className="mx-auto mb-4 max-w-2xl text-green-800 dark:text-green-300">
-              Your token has been deployed and is ready for discovery. The next best move is opening the live market route, then reviewing how the launch fits into your profile, studio, and rewards surfaces.
+            <CheckCircle2 className="mx-auto mb-3 h-12 w-12 text-green-600 dark:text-green-400" />
+            <h2 className="mb-1 text-xl font-bold text-green-900 dark:text-green-200">Token is live</h2>
+            <p className="text-sm text-green-800 dark:text-green-300">
+              Open the market to trade or share the link.
             </p>
           </div>
 
-          <div className="mx-auto mb-6 max-w-2xl rounded-2xl border border-green-200 bg-white/70 p-4 text-left text-sm text-green-900 dark:border-green-500/20 dark:bg-slate-950/40 dark:text-green-200">
-            <div className="flex items-center justify-between">
-              <span>Created token route</span>
-              <span className="font-semibold">{formatAddress(createdTokenAddress)}</span>
-            </div>
-            <div className="mt-2 text-green-700 dark:text-green-300">
-              {createdTokenAddress ? 'Primary action now opens the live token market page.' : 'Route indexing is still catching up, so explore remains available as the fallback action.'}
-            </div>
-          </div>
-
-          <div className="mb-6 grid gap-4 md:grid-cols-3">
-            <SuccessReadCard title="Creator wallet" value={formatAddress(address)} description="The connected shell keeps this creator identity active across profile and studio." />
-            <SuccessReadCard title="Market route" value={createdTokenAddress ? 'Ready' : 'Indexing'} description="The live token destination is now the primary post-launch handoff." />
-            <SuccessReadCard title="Next flow" value="Profile + rewards" description="Launch activity is now positioned as part of a broader connected creator journey." />
-          </div>
-
-          <div className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
+          <div className="mt-6 flex flex-col gap-3">
             <button
               onClick={() => router.push(createdTokenAddress ? `/token/${createdTokenAddress}` : '/explore?tab=tokens')}
-              className="inline-flex items-center justify-center rounded-xl bg-green-600 px-6 py-3 font-semibold text-white hover:bg-green-700"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-6 py-3 font-semibold text-white hover:bg-green-700"
             >
               {createdTokenAddress ? 'Open token market' : 'View live tokens'}
             </button>
-            <button
-              onClick={() => router.push(address ? `/profile/${address}` : '/profile')}
-              className="inline-flex items-center justify-center rounded-xl border border-green-300 bg-white px-6 py-3 font-semibold text-green-700 hover:bg-green-50 dark:border-green-500/20 dark:bg-slate-900 dark:text-green-300"
-            >
-              Open profile
-            </button>
-            <button
-              onClick={() => router.push('/studio')}
-              className="inline-flex items-center justify-center rounded-xl border border-green-300 bg-white px-6 py-3 font-semibold text-green-700 hover:bg-green-50 dark:border-green-500/20 dark:bg-slate-900 dark:text-green-300"
-            >
-              Return to studio
-            </button>
+            {createdTokenAddress && (
+              <button
+                type="button"
+                onClick={() => {
+                  void navigator.clipboard.writeText(createdTokenAddress);
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-green-300 bg-white px-6 py-3 font-semibold text-green-700 hover:bg-green-50 dark:border-green-500/20 dark:bg-slate-900 dark:text-green-300"
+              >
+                Copy token address
+              </button>
+            )}
+            {createdTokenAddress && (
+              <button
+                type="button"
+                onClick={() => {
+                  const url = typeof window !== 'undefined' ? `${window.location.origin}/token/${createdTokenAddress}` : '';
+                  void navigator.clipboard.writeText(url);
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-green-300 bg-white px-6 py-3 font-semibold text-green-700 hover:bg-green-50 dark:border-green-500/20 dark:bg-slate-900 dark:text-green-300"
+              >
+                Copy share link
+              </button>
+            )}
             <button
               onClick={() => {
                 resetLaunchState();
                 router.refresh();
               }}
-              className="inline-flex items-center justify-center rounded-xl border border-green-300 bg-white px-6 py-3 font-semibold text-green-700 hover:bg-green-50 dark:border-green-500/20 dark:bg-slate-900 dark:text-green-300"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-green-300 bg-white px-6 py-3 font-semibold text-green-700 hover:bg-green-50 dark:border-green-500/20 dark:bg-slate-900 dark:text-green-300"
             >
               Launch another token
             </button>
@@ -517,12 +444,6 @@ export default function LaunchPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-current/10 bg-white/60 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide dark:bg-white/5">
-                      {currentState.label}
-                    </span>
-                    <span className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Current state: {step}</span>
-                  </div>
                   <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{currentState.title}</h2>
                   <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">{currentState.description}</p>
                   {error && <p className="mt-3 text-sm text-red-700 dark:text-red-300">{error}</p>}
@@ -542,11 +463,8 @@ export default function LaunchPage() {
             <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
               <div className="mb-5 flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">1. Token identity</h2>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">Give traders a clear signal in the first five seconds.</p>
-                </div>
-                <div className="rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-500 dark:border-white/10 dark:text-neutral-400">
-                  Core
+                  <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Token identity</h2>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">Name, ticker, description, image.</p>
                 </div>
               </div>
 
@@ -628,17 +546,22 @@ export default function LaunchPage() {
             </section>
 
             <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
-              <div className="mb-5 flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">2. Bonding curve setup</h2>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">Tune supply, entry price, and how aggressively price moves.</p>
+              <button
+                type="button"
+                onClick={() => setShowAdvanced((v) => !v)}
+                className="flex w-full items-center justify-between text-left"
+              >
+                <div className="flex items-center gap-2">
+                  {showAdvanced ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Advanced: bonding curve</h2>
                 </div>
-                <div className="rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-500 dark:border-white/10 dark:text-neutral-400">
-                  Market design
-                </div>
-              </div>
+                <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {totalSupply} supply · ${basePrice} base · {CURVE_TYPE_NAMES[curveType]}
+                </span>
+              </button>
 
-              <div className="space-y-4">
+              {showAdvanced && (
+              <div className="mt-5 space-y-4">
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">Total supply</label>
@@ -735,16 +658,14 @@ export default function LaunchPage() {
                   </div>
                 </div>
               </div>
+              )}
             </section>
 
             <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
               <div className="mb-5 flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">3. Creator trust layer</h2>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">Add destination links so traders can verify the project fast.</p>
-                </div>
-                <div className="rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-500 dark:border-white/10 dark:text-neutral-400">
-                  Conversion
+                  <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Socials</h2>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">Website, X, Telegram (optional).</p>
                 </div>
               </div>
 
@@ -791,17 +712,9 @@ export default function LaunchPage() {
               </div>
             </section>
 
-            <section className="rounded-3xl border border-blue-200 bg-blue-50/80 p-5 shadow-sm dark:border-blue-500/20 dark:bg-blue-500/10">
-              <div className="flex items-start gap-3">
-                <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-300" />
-                <div className="space-y-1 text-sm text-blue-900 dark:text-blue-100">
-                  <p className="font-semibold">Launch cost and payout model</p>
-                  <p>Creation fee: ${feeFormatted} USDC. Wallet balance: ${balanceFormatted} USDC.</p>
-                  <p>Graduation model: 50% creator treasury, 25% staking rewards, 25% platform allocation.</p>
-                  <p>Use the preview, economics, and connected-shell route cards to validate positioning before you sign anything.</p>
-                </div>
-              </div>
-            </section>
+            <div className="rounded-2xl border border-neutral-200 bg-neutral-50/80 p-4 text-sm text-neutral-600 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-400">
+              <p>Creation fee: ${feeFormatted} USDC. At graduation: 50% creator, 25% staking, 25% platform.</p>
+            </div>
 
             {hasInsufficientBalance && (
               <div className="rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-500/20 dark:bg-red-500/10">
@@ -885,6 +798,9 @@ export default function LaunchPage() {
                   {telegram.trim() && <PreviewBadge>{telegram.trim()}</PreviewBadge>}
                   {!website.trim() && !xHandle.trim() && !telegram.trim() && <PreviewBadge>Add socials to build trust</PreviewBadge>}
                 </div>
+                <p className="mt-4 text-xs text-blue-100/70">
+                  After launch, your token page will be at: <span className="font-mono">{typeof window !== 'undefined' ? window.location.origin : ''}/token/0x…</span> (address appears after creation).
+                </p>
               </div>
             </section>
 

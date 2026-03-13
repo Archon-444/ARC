@@ -33,6 +33,10 @@ ArcMarket has advanced from a "Hollow Shell" to a **Fully Integrated MVP Codebas
 - **Action:** Added E2E test spec `frontend/e2e/marketplace.spec.ts` for Marketplace flows.
 - **Status:** Test structure in place.
 
+### 5. Token launcher ✅ **IMPLEMENTED**
+- **Action:** Launch page (short form, live preview, advanced bonding curve), token market page (market-first, Details collapsible), token discovery in Explore (New/Trending/Recent/Nearing graduation/Graduated), LauncherTokenCard, useTokenActivity + WebSocket token room, backend GET/POST token activity. Subgraph: LaunchedToken, TokenTrade, TokenGraduation; set ArcTokenFactory address per [subgraph/DEPLOY.md](./subgraph/DEPLOY.md).
+- **Status:** Code and docs aligned; see [README.md](./README.md) and [CLAUDE.md](./CLAUDE.md).
+
 ---
 
 ## 📊 Implementation Status by Component

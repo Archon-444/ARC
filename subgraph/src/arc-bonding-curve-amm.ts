@@ -1,3 +1,7 @@
+/**
+ * ArcBondingCurveAMM event handlers (one instance per token).
+ * Verified: updates LaunchedToken soldSupply/totalVolume/totalTrades/isGraduated; creates TokenTrade, TokenGraduation.
+ */
 import { BigInt, log } from "@graphprotocol/graph-ts";
 import {
   TokensBought,

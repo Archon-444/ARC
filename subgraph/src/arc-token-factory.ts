@@ -1,3 +1,7 @@
+/**
+ * ArcTokenFactory event handlers.
+ * Verified: produces LaunchedToken with launch data; AMM template creates trade/graduation entities.
+ */
 import { BigInt, log } from "@graphprotocol/graph-ts";
 import { TokenCreated } from "../generated/ArcTokenFactory/ArcTokenFactory";
 import { ArcBondingCurveAMM } from "../generated/templates";

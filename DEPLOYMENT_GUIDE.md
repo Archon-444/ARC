@@ -112,10 +112,11 @@ npm run deploy:arc-testnet
 
 This will deploy:
 1. **FeeVault** - Revenue distribution system
-2. **NFTMarketplace** - Core marketplace logic
+2. **ArcMarketplace** - Core marketplace logic
 3. **ProfileRegistry** - User profiles
 4. **StakingRewards** - USDC staking system
 5. **SimpleGovernance** - DAO voting
+6. **ArcTokenFactory** (if included in script) - Token launcher; deployer may output `NEXT_PUBLIC_TOKEN_FACTORY_ADDRESS` for frontend and subgraph
 
 **Deployment time**: ~2-5 minutes
 
@@ -157,26 +158,11 @@ After deployment, update the subgraph configuration:
 
 ```bash
 cd subgraph
-
-# Edit subgraph.yaml with deployed addresses
 nano subgraph.yaml
-
-# Update these fields:
-# - startBlock: <deployment_block>
-# - address: <marketplace_address>
 ```
 
-Example:
-```yaml
-dataSources:
-  - kind: ethereum
-    name: NFTMarketplace
-    network: arc-testnet
-    source:
-      address: "0x1234...abcd"  # From deployment
-      abi: NFTMarketplace
-      startBlock: 1234567        # From deployment
-```
+- Set **ArcMarketplace**, **FeeVault**, **ProfileRegistry** `source.address` and `startBlock` from deployment.
+- Set **ArcTokenFactory** `source.address` to your deployed factory address (same as frontend `NEXT_PUBLIC_TOKEN_FACTORY_ADDRESS`). The repo default is a placeholder; see **[subgraph/DEPLOY.md](./subgraph/DEPLOY.md)** for instructions.
 
 ### Step 6: Deploy Subgraph
 

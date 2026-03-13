@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide provides step-by-step instructions for integrating all 29 UI components into the ArcMarket application. Each section includes specific file paths, code examples, and testing instructions.
+This guide provides step-by-step instructions for integrating UI components into the ARC application (marketplace + token launcher). For high-level product flow and token launcher architecture, see [README.md](../README.md) and [CLAUDE.md](../CLAUDE.md).
 
 ---
 
@@ -13,8 +13,9 @@ This guide provides step-by-step instructions for integrating all 29 UI componen
 3. [API Layer Setup](#api-layer-setup)
 4. [Blockchain Layer Setup](#blockchain-layer-setup)
 5. [Page Integrations](#page-integrations)
-6. [Component Integrations](#component-integrations)
-7. [Testing Guide](#testing-guide)
+6. [Token launcher](#token-launcher)
+7. [Component Integrations](#component-integrations)
+8. [Testing Guide](#testing-guide)
 
 ---
 
@@ -1101,6 +1102,24 @@ export function Header() {
   );
 }
 ```
+
+---
+
+## Token launcher
+
+The token launcher flow is implemented and documented in the main README and CLAUDE. Key paths (no code changes needed for standard setup):
+
+| Area | Path |
+|------|------|
+| Launch page | `frontend/src/app/launch/page.tsx` |
+| Token market page | `frontend/src/app/token/[address]/page.tsx` |
+| Token discovery (Explore) | `frontend/src/components/explore/ExploreContent.tsx` (Tokens tab: New, Trending, Recent, Nearing graduation, Graduated) |
+| Launcher token cards | `frontend/src/components/token/LauncherTokenCard.tsx`, `TokenCard.tsx` |
+| Data | `frontend/src/lib/graphql-client.ts` (`fetchLaunchedTokens`), `frontend/src/hooks/useSubgraphQueries.ts` (`useLaunchedTokensQuery`), `frontend/src/hooks/useTokenActivity.ts` |
+| Backend | `backend/src/routes/activity.routes.ts` (GET/POST token activity), `backend/TOKEN_ACTIVITY_BROADCAST.md` |
+| Subgraph | Set ArcTokenFactory address before deploy: [subgraph/DEPLOY.md](../subgraph/DEPLOY.md) |
+
+Ensure `NEXT_PUBLIC_TOKEN_FACTORY_ADDRESS` is set in frontend env and that the subgraph `subgraph.yaml` uses the same factory address.
 
 ---
 

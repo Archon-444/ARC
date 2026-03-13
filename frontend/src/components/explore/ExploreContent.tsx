@@ -22,7 +22,9 @@ import {
 } from 'lucide-react';
 import { NFTGrid } from '@/components/nft/NFTCard';
 import { TokenGrid } from '@/components/token/TokenCard';
+import { LauncherTokenGrid, type LaunchedTokenFeedItem } from '@/components/token/LauncherTokenCard';
 import { useAllTokens } from '@/hooks/useTokenFactory';
+import { useLaunchedTokensQuery } from '@/hooks/useSubgraphQueries';
 import { useExploreFilters } from '@/hooks/useExploreFilters';
 import { StatCard } from '@/components/ui/StatCard';
 import { Pagination } from '@/components/ui/Pagination';
@@ -60,8 +62,28 @@ export default function ExploreContent() {
   const [stats, setStats] = useState<MarketplaceStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [tokenSection, setTokenSection] = useState<'new' | 'trending' | 'recent' | 'nearing' | 'graduated'>('new');
 
-  const { tokens: launchedTokens, isLoading: tokensLoading } = useAllTokens();
+  const { data: subgraphTokens, isLoading: subgraphTokensLoading } = useLaunchedTokensQuery({
+    first: 200,
+    orderBy: 'createdAt',
+    orderDirection: 'desc',
+  });
+  const { tokens: contractTokens, isLoading: contractTokensLoading } = useAllTokens();
+  const launchedTokens = (subgraphTokens?.length ? subgraphTokens.map((t: { id: string; address?: string }) => t.id || t.address) : contractTokens || []) as string[];
+  const tokensLoading = subgraphTokens?.length ? subgraphTokensLoading : contractTokensLoading;
+
+  const tokenFeedItems = (subgraphTokens || []) as LaunchedTokenFeedItem[];
+  const newTokens = tokenFeedItems.slice().sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+  const trendingTokens = tokenFeedItems.slice().sort((a, b) => Number(b.totalVolume || 0) - Number(a.totalVolume || 0));
+  const recentActivity = tokenFeedItems.slice().sort((a, b) => Number(b.updatedAt ?? b.createdAt ?? 0) - Number(a.updatedAt ?? a.createdAt ?? 0));
+  const curvePct = (t: LaunchedTokenFeedItem) => {
+    const total = Number(t.totalSupply || 1);
+    const sold = Number(t.soldSupply || 0);
+    return total > 0 ? (sold / total) * 100 : 0;
+  };
+  const nearingGraduation = tokenFeedItems.filter((t) => !t.isGraduated).sort((a, b) => curvePct(b) - curvePct(a));
+  const graduatedTokens = tokenFeedItems.filter((t) => t.isGraduated);
 
   useEffect(() => {
     loadStats();
@@ -488,6 +510,35 @@ export default function ExploreContent() {
                     </button>
                   </div>
                 </div>
+              ) : tokenFeedItems.length > 0 ? (
+                <>
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {[
+                      { key: 'new' as const, label: 'New', count: newTokens.length },
+                      { key: 'trending' as const, label: 'Trending', count: trendingTokens.length },
+                      { key: 'recent' as const, label: 'Recent activity', count: recentActivity.length },
+                      { key: 'nearing' as const, label: 'Nearing graduation', count: nearingGraduation.length },
+                      { key: 'graduated' as const, label: 'Graduated', count: graduatedTokens.length },
+                    ].map(({ key, label, count }) => (
+                      <button
+                        key={key}
+                        onClick={() => setTokenSection(key)}
+                        className={
+                          tokenSection === key
+                            ? 'rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black'
+                            : 'rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-600 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-300 dark:hover:text-white'
+                        }
+                      >
+                        {label} {count > 0 && <span className="ml-1 opacity-80">({count})</span>}
+                      </button>
+                    ))}
+                  </div>
+                  {tokenSection === 'new' && <LauncherTokenGrid tokens={newTokens} />}
+                  {tokenSection === 'trending' && <LauncherTokenGrid tokens={trendingTokens} />}
+                  {tokenSection === 'recent' && <LauncherTokenGrid tokens={recentActivity} />}
+                  {tokenSection === 'nearing' && <LauncherTokenGrid tokens={nearingGraduation} />}
+                  {tokenSection === 'graduated' && <LauncherTokenGrid tokens={graduatedTokens} />}
+                </>
               ) : (
                 <TokenGrid tokens={launchedTokens} isLoading={tokensLoading} />
               )
