@@ -1,15 +1,17 @@
-import { v4 as uuidv4 } from 'uuid';
 import { APIError } from '../middleware/error.middleware';
 import { broadcastToRoom } from '../websocket';
+import { prisma } from '../prisma';
+import { getNFTOwner } from './nft-ownership';
+import type { Offer as PrismaOffer, OfferStatus } from '@prisma/client';
 
 /**
  * Offer Service
  *
- * Handles business logic for offer management
- * TODO: Replace in-memory storage with database (PostgreSQL/Prisma)
+ * Persists offers via Prisma (Postgres). Owner-gated actions verify on-chain
+ * ownership through RPC_URL to prevent accept-offer spoofing.
  */
 
-interface Offer {
+export interface Offer {
   id: string;
   nftId: string;
   contractAddress: string;
@@ -24,9 +26,22 @@ interface Offer {
   onChainOfferId?: string;
 }
 
-// In-memory storage (replace with database)
-const offers: Map<string, Offer> = new Map();
-const nftOffers: Map<string, string[]> = new Map(); // nftId -> offerIds[]
+function toOffer(row: PrismaOffer): Offer {
+  return {
+    id: row.id,
+    nftId: row.nftId,
+    contractAddress: row.contractAddress,
+    tokenId: row.tokenId,
+    offerer: row.offerer,
+    offererUsername: row.offererUsername ?? undefined,
+    offererAvatar: row.offererAvatar ?? undefined,
+    price: row.price,
+    expiresAt: row.expiresAt.toISOString(),
+    createdAt: row.createdAt.toISOString(),
+    status: row.status as Offer['status'],
+    onChainOfferId: row.onChainOfferId ?? undefined,
+  };
+}
 
 /**
  * Create new offer
@@ -40,117 +55,107 @@ export async function createOffer(params: {
   offererAddress: string;
   signature?: string;
 }) {
-  const offerId = uuidv4();
   const now = new Date();
   const expiresAt = new Date(now.getTime() + params.expirationDays * 24 * 60 * 60 * 1000);
 
-  const offer: Offer = {
-    id: offerId,
-    nftId: params.nftId,
-    contractAddress: params.contractAddress,
-    tokenId: params.tokenId,
-    offerer: params.offererAddress,
-    price: params.price,
-    expiresAt: expiresAt.toISOString(),
-    createdAt: now.toISOString(),
-    status: 'pending',
-  };
+  const row = await prisma.offer.create({
+    data: {
+      nftId: params.nftId,
+      contractAddress: params.contractAddress,
+      tokenId: params.tokenId,
+      offerer: params.offererAddress,
+      price: params.price,
+      expiresAt,
+      status: 'pending' as OfferStatus,
+    },
+  });
 
-  // Store offer
-  offers.set(offerId, offer);
+  const offer = toOffer(row);
 
-  // Add to NFT offers index
-  const currentOffers = nftOffers.get(params.nftId) || [];
-  currentOffers.push(offerId);
-  nftOffers.set(params.nftId, currentOffers);
-
-  // Broadcast to WebSocket clients
   broadcastToRoom(`nft:${params.nftId}`, {
     type: 'offer_created',
     data: offer,
   });
 
-  // In production: This would also submit to blockchain
-  // const { onChainOfferId } = await submitOfferToBlockchain(params);
-  // offer.onChainOfferId = onChainOfferId;
-
   return {
-    offerId,
-    status: 'pending',
-    requiresApproval: true, // Check USDC allowance in real implementation
-    // In production: Return approval transaction data if needed
+    offerId: offer.id,
+    status: 'pending' as const,
+    requiresApproval: true,
   };
 }
 
 /**
- * Get offers for an NFT
+ * Get offers for an NFT (filters out expired; lazily transitions pending→expired).
  */
 export async function getOffersByNFT(nftId: string): Promise<Offer[]> {
-  const offerIds = nftOffers.get(nftId) || [];
-  const nftOffersList = offerIds
-    .map(id => offers.get(id))
-    .filter(offer => offer !== undefined) as Offer[];
-
-  // Filter expired offers
   const now = new Date();
-  return nftOffersList.filter(offer => {
-    if (offer.status === 'expired') return false;
 
-    // Auto-expire old offers
-    if (new Date(offer.expiresAt) < now && offer.status === 'pending') {
-      offer.status = 'expired';
-      offers.set(offer.id, offer);
-      return false;
-    }
-
-    return true;
+  await prisma.offer.updateMany({
+    where: { nftId, status: 'pending', expiresAt: { lt: now } },
+    data: { status: 'expired' },
   });
+
+  const rows = await prisma.offer.findMany({
+    where: { nftId, status: { notIn: ['expired'] } },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return rows.map(toOffer);
 }
 
 /**
- * Accept offer (owner only)
+ * Accept offer. Verifies the signed `ownerAddress` matches the current on-chain
+ * owner of the NFT before transitioning.
  */
 export async function acceptOffer(offerId: string, ownerAddress: string) {
-  const offer = offers.get(offerId);
-
-  if (!offer) {
+  const row = await prisma.offer.findUnique({ where: { id: offerId } });
+  if (!row) {
     throw new APIError(404, 'Offer not found', 'NOT_FOUND');
   }
 
-  if (offer.status !== 'pending') {
+  if (row.status !== 'pending') {
     throw new APIError(400, 'Offer is not pending', 'INVALID_STATUS');
   }
 
-  // Check if expired
-  if (new Date(offer.expiresAt) < new Date()) {
-    offer.status = 'expired';
-    offers.set(offerId, offer);
+  if (row.expiresAt < new Date()) {
+    await prisma.offer.update({
+      where: { id: offerId },
+      data: { status: 'expired' },
+    });
     throw new APIError(400, 'Offer has expired', 'EXPIRED');
   }
 
-  // TODO: In production, verify ownerAddress owns the NFT
-  // const actualOwner = await getNFTOwner(offer.contractAddress, offer.tokenId);
-  // if (actualOwner.toLowerCase() !== ownerAddress.toLowerCase()) {
-  //   throw new APIError(403, 'Not NFT owner', 'NOT_OWNER');
-  // }
+  let actualOwner: string;
+  try {
+    actualOwner = await getNFTOwner(row.contractAddress, row.tokenId);
+  } catch (err) {
+    throw new APIError(
+      502,
+      'Failed to verify NFT ownership',
+      'OWNERSHIP_LOOKUP_FAILED',
+      err,
+    );
+  }
 
-  // Update offer status
-  offer.status = 'accepted';
-  offers.set(offerId, offer);
+  if (actualOwner !== ownerAddress.toLowerCase()) {
+    throw new APIError(403, 'Not NFT owner', 'NOT_OWNER');
+  }
 
-  // Broadcast to WebSocket clients
+  const updated = await prisma.offer.update({
+    where: { id: offerId },
+    data: { status: 'accepted' },
+  });
+  const offer = toOffer(updated);
+
   broadcastToRoom(`nft:${offer.nftId}`, {
     type: 'offer_accepted',
     data: offer,
   });
 
-  // In production: Submit acceptance to blockchain
-  // const txHash = await acceptOfferOnChain(offerId);
-
   return {
-    offerId,
-    status: 'accepted',
-    txHash: '0x' + '0'.repeat(64), // Mock transaction hash
+    offerId: offer.id,
+    status: 'accepted' as const,
+    txHash: '0x' + '0'.repeat(64),
   };
 }
 
@@ -158,37 +163,34 @@ export async function acceptOffer(offerId: string, ownerAddress: string) {
  * Cancel offer (offerer only)
  */
 export async function cancelOffer(offerId: string, offererAddress: string) {
-  const offer = offers.get(offerId);
-
-  if (!offer) {
+  const row = await prisma.offer.findUnique({ where: { id: offerId } });
+  if (!row) {
     throw new APIError(404, 'Offer not found', 'NOT_FOUND');
   }
 
-  if (offer.offerer.toLowerCase() !== offererAddress.toLowerCase()) {
+  if (row.offerer.toLowerCase() !== offererAddress.toLowerCase()) {
     throw new APIError(403, 'Not offer creator', 'NOT_OFFERER');
   }
 
-  if (offer.status !== 'pending') {
+  if (row.status !== 'pending') {
     throw new APIError(400, 'Offer is not pending', 'INVALID_STATUS');
   }
 
-  // Update offer status
-  offer.status = 'cancelled';
-  offers.set(offerId, offer);
+  const updated = await prisma.offer.update({
+    where: { id: offerId },
+    data: { status: 'cancelled' },
+  });
+  const offer = toOffer(updated);
 
-  // Broadcast to WebSocket clients
   broadcastToRoom(`nft:${offer.nftId}`, {
     type: 'offer_cancelled',
     data: offer,
   });
 
-  // In production: Submit cancellation to blockchain
-  // const txHash = await cancelOfferOnChain(offerId);
-
   return {
-    offerId,
-    status: 'cancelled',
-    txHash: '0x' + '0'.repeat(64), // Mock transaction hash
+    offerId: offer.id,
+    status: 'cancelled' as const,
+    txHash: '0x' + '0'.repeat(64),
   };
 }
 
@@ -196,30 +198,29 @@ export async function cancelOffer(offerId: string, offererAddress: string) {
  * Get offer by ID
  */
 export async function getOfferById(offerId: string): Promise<Offer | null> {
-  return offers.get(offerId) || null;
+  const row = await prisma.offer.findUnique({ where: { id: offerId } });
+  return row ? toOffer(row) : null;
 }
 
 /**
  * Clean up expired offers (run periodically)
  */
 export async function cleanupExpiredOffers() {
-  const now = new Date();
-  let cleanedCount = 0;
+  const { count } = await prisma.offer.updateMany({
+    where: { status: 'pending', expiresAt: { lt: new Date() } },
+    data: { status: 'expired' },
+  });
 
-  for (const [id, offer] of offers.entries()) {
-    if (offer.status === 'pending' && new Date(offer.expiresAt) < now) {
-      offer.status = 'expired';
-      offers.set(id, offer);
-      cleanedCount++;
-    }
+  if (count > 0) {
+    console.log(`Cleaned up ${count} expired offers`);
   }
 
-  if (cleanedCount > 0) {
-    console.log(`Cleaned up ${cleanedCount} expired offers`);
-  }
-
-  return cleanedCount;
+  return count;
 }
 
-// Run cleanup every hour
-setInterval(cleanupExpiredOffers, 60 * 60 * 1000);
+// Run cleanup every hour.
+setInterval(() => {
+  cleanupExpiredOffers().catch((err) => {
+    console.error('cleanupExpiredOffers failed:', err);
+  });
+}, 60 * 60 * 1000);
