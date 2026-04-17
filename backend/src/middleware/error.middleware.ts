@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { reportError } from '../lib/error-reporting';
 
 export class APIError extends Error {
   constructor(
@@ -19,6 +20,14 @@ export function errorHandler(
   next: NextFunction
 ) {
   console.error('Error:', err);
+
+  // Non-APIError exceptions are unexpected — forward to error tracking.
+  if (!(err instanceof APIError)) {
+    reportError(err, {
+      method: req.method,
+      path: req.path,
+    });
+  }
 
   if (err instanceof APIError) {
     return res.status(err.statusCode).json({

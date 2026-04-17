@@ -10,6 +10,7 @@
 import React from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from './ui/Button';
+import { reportError } from '@/lib/error-reporting';
 import Link from 'next/link';
 
 interface Props {
@@ -36,12 +37,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught:', error, errorInfo);
     this.setState({ errorInfo });
-
-    // Log to error tracking service in production
-    if (process.env.NODE_ENV === 'production') {
-      // TODO: Send to Sentry/LogRocket/etc
-      // logErrorToService(error, errorInfo);
-    }
+    reportError(error, { componentStack: errorInfo.componentStack });
   }
 
   handleReset = () => {

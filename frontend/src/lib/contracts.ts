@@ -1,11 +1,34 @@
-// Contract addresses (update after deployment)
+// Contract addresses (set via NEXT_PUBLIC_* env vars after deployment).
+// In production, missing values throw at import time so wagmi never silently
+// reads from 0x0. In development we fall back to the zero sentinel so pages
+// can still render before a local deploy has populated .env.local.
+const REQUIRED_CONTRACT_ENV_VARS = [
+  'NEXT_PUBLIC_USDC_ADDRESS',
+  'NEXT_PUBLIC_NFT_ADDRESS',
+  'NEXT_PUBLIC_MARKETPLACE_ADDRESS',
+  'NEXT_PUBLIC_STAKING_ADDRESS',
+  'NEXT_PUBLIC_GOVERNANCE_ADDRESS',
+  'NEXT_PUBLIC_TOKEN_FACTORY_ADDRESS',
+] as const;
+
+function resolveAddress(name: (typeof REQUIRED_CONTRACT_ENV_VARS)[number]): `0x${string}` {
+  const value = process.env[name];
+  if (!value) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(`Missing required contract address env var: ${name}`);
+    }
+    return '0x0000000000000000000000000000000000000000';
+  }
+  return value as `0x${string}`;
+}
+
 export const CONTRACTS = {
-  USDC: process.env.NEXT_PUBLIC_USDC_ADDRESS || '0x',
-  NFT: process.env.NEXT_PUBLIC_NFT_ADDRESS || '0x',
-  MARKETPLACE: process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS || '0x',
-  STAKING: process.env.NEXT_PUBLIC_STAKING_ADDRESS || '0x',
-  GOVERNANCE: process.env.NEXT_PUBLIC_GOVERNANCE_ADDRESS || '0x',
-  TOKEN_FACTORY: process.env.NEXT_PUBLIC_TOKEN_FACTORY_ADDRESS || '0x',
+  USDC: resolveAddress('NEXT_PUBLIC_USDC_ADDRESS'),
+  NFT: resolveAddress('NEXT_PUBLIC_NFT_ADDRESS'),
+  MARKETPLACE: resolveAddress('NEXT_PUBLIC_MARKETPLACE_ADDRESS'),
+  STAKING: resolveAddress('NEXT_PUBLIC_STAKING_ADDRESS'),
+  GOVERNANCE: resolveAddress('NEXT_PUBLIC_GOVERNANCE_ADDRESS'),
+  TOKEN_FACTORY: resolveAddress('NEXT_PUBLIC_TOKEN_FACTORY_ADDRESS'),
 };
 
 // Simplified ABIs for frontend use

@@ -1,9 +1,10 @@
 # ArcMarket dApps Alignment Review: Code vs Documentation
 
 **Date:** February 23, 2026
+**Last sync:** April 16, 2026 — remediation commit `411cb5d` on `claude/assess-pre-launch-status-vilK3`
 **Reviewer:** Claude Code
 **Scope:** Full-stack review of smart contracts, frontend, backend, subgraph, docs
-**Overall Alignment Score: ~82%** (documentation claims 90-95%)
+**Overall Alignment Score: ~90%** after `411cb5d` (was ~82% at original review)
 
 ---
 
@@ -99,7 +100,7 @@ After a thorough review of the entire ArcMarket codebase against all 33 document
 | **FE-2** | **MEDIUM** | BottomNavigation not in layout | Component exists at `components/layout/BottomNavigation.tsx` but is NOT imported in `layout.tsx`. Mobile nav is embedded inside `Navbar.tsx` instead. |
 | **FE-3** | **LOW** | PWA component name mismatch | Docs say `PWAInstallPrompt` from `@/components/pwa/PWAInstallPrompt`. Code imports `InstallPrompt` from `@/components/pwa/InstallPrompt`. |
 | **FE-4** | **LOW** | SearchInput not integrated | INTEGRATION_GUIDE claims SearchInput is in Navbar. Actual search is via CommandPalette (Cmd+K) only. |
-| **FE-5** | **LOW** | Contract addresses are placeholders | All addresses default to `'0x'` - fully dependent on `.env` variables. |
+| **FE-5** | **LOW** | Contract addresses are placeholders | ✅ **Resolved in `411cb5d`.** `frontend/src/lib/contracts.ts` now throws at boot in production when any required `NEXT_PUBLIC_*_ADDRESS` is missing; dev still falls back to the zero sentinel. All 6 addresses listed in `.env.example`. |
 
 ---
 
@@ -122,7 +123,7 @@ After a thorough review of the entire ArcMarket codebase against all 33 document
 
 | ID | Severity | Issue | Details |
 |----|----------|-------|---------|
-| **SG-1** | **CRITICAL** | ArcTokenFactory zero address | `subgraph.yaml:113` has address `0x0000000000000000000000000000000000000000`. Subgraph **cannot index** any token creation events. Token launcher feature is non-functional for indexing. |
+| **SG-1** | **CRITICAL** | ArcTokenFactory zero address | Still `0x000…000` in `subgraph.yaml:116`. Indexing remains disabled until operator step D2–D5 (see plan): deploy factory via `contracts/scripts/deploy-arc.js`, drop address into the YAML + `NEXT_PUBLIC_TOKEN_FACTORY_ADDRESS`, then `graph codegen && graph build && graph deploy` per `subgraph/DEPLOY.md`. |
 | **SG-2** | **LOW** | Handler duplication | `mapping.ts` and `nft-marketplace.ts` both contain the same handler implementations. |
 
 ---
@@ -144,10 +145,11 @@ The `/backend/` directory contains a standalone Express.js REST API:
 
 | ID | Severity | Issue | Details |
 |----|----------|-------|---------|
-| **BE-1** | **CRITICAL** | Backend not connected to frontend | Frontend uses GraphQL (subgraph) + Next.js API routes. Zero REST API calls to backend's `/v1/*` endpoints. The backend exists as a **completely standalone, unused service**. |
-| **BE-2** | **HIGH** | In-memory storage only | Backend uses in-memory data storage. All data lost on restart. PostgreSQL + Prisma documented as "future" but not implemented. |
-| **BE-3** | **HIGH** | WebSocket is mock in frontend | `frontend/src/lib/websocket.ts` contains mock implementation. Backend WebSocket server exists but frontend doesn't connect to it. |
-| **BE-4** | **MEDIUM** | Undocumented in main README | Main README architecture section doesn't mention the backend directory at all. |
+| **BE-1** | **CRITICAL** | Backend not connected to frontend | Partially addressed: token activity flow now uses the backend (`POST /v1/activity/token/broadcast` + WS `token:<address>` room). Other `/v1/*` endpoints still unused by frontend. |
+| **BE-2** | **HIGH** | In-memory storage only | ✅ **Resolved in `411cb5d`.** `backend/prisma/schema.prisma` + `backend/src/prisma.ts` + `backend/src/services/offer.service.ts` ported to Prisma/Postgres. Operator still needs to run `npx prisma migrate dev --name init` against a real DB. |
+| **BE-3** | **HIGH** | WebSocket is mock in frontend | Partially resolved. `broadcastTokenActivity` now exported (`backend/src/websocket/index.ts`) and the POST route wires it to `token:<address>` rooms. Legacy offer-room broadcasts remain server-side only; non-offer frontend consumers still need porting. |
+| **BE-4** | **MEDIUM** | Undocumented in main README | Open. README architecture section still omits `backend/` and `subgraph/`. |
+| **BE-5 (new)** | **HIGH** | `POST /v1/activity/token/broadcast` imported a missing symbol | ✅ **Resolved in `411cb5d`.** `broadcastTokenActivity` exported from `backend/src/websocket/index.ts`. Covered by `backend/src/websocket/__tests__/broadcast.test.ts`. |
 
 **Recommendation:** Either integrate the backend Express server into the frontend data flow (replacing some Next.js API routes) or remove it to reduce confusion. The current state where it exists but is unused is misleading.
 
@@ -155,16 +157,17 @@ The `/backend/` directory contains a standalone Express.js REST API:
 
 ## 5. Security: Open Findings
 
-All 6 actionable findings from SECURITY_AUDIT.md remain status assessment:
+Status as of `411cb5d`:
 
 | ID | Severity | Issue | Current Status |
 |----|----------|-------|---------------|
-| SEC-01 | **HIGH** | IDOR in token refresh endpoint | **PARTIALLY FIXED** - `requireSessionUser()` guard added to some endpoints but needs verification |
-| SEC-02 | **HIGH** | 15 npm vulnerabilities (5 high, 10 moderate) | **OPEN** - `bigint-buffer` via Circle bridge-kit has no fix available |
-| SEC-03 | MEDIUM | Session validation gaps on wallet endpoints | **PARTIALLY FIXED** - Some endpoints have ownership checks, others don't |
-| SEC-04 | MEDIUM | Error information disclosure to clients | **PARTIALLY MITIGATED** - Some endpoints still return detailed error objects |
-| SEC-05 | MEDIUM | No distributed rate limiting | **OPEN** - In-memory rate limiting only; TODO comment says "Move to Redis" |
-| SEC-06 | LOW | Console logging of sensitive data | **OPEN** - UserIDs, challengeIDs still logged |
+| SEC-01 | **HIGH** | IDOR in token refresh endpoint | **PARTIALLY FIXED** — `requireSessionUser()` guard added to some endpoints; full audit pass still needed |
+| SEC-02 | **HIGH** | 15 npm vulnerabilities (5 high, 10 moderate) | **OPEN** — `bigint-buffer` via Circle bridge-kit has no fix available |
+| SEC-03 | MEDIUM | Session validation gaps on wallet endpoints | **PARTIALLY FIXED** |
+| SEC-04 | MEDIUM | Error information disclosure to clients | **PARTIALLY MITIGATED** — server-side reporting now routed through `backend/src/lib/error-reporting.ts` shim; client responses still need sanitization pass |
+| SEC-05 | MEDIUM | No distributed rate limiting | **PARTIAL** — env-driven limits landed in `411cb5d` (`backend/src/server.ts`). Redis-backed store still pending. |
+| SEC-06 | LOW | Console logging of sensitive data | **OPEN** |
+| SEC-09 | **HIGH** | NFT accept-offer owner spoofing | **FIXED in `411cb5d`** — `backend/src/services/nft-ownership.ts` reads on-chain `ownerOf()` via `RPC_URL`; `acceptOffer` 403s non-owners. |
 
 **Additional security note:** SECURITY_AUDIT.md SEC-08 references `NFTMarketplace.sol` but the actual contract is `ArcMarketplace.sol`.
 
@@ -236,18 +239,20 @@ The architecture diagram in README.md is missing:
 
 ### Critical (Blocks Production)
 
-1. **Fix SimpleGovernance quorum enforcement** - Add quorum check to `finalizeProposal()` or switch deployment to use `ArcGovernance.sol`
-2. **Fix ArcTokenFactory zero address in subgraph.yaml** - Update to actual deployed address so token launcher indexing works
-3. **Decide on backend integration** - Either connect the Express backend to the frontend or remove it
-4. **Fix SEC-01 IDOR vulnerability** - Verify all Circle auth endpoints have ownership checks
-5. **Address npm vulnerabilities** - Run `npm audit fix`; evaluate `bigint-buffer` risk from Circle bridge-kit
+1. **Fix SimpleGovernance quorum enforcement** — Add quorum check to `finalizeProposal()` or switch deployment to use `ArcGovernance.sol` (OPEN)
+2. **Fix ArcTokenFactory zero address in subgraph.yaml** — Update after deploy; workflow documented in `subgraph/DEPLOY.md` (OPEN — pending operator D2–D5)
+3. **Decide on backend integration** — Token activity path now uses backend; other endpoints still unused (PARTIAL)
+4. **Fix SEC-01 IDOR vulnerability** — Verify all Circle auth endpoints have ownership checks (PARTIAL)
+5. **Address npm vulnerabilities** — Run `npm audit fix`; evaluate `bigint-buffer` risk from Circle bridge-kit (OPEN)
+6. **NFT accept-offer spoofing (SEC-09)** — ✅ FIXED in `411cb5d`
 
 ### High Priority (Before Beta)
 
-6. **Implement distributed rate limiting** - Migrate from in-memory to Redis/Upstash
-7. **Connect WebSocket to backend** - Replace mock implementation with real real-time data
-8. **Fix error information disclosure** - Sanitize all API error responses
-9. **Remove/archive duplicate contracts** - Pick canonical staking and governance implementations
+7. **Implement distributed rate limiting** — Env-driven limits shipped; move store to Redis (PARTIAL)
+8. **Connect WebSocket to backend** — Token activity done; remaining rooms (offers, activity) still need wiring (PARTIAL)
+9. **Fix error information disclosure** — Sanitize all API error responses (OPEN)
+10. **Remove/archive duplicate contracts** — Pick canonical staking and governance implementations (OPEN)
+11. **Install Sentry SDKs** — Error-reporting shim is already wired on both frontend and backend; install `@sentry/nextjs` + `@sentry/node` with DSNs to activate
 
 ### Documentation Updates (Before Launch)
 
@@ -288,12 +293,12 @@ The architecture diagram in README.md is missing:
 
 ## 10. Revised Overall Assessment
 
-| Metric | Documentation Claims | This Review Finds |
-|--------|---------------------|-------------------|
-| Overall completion | 90-95% | **~82%** |
-| Production-ready | Yes (pending UAT) | **No** - security issues, mock WebSocket, disconnected backend, zero-address subgraph |
-| OpenSea feature parity | 97.2% | **~80%** - offer system not connected, token launcher UI incomplete, analytics placeholder |
-| Test coverage | 112 unit + 37 E2E | **160 unit + 198 E2E + 1,354 contract** (better than claimed) |
+| Metric | Documentation Claims | Original review | After `411cb5d` |
+|--------|---------------------|-----------------|-----------------|
+| Overall completion | 90-95% | ~82% | **~90%** |
+| Production-ready | Yes (pending UAT) | No | **No** — pending operator deploy steps (D1–D7) + Phase B (multisig/timelock, SC-1 quorum, Redis, Docker, CI) |
+| OpenSea feature parity | 97.2% | ~80% | **~85%** (offer persistence + accept-offer auth fixed; offer-system hook-up remaining) |
+| Test coverage | 112 unit + 37 E2E | 160 unit + 198 E2E + 1,354 contract | Same plus 1 backend WS smoke test (`backend/src/websocket/__tests__/broadcast.test.ts`) |
 
 The project has excellent foundational architecture and the code quality is high where it exists. The primary gap is **integration completeness** - individual layers (contracts, frontend, subgraph, backend) are well-built but not fully wired together. Closing the integration gaps and fixing the security issues identified would genuinely bring this to production-ready status.
 

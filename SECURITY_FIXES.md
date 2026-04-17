@@ -2,11 +2,17 @@
 
 This document outlines the security improvements implemented to address npm vulnerabilities and the IDOR (Insecure Direct Object Reference) vulnerability.
 
+**Last commit sync:** `411cb5d` on `claude/assess-pre-launch-status-vilK3`.
+
 ## Summary
 
-- **15 npm vulnerabilities**: Addressed through dependency updates
+- **15 npm vulnerabilities**: Addressed through dependency updates (manual `npm audit fix` still required per operator checklist below)
 - **IDOR vulnerability**: Fixed with authorization middleware
-- **Security posture**: 75% → 95%
+- **NFT accept-offer owner spoofing (SEC-09)**: Fixed in `411cb5d` via on-chain owner verification in `backend/src/services/offer.service.ts` + `nft-ownership.ts`
+- **Rate limit env-driven**: `backend/src/server.ts` now reads `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX_REQUESTS`. Redis-backed store still pending (see SEC-05 in `SECURITY_AUDIT.md`)
+- **Error reporting**: Sentry-compatible shim wired on both frontend (`frontend/src/lib/error-reporting.ts` + `ErrorBoundary.tsx`) and backend (`backend/src/lib/error-reporting.ts` + `error.middleware.ts`). No-ops until `@sentry/nextjs` / `@sentry/node` are installed with a DSN.
+- **Offer persistence**: Moved from in-memory `Map` to Prisma/Postgres (`backend/prisma/schema.prisma` + `backend/src/prisma.ts`). Operator must run `npx prisma migrate dev --name init` before boot.
+- **Security posture**: 75% → ~90% (remaining gap is SEC-05 Redis, SEC-02 upstream deps, SEC-06 structured logging, SC-1 quorum bug)
 
 ---
 
@@ -175,7 +181,8 @@ curl -H "Authorization: Bearer $OTHER_TOKEN" -X DELETE /api/tokens/123
 ✅ Use TypeScript for type safety
 
 ### Rate Limiting
-⚠️ TODO: Implement Redis rate limiting (Week 2)
+✅ Env-configurable via `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX_REQUESTS` (`411cb5d`)
+⚠️ TODO: Swap in-memory store for `rate-limit-redis` backed by `REDIS_URL` (multi-instance deploys)
 
 ### Logging
 ✅ Log authorization failures
@@ -236,7 +243,10 @@ npm run test:integration
 - Security posture: 95%
 
 **Remaining:**
-- Redis rate limiting (Week 2)
+- Redis-backed rate-limit store (env-driven config already shipped)
+- `bigint-buffer` transitive HIGH via `@circle-fin/bridge-kit` — no fix available upstream
+- Structured logging + redaction (SEC-06)
+- SimpleGovernance quorum enforcement (SC-1 in DAPPS_ALIGNMENT_REVIEW.md)
 - WAF/DDoS protection (Production)
 
 ---

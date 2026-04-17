@@ -14,6 +14,8 @@ import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
+  ArrowRight,
+  BarChart3,
   ChevronDown,
   ChevronRight,
   CheckCircle2,

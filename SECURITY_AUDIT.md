@@ -4,6 +4,7 @@
 **Auditor:** Claude Code
 **Version:** 0.4
 **Risk Rating:** MEDIUM
+**Last remediation sync:** `411cb5d` (branch `claude/assess-pre-launch-status-vilK3`)
 
 ---
 
@@ -19,14 +20,15 @@ This security audit covers the ARC NFT Marketplace frontend and smart contracts.
 
 | ID | Severity | Category | Status |
 |----|----------|----------|--------|
-| SEC-01 | HIGH | IDOR Vulnerability | Open |
+| SEC-01 | HIGH | IDOR Vulnerability | Partial |
 | SEC-02 | HIGH | Dependency Vulnerabilities | Open |
-| SEC-03 | MEDIUM | Session Validation Gap | Open |
-| SEC-04 | MEDIUM | Error Information Disclosure | Open |
-| SEC-05 | MEDIUM | Missing Rate Limiting | Open |
+| SEC-03 | MEDIUM | Session Validation Gap | Partial |
+| SEC-04 | MEDIUM | Error Information Disclosure | Partial |
+| SEC-05 | MEDIUM | Missing Rate Limiting | Partial (see below) |
 | SEC-06 | LOW | Console Logging of Sensitive Data | Open |
 | SEC-07 | LOW | dangerouslySetInnerHTML Usage | Acceptable |
 | SEC-08 | INFO | Smart Contract Best Practices | Advisory |
+| SEC-09 | HIGH | NFT accept-offer owner spoofing | **Fixed** in `411cb5d` |
 
 ---
 
@@ -127,29 +129,27 @@ return NextResponse.json({
 
 ---
 
-### SEC-05: Missing Rate Limiting [MEDIUM]
+### SEC-05: Missing Rate Limiting [MEDIUM — PARTIAL]
 
-**Location:** All API routes
+**Location:** `backend/src/server.ts:47-57`
 
-**Description:** No rate limiting is implemented on API endpoints, allowing potential abuse through:
-- Brute force attacks on auth endpoints
-- DoS through excessive API calls
-- Enumeration attacks
+**Description:** `express-rate-limit` protects `/v1/*` (default 100 req / 15 min per IP).
 
-**Recommendation:**
-1. Implement rate limiting middleware (e.g., `@upstash/ratelimit`)
-2. Add per-IP and per-user limits
-3. Implement exponential backoff for failed auth attempts
+**`411cb5d` update:** Limiter now reads `RATE_LIMIT_WINDOW_MS` and `RATE_LIMIT_MAX_REQUESTS` from env, and emits `RateLimit-*` standard headers.
 
-```typescript
-import { Ratelimit } from '@upstash/ratelimit';
-import { Redis } from '@upstash/redis';
+**Still open:** Store is in-memory — behind a load balancer each instance rate-limits independently. Before mainnet, swap to `rate-limit-redis` + `ioredis` against `REDIS_URL`, or port to `@upstash/ratelimit`.
 
-const ratelimit = new Ratelimit({
-  redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(10, '10 s'),
-});
-```
+---
+
+### SEC-09: NFT accept-offer owner spoofing [HIGH — FIXED]
+
+**Location:** `backend/src/services/offer.service.ts:113-155` (pre-`411cb5d`)
+
+**Description:** `acceptOffer` trusted the signed `ownerAddress` header without verifying the current on-chain owner of the NFT. Any wallet with a valid signed message could accept any pending offer, DoS-ing the offerer and potentially hijacking accept flows when combined with front-running.
+
+**Remediation (`411cb5d`):** `backend/src/services/nft-ownership.ts` added — reads `ownerOf(tokenId)` via `RPC_URL`. `acceptOffer` now 403s when the recovered signer does not match the current on-chain owner. If the ownership lookup fails, returns 502 `OWNERSHIP_LOOKUP_FAILED` rather than falling through.
+
+**Status:** Fixed. Requires operator to set `RPC_URL` in `backend/.env`.
 
 ---
 
@@ -263,18 +263,21 @@ undici 6.0.0-6.21.1: Insufficient random values, DoS via bad certificates
 ## Remediation Priority
 
 ### Immediate (Before Production)
-1. **SEC-01**: Fix IDOR in token refresh endpoint
-2. **SEC-03**: Add ownership verification to wallet endpoints
-3. **SEC-04**: Remove detailed error exposure
+1. **SEC-01**: Fix IDOR in token refresh endpoint — PARTIAL; verify `requireSessionUser` on every `/api/circle/*` route
+2. **SEC-03**: Add ownership verification to wallet endpoints — PARTIAL; full audit pass still needed
+3. **SEC-04**: Remove detailed error exposure — PARTIAL; server-side logging routed through `lib/error-reporting.ts` shim
 
 ### Short-term (Within 2 weeks)
-4. **SEC-05**: Implement rate limiting
-5. **SEC-02**: Apply available dependency fixes
+4. **SEC-05**: Move rate limit store to Redis (env-driven limits already landed in `411cb5d`)
+5. **SEC-02**: Apply available dependency fixes; monitor `bigint-buffer` upstream
 
 ### Medium-term (Within 1 month)
-6. **SEC-06**: Implement structured logging
+6. **SEC-06**: Implement structured logging (pino with redact paths)
 7. Add Content-Security-Policy header
 8. Consider smart contract pause mechanism
+
+### Already done (`411cb5d`)
+- **SEC-09**: NFT accept-offer owner spoofing — fixed by on-chain owner verification in `offer.service.ts`
 
 ---
 
