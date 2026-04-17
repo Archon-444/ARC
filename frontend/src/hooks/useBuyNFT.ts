@@ -15,7 +15,7 @@ export function useBuyNFT() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { executeChallenge, activeWallet } = useCircleWallet();
+  const { executeChallenge, currentWallet } = useCircleWallet();
   const { writeContract, data: hash } = useContractWrite();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
@@ -39,7 +39,7 @@ export function useBuyNFT() {
       const priceInWei = parseUnits(price, 6);
 
       // Step 1: Approve USDC spending
-      if (useCircle && activeWallet) {
+      if (useCircle && currentWallet) {
         // Use Circle wallet for approval
         const approveData = encodeFunctionData({
           abi: ERC20ABI,
@@ -51,7 +51,7 @@ export function useBuyNFT() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            walletId: activeWallet.id,
+            walletId: currentWallet.id,
             to: USDC_ADDRESS,
             value: '0',
             data: approveData,
@@ -84,7 +84,7 @@ export function useBuyNFT() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            walletId: activeWallet.id,
+            walletId: currentWallet.id,
             to: MARKETPLACE_ADDRESS,
             value: '0',
             data: buyData,
@@ -153,7 +153,7 @@ export function useApproveUSDC() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { executeChallenge, activeWallet } = useCircleWallet();
+  const { executeChallenge, currentWallet } = useCircleWallet();
   const { writeContract, data: hash } = useContractWrite();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
@@ -164,7 +164,7 @@ export function useApproveUSDC() {
     try {
       const amountInWei = parseUnits(amount, 6);
 
-      if (useCircle && activeWallet) {
+      if (useCircle && currentWallet) {
         const approveData = encodeFunctionData({
           abi: ERC20ABI,
           functionName: 'approve',
@@ -175,7 +175,7 @@ export function useApproveUSDC() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            walletId: activeWallet.id,
+            walletId: currentWallet.id,
             to: USDC_ADDRESS,
             value: '0',
             data: approveData,

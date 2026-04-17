@@ -42,17 +42,17 @@ interface SocialLoginProps {
  */
 export function SocialLogin({ onSuccess, onError, className = '' }: SocialLoginProps) {
   const { data: session, status } = useSession();
-  const { createWallet, activeWallet, isSDKReady } = useCircleWallet();
+  const { createWallet, currentWallet, isSDKReady } = useCircleWallet();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [provider, setProvider] = useState<string | null>(null);
 
   // When OAuth session is established, create Circle wallet
   useEffect(() => {
-    if (session && provider && !activeWallet) {
+    if (session && provider && !currentWallet) {
       handleCreateWallet();
     }
-  }, [session, provider, activeWallet]);
+  }, [session, provider, currentWallet]);
 
   /**
    * Create Circle wallet after successful OAuth
@@ -181,13 +181,13 @@ export function SocialLogin({ onSuccess, onError, className = '' }: SocialLoginP
       )}
 
       {/* Success Message */}
-      {session && activeWallet && (
+      {session && currentWallet && (
         <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
           <p className="text-sm text-green-800 dark:text-green-200">
             ✅ Signed in as {session.user?.email}
           </p>
           <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-            Wallet: {activeWallet.address.slice(0, 6)}...{activeWallet.address.slice(-4)}
+            Wallet: {currentWallet.address.slice(0, 6)}...{currentWallet.address.slice(-4)}
           </p>
         </div>
       )}
