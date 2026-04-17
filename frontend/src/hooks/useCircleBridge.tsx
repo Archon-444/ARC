@@ -8,7 +8,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { BridgeKit } from '@circle-fin/bridge-kit';
+import { AppKit } from '@circle-fin/app-kit';
 import { createAdapterFromProvider } from '@circle-fin/adapter-viem-v2';
 import type { SupportedBridgeChain, BridgeSpeed, BridgeResult, BridgeEstimate } from '@/lib/circle-bridge';
 import { initializeBridgeKit, CircleBridgeError } from '@/lib/circle-bridge';
@@ -70,7 +70,7 @@ interface UseBridgeReturn {
  * ```
  */
 export function useCircleBridge(): UseBridgeReturn {
-  const [kit, setKit] = useState<BridgeKit | null>(null);
+  const [kit, setKit] = useState<AppKit | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [result, setResult] = useState<BridgeResult | null>(null);
@@ -191,7 +191,7 @@ export function useCircleBridge(): UseBridgeReturn {
           provider: window.ethereum,
         });
 
-        const estimateResult = await kit.estimate({
+        const estimateResult = await kit.estimateBridge({
           from: {
             adapter,
             chain: params.fromChain,
@@ -246,7 +246,7 @@ export function useCircleBridge(): UseBridgeReturn {
           provider: window.ethereum,
         });
 
-        const retryResult = await kit.retry(failedResult as any, {
+        const retryResult = await kit.retryBridge(failedResult as any, {
           from: adapter,
           to: adapter,
         });
