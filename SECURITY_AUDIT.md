@@ -21,7 +21,7 @@ This security audit covers the ARC NFT Marketplace frontend and smart contracts.
 | ID | Severity | Category | Status |
 |----|----------|----------|--------|
 | SEC-01 | HIGH | IDOR Vulnerability | Partial |
-| SEC-02 | HIGH | Dependency Vulnerabilities | Open |
+| SEC-02 | HIGH | Dependency Vulnerabilities | Closed (bigint-buffer removed via App Kit install) |
 | SEC-03 | MEDIUM | Session Validation Gap | Partial |
 | SEC-04 | MEDIUM | Error Information Disclosure | Partial |
 | SEC-05 | MEDIUM | Missing Rate Limiting | Partial (see below) |
@@ -66,10 +66,12 @@ if (!session || session.user.userId !== userId) {
 
 ### SEC-02: Dependency Vulnerabilities [HIGH]
 
+**Status:** `bigint-buffer` HIGH is **CLOSED**. After migrating from `@circle-fin/bridge-kit` (direct dep) to `@circle-fin/app-kit` in Phase 2, `npm ls bigint-buffer` on `frontend/` returns empty — App Kit's transitive tree no longer pulls the vulnerable package. Other npm-audit items tracked separately.
+
 **Description:** npm audit reports 15 vulnerabilities (10 moderate, 5 high).
 
 **Key Vulnerabilities:**
-- `bigint-buffer`: Buffer overflow vulnerability (HIGH) - No fix available
+- ~~`bigint-buffer`: Buffer overflow vulnerability (HIGH) - No fix available~~ — **CLOSED** (no longer in dep tree after App Kit migration)
 - `undici`: Insufficient random values & DoS via bad certificates (MODERATE)
 - `@firebase/*`: Multiple vulnerabilities via undici dependency
 
@@ -213,8 +215,8 @@ console.log('[NextAuth] Sign in:', { user: user.email, provider: account?.provid
 
 ```
 # High Severity
-bigint-buffer: Buffer Overflow via toBigIntLE() - No fix available
-  └─ @circle-fin/bridge-kit → @solana/spl-token → bigint-buffer
+# ~~bigint-buffer~~: CLOSED — removed from tree by App Kit migration
+#   (was: @circle-fin/bridge-kit → @solana/spl-token → bigint-buffer)
 
 # Moderate Severity
 undici 6.0.0-6.21.1: Insufficient random values, DoS via bad certificates
@@ -269,7 +271,7 @@ undici 6.0.0-6.21.1: Insufficient random values, DoS via bad certificates
 
 ### Short-term (Within 2 weeks)
 4. **SEC-05**: Move rate limit store to Redis (env-driven limits already landed in `411cb5d`)
-5. **SEC-02**: Apply available dependency fixes; monitor `bigint-buffer` upstream
+5. ~~**SEC-02**: Apply available dependency fixes; monitor `bigint-buffer` upstream~~ — CLOSED (bigint-buffer no longer in tree)
 
 ### Medium-term (Within 1 month)
 6. **SEC-06**: Implement structured logging (pino with redact paths)

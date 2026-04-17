@@ -16,7 +16,7 @@
  * function MyComponent() {
  *   const {
  *     wallets,
- *     activeWallet,
+ *     currentWallet,
  *     isConnected,
  *     loading,
  *     createWallet,
@@ -38,7 +38,7 @@
  *   return (
  *     <div>
  *       {isConnected && (
- *         <p>Wallet: {activeWallet?.address}</p>
+ *         <p>Wallet: {currentWallet?.address}</p>
  *       )}
  *       <button onClick={handleCreateWallet} disabled={loading}>
  *         Create Wallet

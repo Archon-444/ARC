@@ -5,7 +5,7 @@
  * Supports 34 chains with 544 bridge routes
  */
 
-import { BridgeKit } from '@circle-fin/bridge-kit';
+import { AppKit } from '@circle-fin/app-kit';
 
 // Supported chains for bridging to/from Arc
 export const SUPPORTED_BRIDGE_CHAINS = [
@@ -54,8 +54,8 @@ export interface BridgeEstimate {
 /**
  * Initialize Bridge Kit
  */
-export function initializeBridgeKit(): BridgeKit {
-  return new BridgeKit();
+export function initializeBridgeKit(): AppKit {
+  return new AppKit();
 }
 
 /**

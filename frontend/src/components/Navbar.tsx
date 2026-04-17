@@ -70,7 +70,7 @@ export default function Navbar() {
   const { open } = useCommandPalette();
   const {
     isConnected,
-    currentWallet: activeWallet,
+    currentWallet,
     wallets,
     createWallet,
     isLoading: loading,
@@ -210,7 +210,7 @@ export default function Navbar() {
     setWalletMenuOpen(false);
   };
 
-  const isWalletConnected = isConnected && activeWallet;
+  const isWalletConnected = isConnected && currentWallet;
 
   const isNavActive = (href: string) => {
     if (href === '/explore') return pathname.startsWith('/explore') || pathname.startsWith('/token/');
@@ -433,7 +433,7 @@ export default function Navbar() {
               }`}
             >
               <Wallet className="h-4 w-4" />
-              {isWalletConnected ? truncateAddress(activeWallet.address as `0x${string}`) : 'Connect Wallet'}
+              {isWalletConnected ? truncateAddress(currentWallet.address as `0x${string}`) : 'Connect Wallet'}
             </button>
 
             {walletMenuOpen && (
@@ -492,7 +492,7 @@ export default function Navbar() {
                     <div className="border-b border-neutral-100 px-3 py-2 dark:border-neutral-800">
                       <p className="text-xs uppercase tracking-wide text-neutral-400">Connected</p>
                       <p className="mt-1 text-sm font-medium text-neutral-900 dark:text-white">
-                        {truncateAddress(activeWallet.address as `0x${string}`)}
+                        {truncateAddress(currentWallet.address as `0x${string}`)}
                       </p>
                     </div>
                     <div className="mt-2 space-y-0.5">
@@ -820,7 +820,7 @@ export default function Navbar() {
                 </div>
               </div>
 
-              {isConnected && activeWallet && (
+              {isConnected && currentWallet && (
                 <div>
                   <p className="px-4 text-xs font-medium uppercase tracking-wide text-neutral-400">Wallet</p>
                   <div className="mt-2 space-y-1">

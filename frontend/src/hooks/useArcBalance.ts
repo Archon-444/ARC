@@ -4,9 +4,11 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { getUSDCBalance, getArcBalance } from '@/lib/arc-client';
-import { batchGetBalances } from '@/lib/arc-utils';
-import { formatUSDCAmount } from '@/lib/arc-utils';
+import { erc20Abi } from 'viem';
+import { publicClient } from '@/lib/public-client';
+import { batchGetBalances, formatUSDCAmount } from '@/lib/arc-utils';
+
+const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS as `0x${string}` | undefined;
 
 /**
  * Hook to get USDC balance with Arc SDK
@@ -59,8 +61,15 @@ export function useArcUSDCBalance(
     setError(null);
 
     try {
-      const balanceHex = await getUSDCBalance(address);
-      const balanceBigInt = BigInt(balanceHex);
+      if (!USDC_ADDRESS) {
+        throw new Error('USDC address not configured');
+      }
+      const balanceBigInt = await publicClient.readContract({
+        address: USDC_ADDRESS,
+        abi: erc20Abi,
+        functionName: 'balanceOf',
+        args: [address as `0x${string}`],
+      });
 
       setBalance(balanceBigInt);
       setFormatted(formatUSDCAmount(balanceBigInt));
@@ -131,8 +140,9 @@ export function useArcNativeBalance(
     setError(null);
 
     try {
-      const balanceHex = await getArcBalance(address);
-      const balanceBigInt = BigInt(balanceHex);
+      const balanceBigInt = await publicClient.getBalance({
+        address: address as `0x${string}`,
+      });
 
       setBalance(balanceBigInt);
 
