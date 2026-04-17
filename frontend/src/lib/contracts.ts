@@ -1,7 +1,10 @@
 // Contract addresses (set via NEXT_PUBLIC_* env vars after deployment).
-// In production, missing values throw at import time so wagmi never silently
-// reads from 0x0. In development we fall back to the zero sentinel so pages
-// can still render before a local deploy has populated .env.local.
+// Resolved lazily per-access so module import (Next.js page-data collection,
+// static analysis, etc.) never fires the guard; it only trips when a caller
+// actually reads the address at runtime. In production, missing values throw
+// so wagmi never silently reads from 0x0. In development we fall back to the
+// zero sentinel so pages can still render before a local deploy has populated
+// .env.local.
 const REQUIRED_CONTRACT_ENV_VARS = [
   'NEXT_PUBLIC_USDC_ADDRESS',
   'NEXT_PUBLIC_NFT_ADDRESS',
@@ -11,24 +14,32 @@ const REQUIRED_CONTRACT_ENV_VARS = [
   'NEXT_PUBLIC_TOKEN_FACTORY_ADDRESS',
 ] as const;
 
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;
+
+function isBuildPhase(): boolean {
+  // Next.js sets NEXT_PHASE during `next build`; we must not throw while it
+  // collects page data, since that just imports route modules.
+  return process.env.NEXT_PHASE === 'phase-production-build';
+}
+
 function resolveAddress(name: (typeof REQUIRED_CONTRACT_ENV_VARS)[number]): `0x${string}` {
   const value = process.env[name];
-  if (!value) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error(`Missing required contract address env var: ${name}`);
-    }
-    return '0x0000000000000000000000000000000000000000';
+  if (value && value !== ZERO_ADDRESS) {
+    return value as `0x${string}`;
   }
-  return value as `0x${string}`;
+  if (process.env.NODE_ENV === 'production' && !isBuildPhase()) {
+    throw new Error(`Missing required contract address env var: ${name}`);
+  }
+  return ZERO_ADDRESS;
 }
 
 export const CONTRACTS = {
-  USDC: resolveAddress('NEXT_PUBLIC_USDC_ADDRESS'),
-  NFT: resolveAddress('NEXT_PUBLIC_NFT_ADDRESS'),
-  MARKETPLACE: resolveAddress('NEXT_PUBLIC_MARKETPLACE_ADDRESS'),
-  STAKING: resolveAddress('NEXT_PUBLIC_STAKING_ADDRESS'),
-  GOVERNANCE: resolveAddress('NEXT_PUBLIC_GOVERNANCE_ADDRESS'),
-  TOKEN_FACTORY: resolveAddress('NEXT_PUBLIC_TOKEN_FACTORY_ADDRESS'),
+  get USDC() { return resolveAddress('NEXT_PUBLIC_USDC_ADDRESS'); },
+  get NFT() { return resolveAddress('NEXT_PUBLIC_NFT_ADDRESS'); },
+  get MARKETPLACE() { return resolveAddress('NEXT_PUBLIC_MARKETPLACE_ADDRESS'); },
+  get STAKING() { return resolveAddress('NEXT_PUBLIC_STAKING_ADDRESS'); },
+  get GOVERNANCE() { return resolveAddress('NEXT_PUBLIC_GOVERNANCE_ADDRESS'); },
+  get TOKEN_FACTORY() { return resolveAddress('NEXT_PUBLIC_TOKEN_FACTORY_ADDRESS'); },
 };
 
 // Simplified ABIs for frontend use
