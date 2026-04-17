@@ -3,7 +3,7 @@
  * Helpers for Arc blockchain operations and features
  */
 
-import { arcClient, arcCrypto } from './arc-client';
+import { publicClient } from './public-client';
 
 /**
  * Arc transaction status with instant finality information
@@ -50,21 +50,38 @@ export interface ArcNetworkStats {
  */
 export async function getArcTxStatus(txHash: string): Promise<ArcTxStatus> {
   try {
-    const tx = await arcClient.getTransaction(txHash);
-    const latestBlock = await arcClient.getBlockNumber();
+    const hash = txHash as `0x${string}`;
+    const [tx, latestBlock] = await Promise.all([
+      publicClient.getTransaction({ hash }),
+      publicClient.getBlockNumber(),
+    ]);
 
-    // Get block timestamp if transaction is confirmed
+    // Receipt may not exist yet for pending transactions
+    let receiptStatus: 'pending' | 'success' | 'failed' = 'pending';
     let timestamp: number | undefined;
-    if (tx.blockNumber) {
-      const block = await arcClient.getBlock(tx.blockNumber);
-      timestamp = block.timestamp;
+    try {
+      const receipt = await publicClient.getTransactionReceipt({ hash });
+      receiptStatus = receipt.status === 'success' ? 'success' : 'failed';
+      if (receipt.blockNumber) {
+        const block = await publicClient.getBlock({ blockNumber: receipt.blockNumber });
+        timestamp = Number(block.timestamp);
+      }
+    } catch {
+      // Receipt not yet available — transaction pending
     }
 
-    const confirmations = tx.blockNumber ? latestBlock - tx.blockNumber + 1 : 0;
+    const txBlockNumber = tx.blockNumber ? Number(tx.blockNumber) : undefined;
+    const confirmations = txBlockNumber ? Number(latestBlock) - txBlockNumber + 1 : 0;
     const isFinalized = confirmations > 0; // Arc has instant finality
 
     return {
-      ...tx,
+      hash: tx.hash,
+      from: tx.from,
+      to: tx.to ?? '',
+      value: tx.value.toString(),
+      blockNumber: txBlockNumber,
+      blockHash: tx.blockHash ?? undefined,
+      status: receiptStatus,
       isFinalized,
       confirmations,
       finalityTime: isFinalized ? '< 1 second' : 'pending',
@@ -109,44 +126,38 @@ export async function waitForArcTxFinality(
 }
 
 /**
- * Verify Arc signature (useful for profiles/authentication)
- */
-export function verifyArcSignature(
-  message: string,
-  signature: string,
-  address: string
-): boolean {
-  try {
-    return arcCrypto.verifySignature(message, signature, address);
-  } catch (error) {
-    console.error('Failed to verify Arc signature:', error);
-    return false;
-  }
-}
-
-/**
  * Calculate optimal gas for Arc transactions
  * Arc uses USDC for gas, this converts gas to USDC cost
  */
-export async function calculateArcGas(txData: any): Promise<ArcGasEstimate> {
+export async function calculateArcGas(
+  txData: {
+    from?: string;
+    to?: string;
+    value?: bigint | string;
+    data?: string;
+  }
+): Promise<ArcGasEstimate> {
   try {
-    const [gasLimit, gasPriceHex] = await Promise.all([
-      arcClient.estimateGas(txData),
-      arcClient.getGasPrice(),
+    const [gasLimitBigInt, gasPriceBigInt] = await Promise.all([
+      publicClient.estimateGas({
+        account: txData.from as `0x${string}` | undefined,
+        to: txData.to as `0x${string}` | undefined,
+        value: typeof txData.value === 'string' ? BigInt(txData.value) : txData.value,
+        data: txData.data as `0x${string}` | undefined,
+      }),
+      publicClient.getGasPrice(),
     ]);
 
-    const gasPrice = BigInt(gasPriceHex);
-
     // Calculate total gas cost in wei
-    const totalGasWei = BigInt(gasLimit) * gasPrice;
+    const totalGasWei = gasLimitBigInt * gasPriceBigInt;
 
     // Convert to USDC (assuming 1:1 conversion for gas)
     // TODO: Update with actual Arc gas -> USDC conversion rate
     const gasInUSDC = Number(totalGasWei) / 1e18; // Placeholder conversion
 
     return {
-      gasLimit,
-      gasPrice: gasPriceHex,
+      gasLimit: Number(gasLimitBigInt),
+      gasPrice: `0x${gasPriceBigInt.toString(16)}`,
       gasInUSDC,
       gasCostFormatted: `${gasInUSDC.toFixed(6)} USDC`,
       totalCostUSDC: gasInUSDC.toFixed(6),
@@ -162,10 +173,10 @@ export async function calculateArcGas(txData: any): Promise<ArcGasEstimate> {
  */
 export async function getArcNetworkStats(): Promise<ArcNetworkStats> {
   try {
-    const [latestBlock, gasPriceHex, chainId] = await Promise.all([
-      arcClient.getBlockNumber(),
-      arcClient.getGasPrice(),
-      arcClient.getChainId(),
+    const [latestBlock, gasPriceBigInt, chainId] = await Promise.all([
+      publicClient.getBlockNumber(),
+      publicClient.getGasPrice(),
+      publicClient.getChainId(),
     ]);
 
     // Arc has very fast block times and instant finality
@@ -173,8 +184,8 @@ export async function getArcNetworkStats(): Promise<ArcNetworkStats> {
     const avgFinality = 0.5; // <1 second finality
 
     return {
-      latestBlock,
-      gasPrice: gasPriceHex,
+      latestBlock: Number(latestBlock),
+      gasPrice: `0x${gasPriceBigInt.toString(16)}`,
       chainId,
       blockTime,
       avgFinality,
@@ -234,7 +245,7 @@ export async function getTimeUntilBlock(targetBlock: number): Promise<{
   formatted: string;
 }> {
   try {
-    const currentBlock = await arcClient.getBlockNumber();
+    const currentBlock = Number(await publicClient.getBlockNumber());
     const blocksRemaining = Math.max(0, targetBlock - currentBlock);
 
     // Arc block time is ~0.5 seconds
@@ -269,29 +280,25 @@ export async function getArcTransactionReceipt(txHash: string): Promise<{
   effectiveGasPrice: string;
   blockNumber: number;
   confirmations: number;
-  logs: any[];
+  logs: unknown[];
 }> {
   try {
-    // Get transaction status
-    const txStatus = await getArcTxStatus(txHash);
+    const hash = txHash as `0x${string}`;
+    const [receipt, latestBlock] = await Promise.all([
+      publicClient.getTransactionReceipt({ hash }),
+      publicClient.getBlockNumber(),
+    ]);
 
-    if (!txStatus.blockNumber || txStatus.status === 'pending') {
-      throw new Error('Transaction not yet mined');
-    }
+    const blockNumber = Number(receipt.blockNumber);
+    const confirmations = Number(latestBlock) - blockNumber + 1;
 
-    // Get latest block for confirmations
-    const latestBlock = await arcClient.getBlockNumber();
-    const confirmations = latestBlock - txStatus.blockNumber + 1;
-
-    // TODO: Get actual receipt data from RPC
-    // For now, return basic information
     return {
-      status: txStatus.status === 'success' ? 'success' : 'failed',
-      gasUsed: 0, // TODO: Get from receipt
-      effectiveGasPrice: '0', // TODO: Get from receipt
-      blockNumber: txStatus.blockNumber,
+      status: receipt.status === 'success' ? 'success' : 'failed',
+      gasUsed: Number(receipt.gasUsed),
+      effectiveGasPrice: `0x${receipt.effectiveGasPrice.toString(16)}`,
+      blockNumber,
       confirmations,
-      logs: [], // TODO: Get from receipt
+      logs: receipt.logs,
     };
   } catch (error) {
     console.error('Failed to get transaction receipt:', error);
@@ -304,12 +311,15 @@ export async function getArcTransactionReceipt(txHash: string): Promise<{
  */
 export async function batchGetBalances(addresses: string[]): Promise<Map<string, string>> {
   try {
-    const balancePromises = addresses.map((address) => arcClient.getBalance(address));
-    const balances = await Promise.all(balancePromises);
+    const balances = await Promise.all(
+      addresses.map((address) =>
+        publicClient.getBalance({ address: address as `0x${string}` })
+      )
+    );
 
     const balanceMap = new Map<string, string>();
     addresses.forEach((address, index) => {
-      balanceMap.set(address, balances[index]);
+      balanceMap.set(address, balances[index].toString());
     });
 
     return balanceMap;
@@ -368,7 +378,7 @@ export async function getArcNetworkHealth(): Promise<{
   const startTime = Date.now();
 
   try {
-    const blockNumber = await arcClient.getBlockNumber();
+    const blockNumber = await publicClient.getBlockNumber();
     const latency = Date.now() - startTime;
 
     const isHealthy = latency < 3000; // Consider healthy if response under 3s
@@ -376,7 +386,7 @@ export async function getArcNetworkHealth(): Promise<{
     return {
       isHealthy,
       latency,
-      blockHeight: blockNumber,
+      blockHeight: Number(blockNumber),
       message: isHealthy
         ? `Arc network is healthy (${latency}ms)`
         : `Arc network may be experiencing issues (${latency}ms)`,
