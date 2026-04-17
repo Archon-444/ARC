@@ -15,7 +15,7 @@ A full-stack marketplace and **token launcher** on Circle's Arc blockchain: USDC
 - **Realtime**: Backend token WebSocket room (`token:<address>`), `GET /v1/activity/token/:address`, `POST /v1/activity/token/broadcast`; frontend `useTokenActivity` and `subscribeToToken`
 - **Trust layer**: Footer Legal & company; compliance line; trust in footer/collapsible, not in main loop
 
-See [GAP_ANALYSIS.md](./GAP_ANALYSIS.md) for progress and [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) for security findings.
+See [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) for security findings. Historical gap analysis and phase docs live under [docs/archived/](./docs/archived/).
 
 ## Features
 
@@ -85,7 +85,7 @@ ArcMarket/
 │   └── schema.graphql     # LaunchedToken, TokenTrade, TokenGraduation, …
 │
 ├── .github/workflows/      # CI/CD
-├── GAP_ANALYSIS.md         # Progress tracking
+├── docs/archived/          # Historical plans, phase docs, audits
 └── SECURITY_AUDIT.md       # Security findings
 ```
 
@@ -105,7 +105,7 @@ See [DAPPS_ALIGNMENT_REVIEW.md](./DAPPS_ALIGNMENT_REVIEW.md) for the full alignm
 
 ### Frontend shell
 
-Shell and design-system documentation lives in `frontend/docs/`: [REGRESSION_CHECKLIST.md](./frontend/docs/REGRESSION_CHECKLIST.md) (mobile nav and shell checks), [DESIGN_TOKENS.md](./frontend/docs/DESIGN_TOKENS.md) (design tokens and Tailwind usage), [BASELINE_ALIGNMENT.md](./frontend/docs/BASELINE_ALIGNMENT.md) (baseline alignment).
+Shell and design-system documentation lives in `frontend/docs/`: [REGRESSION_CHECKLIST.md](./frontend/docs/REGRESSION_CHECKLIST.md) (mobile nav and shell checks), [DESIGN_TOKENS.md](./frontend/docs/DESIGN_TOKENS.md) (design tokens and Tailwind usage).
 
 ## Getting Started
 
@@ -264,10 +264,12 @@ See [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) for the full security audit report.
 
 ## Documentation
 
-- [GAP_ANALYSIS.md](./GAP_ANALYSIS.md) — Progress tracking and roadmap
 - [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) — Security audit findings
+- [DAPPS_ALIGNMENT_REVIEW.md](./DAPPS_ALIGNMENT_REVIEW.md) — Code-vs-documentation alignment audit
 - [CLAUDE.md](./CLAUDE.md) — Project context and conventions (for AI and contributors)
+- [MASTER_REFACTOR_PLAN.md](./MASTER_REFACTOR_PLAN.md) — Forward-looking operating model
 - [subgraph/DEPLOY.md](./subgraph/DEPLOY.md) — Set ArcTokenFactory address before subgraph deploy
+- [docs/archived/](./docs/archived/) — Historical plans, phase status, gap analysis, audits
 - [backend/TOKEN_ACTIVITY_BROADCAST.md](./backend/TOKEN_ACTIVITY_BROADCAST.md) — Push token trade/graduation events to WebSocket
 - [frontend/e2e/README.md](./frontend/e2e/README.md) — E2E testing guide
 
