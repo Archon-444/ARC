@@ -1,0 +1,23 @@
+{
+  "name": "arc-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "ARC — trust, identity, and editorial-verification layer for Circle-native agent commerce.",
+  "workspaces": [
+    "frontend",
+    "backend",
+    "contracts",
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace frontend run dev",
+    "build:web": "npm --workspace frontend run build",
+    "test:web": "npm --workspace frontend test",
+    "type-check:web": "npm --workspace frontend run type-check",
+    "lint:web": "npm --workspace frontend run lint",
+    "build:trust-core": "npm --workspace @arc/trust-core run build",
+    "test:trust-core": "npm --workspace @arc/trust-core test",
+    "test:packages": "npm --workspaces --if-present test"
+  }
+}

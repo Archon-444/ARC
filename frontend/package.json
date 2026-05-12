@@ -30,6 +30,7 @@
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
+    "@arc/trust-core": "*",
     "@circle-fin/adapter-viem-v2": "^1.8.2",
     "@circle-fin/app-kit": "^1.3.0",
     "@circle-fin/developer-controlled-wallets": "^9.3.0",

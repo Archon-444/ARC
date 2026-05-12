@@ -1,0 +1,5 @@
+{
+  "root": true,
+  "$comment": "Boundary rule reserved for W11 when legacy-primitives/ exists. Activates the no-restricted-imports rule banning legacy-primitives/* imports from apps/* and packages/*. Until then this file is a placeholder so workspace-level lint config has a single source of truth.",
+  "rules": {}
+}

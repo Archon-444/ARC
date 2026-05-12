@@ -1,10 +1,3 @@
-/**
- * Token Risk Scoring Algorithm Tests
- *
- * Tests the pure scoring functions exported from the risk API route.
- * Covers each risk factor + red flag detection with known scenarios.
- */
-
 import {
   assessCreatorRisk,
   assessContractRisk,
@@ -12,22 +5,20 @@ import {
   assessLiquidityRisk,
   scoreToLevel,
   getRecommendation,
-} from '@/lib/risk-scoring';
+} from '../scoring/v1-heuristic';
 
-// Helper: create a mock token with default values
 function mockToken(overrides: Record<string, any> = {}) {
   return {
-    totalSupply: '1000000000000000000000000', // 1M tokens (18 decimals)
-    soldSupply: '400000000000000000000000', // 400K tokens (40%)
+    totalSupply: '1000000000000000000000000',
+    soldSupply: '400000000000000000000000',
     isGraduated: false,
-    createdAt: String(Math.floor(Date.now() / 1000) - 86400 * 30), // 30 days ago
+    createdAt: String(Math.floor(Date.now() / 1000) - 86400 * 30),
     creator: '0x1234567890abcdef1234567890abcdef12345678',
     graduation: null,
     ...overrides,
   };
 }
 
-// Helper: create a mock creator token
 function mockCreatorToken(overrides: Record<string, any> = {}) {
   return {
     isGraduated: false,
@@ -36,7 +27,6 @@ function mockCreatorToken(overrides: Record<string, any> = {}) {
   };
 }
 
-// Helper: create mock trade data
 function mockTrades(
   buyCount: number,
   sellCount: number,
@@ -47,7 +37,7 @@ function mockTrades(
     sellAmounts?: string[];
   } = {}
 ) {
-  const defaultAmount = '1000000'; // $1 USDC
+  const defaultAmount = '1000000';
 
   const buyTrades = Array.from({ length: buyCount }, (_, i) => ({
     trader: options.buyTraders?.[i] || `0x${String(i + 1).padStart(4, '0')}`,
@@ -63,10 +53,6 @@ function mockTrades(
 
   return { buyTrades, sellTrades };
 }
-
-// =============================================
-// scoreToLevel
-// =============================================
 
 describe('scoreToLevel', () => {
   it('returns low for score 0', () => {
@@ -94,10 +80,6 @@ describe('scoreToLevel', () => {
   });
 });
 
-// =============================================
-// getRecommendation
-// =============================================
-
 describe('getRecommendation', () => {
   it('returns safe_buy for low score with no red flags', () => {
     expect(getRecommendation(10, 0)).toBe('safe_buy');
@@ -124,14 +106,10 @@ describe('getRecommendation', () => {
   });
 });
 
-// =============================================
-// assessCreatorRisk
-// =============================================
-
 describe('assessCreatorRisk', () => {
   it('gives moderate score for brand new creator (first token)', () => {
     const token = mockToken();
-    const creatorTokens = [mockCreatorToken()]; // only this token
+    const creatorTokens = [mockCreatorToken()];
     const redFlags: string[] = [];
 
     const result = assessCreatorRisk(token, creatorTokens, redFlags);
@@ -167,7 +145,7 @@ describe('assessCreatorRisk', () => {
     const redFlags: string[] = [];
 
     const result = assessCreatorRisk(token, creatorTokens, redFlags);
-    expect(result.score).toBe(80); // 60 (poor track) + 20 (3 non-graduated flag)
+    expect(result.score).toBe(80);
     expect(result.level).toBe('high');
     expect(redFlags).toContain('Creator has 3 tokens that never graduated');
   });
@@ -176,7 +154,7 @@ describe('assessCreatorRisk', () => {
     const now = Math.floor(Date.now() / 1000);
     const creatorTokens = Array.from({ length: 6 }, (_, i) => ({
       isGraduated: false,
-      createdAt: String(now - i * 3600), // 1 per hour over 6 hours
+      createdAt: String(now - i * 3600),
     }));
     const redFlags: string[] = [];
 
@@ -197,15 +175,11 @@ describe('assessCreatorRisk', () => {
   });
 });
 
-// =============================================
-// assessContractRisk
-// =============================================
-
 describe('assessContractRisk', () => {
   it('gives low score for mature token with sales', () => {
     const token = mockToken({
-      createdAt: String(Math.floor(Date.now() / 1000) - 86400 * 60), // 60 days old
-      soldSupply: '500000000000000000000000', // 50%
+      createdAt: String(Math.floor(Date.now() / 1000) - 86400 * 60),
+      soldSupply: '500000000000000000000000',
     });
     const redFlags: string[] = [];
 
@@ -216,7 +190,7 @@ describe('assessContractRisk', () => {
 
   it('gives higher score for brand new token', () => {
     const token = mockToken({
-      createdAt: String(Math.floor(Date.now() / 1000) - 3600), // 1 hour old
+      createdAt: String(Math.floor(Date.now() / 1000) - 3600),
     });
     const redFlags: string[] = [];
 
@@ -227,7 +201,7 @@ describe('assessContractRisk', () => {
 
   it('flags extremely high supply', () => {
     const token = mockToken({
-      totalSupply: '2000000000000000000000000000000', // > 1 trillion
+      totalSupply: '2000000000000000000000000000000',
     });
     const redFlags: string[] = [];
 
@@ -237,8 +211,8 @@ describe('assessContractRisk', () => {
 
   it('penalizes stale tokens with low sales', () => {
     const token = mockToken({
-      createdAt: String(Math.floor(Date.now() / 1000) - 86400 * 14), // 14 days old
-      soldSupply: '5000000000000000000000', // 0.5%
+      createdAt: String(Math.floor(Date.now() / 1000) - 86400 * 14),
+      soldSupply: '5000000000000000000000',
     });
     const redFlags: string[] = [];
 
@@ -246,10 +220,6 @@ describe('assessContractRisk', () => {
     expect(result.score).toBeGreaterThanOrEqual(25);
   });
 });
-
-// =============================================
-// assessTradingRisk
-// =============================================
 
 describe('assessTradingRisk', () => {
   it('returns moderate score for no trades', () => {
@@ -260,7 +230,7 @@ describe('assessTradingRisk', () => {
   });
 
   it('gives low score for diverse organic trading', () => {
-    const trades = mockTrades(20, 5); // 20 buys from 20 wallets, 5 sells from 5 wallets
+    const trades = mockTrades(20, 5);
     const redFlags: string[] = [];
 
     const result = assessTradingRisk(mockToken(), trades, redFlags);
@@ -293,7 +263,7 @@ describe('assessTradingRisk', () => {
 
   it('flags heavy sell pressure', () => {
     const trades = mockTrades(5, 15, {
-      sellAmounts: Array(15).fill('3000000'), // 3x the buy volume per trade
+      sellAmounts: Array(15).fill('3000000'),
     });
     const redFlags: string[] = [];
 
@@ -302,17 +272,13 @@ describe('assessTradingRisk', () => {
   });
 });
 
-// =============================================
-// assessLiquidityRisk
-// =============================================
-
 describe('assessLiquidityRisk', () => {
   it('gives low score for healthy graduated token', () => {
     const token = mockToken({
       isGraduated: true,
-      soldSupply: '800000000000000000000000', // 80%
+      soldSupply: '800000000000000000000000',
       graduation: {
-        creatorReserve: '50000000000', // 50K USDC
+        creatorReserve: '50000000000',
         createdAt: String(Math.floor(Date.now() / 1000) - 86400 * 30),
       },
     });
@@ -324,20 +290,20 @@ describe('assessLiquidityRisk', () => {
   });
 
   it('flags rapid creator treasury withdrawal after graduation', () => {
-    const gradTime = Math.floor(Date.now() / 1000) - 3600; // graduated 1 hour ago
+    const gradTime = Math.floor(Date.now() / 1000) - 3600;
     const token = mockToken({
       isGraduated: true,
       soldSupply: '800000000000000000000000',
       graduation: {
-        creatorReserve: '50000000000', // 50K USDC
+        creatorReserve: '50000000000',
         createdAt: String(gradTime),
       },
     });
     const withdrawals = [
       {
-        amount: '45000000000', // 45K USDC (90% of reserve)
+        amount: '45000000000',
         reason: 'emergency',
-        createdAt: String(gradTime + 1800), // 30 min after graduation
+        createdAt: String(gradTime + 1800),
       },
     ];
     const redFlags: string[] = [];
@@ -349,8 +315,8 @@ describe('assessLiquidityRisk', () => {
 
   it('flags stalled token below 10% for 14+ days', () => {
     const token = mockToken({
-      createdAt: String(Math.floor(Date.now() / 1000) - 86400 * 20), // 20 days old
-      soldSupply: '50000000000000000000000', // 5% of 1M
+      createdAt: String(Math.floor(Date.now() / 1000) - 86400 * 20),
+      soldSupply: '50000000000000000000000',
     });
     const redFlags: string[] = [];
 
@@ -361,7 +327,7 @@ describe('assessLiquidityRisk', () => {
 
   it('gives moderate score for token with no progress', () => {
     const token = mockToken({
-      createdAt: String(Math.floor(Date.now() / 1000) - 86400 * 3), // 3 days old
+      createdAt: String(Math.floor(Date.now() / 1000) - 86400 * 3),
       soldSupply: '0',
     });
     const redFlags: string[] = [];
@@ -372,8 +338,8 @@ describe('assessLiquidityRisk', () => {
 
   it('gives healthy score for actively progressing token', () => {
     const token = mockToken({
-      createdAt: String(Math.floor(Date.now() / 1000) - 86400 * 5), // 5 days old
-      soldSupply: '300000000000000000000000', // 30%
+      createdAt: String(Math.floor(Date.now() / 1000) - 86400 * 5),
+      soldSupply: '300000000000000000000000',
     });
     const redFlags: string[] = [];
 
@@ -383,17 +349,13 @@ describe('assessLiquidityRisk', () => {
   });
 });
 
-// =============================================
-// Composite Scenarios
-// =============================================
-
 describe('composite scoring scenarios', () => {
   it('new token by new creator = moderate overall', () => {
     const token = mockToken({
       createdAt: String(Math.floor(Date.now() / 1000) - 86400 * 2),
-      soldSupply: '50000000000000000000000', // 5%
+      soldSupply: '50000000000000000000000',
     });
-    const creatorTokens = [mockCreatorToken()]; // first token
+    const creatorTokens = [mockCreatorToken()];
     const trades = mockTrades(3, 0);
     const redFlags: string[] = [];
 
@@ -402,8 +364,8 @@ describe('composite scoring scenarios', () => {
     const tr = assessTradingRisk(token, trades, redFlags);
     const lr = assessLiquidityRisk(token, [], redFlags);
 
-    const overall = Math.round(cr.score * 0.35 + co.score * 0.25 + tr.score * 0.20 + lr.score * 0.20);
-    expect(overall).toBeGreaterThanOrEqual(15); // New creator + recent token = moderate range
+    const overall = Math.round(cr.score * 0.35 + co.score * 0.25 + tr.score * 0.2 + lr.score * 0.2);
+    expect(overall).toBeGreaterThanOrEqual(15);
     expect(overall).toBeLessThanOrEqual(60);
   });
 
@@ -411,14 +373,14 @@ describe('composite scoring scenarios', () => {
     const now = Math.floor(Date.now() / 1000);
     const token = mockToken({
       createdAt: String(now - 86400 * 20),
-      soldSupply: '10000000000000000000000', // 1%
+      soldSupply: '10000000000000000000000',
     });
     const creatorTokens = Array.from({ length: 6 }, (_, i) => ({
       isGraduated: false,
-      createdAt: String(now - i * 7200), // 1 every 2 hours
+      createdAt: String(now - i * 7200),
     }));
     const trades = mockTrades(10, 0, {
-      buyTraders: Array(10).fill('0xaaaa'), // single wallet
+      buyTraders: Array(10).fill('0xaaaa'),
       buyAmounts: Array(10).fill('10000000'),
     });
     const redFlags: string[] = [];

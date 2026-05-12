@@ -1,25 +1,21 @@
-/**
- * Token Risk Scoring Algorithm
- *
- * Pure functions for computing rug-pull risk scores from on-chain data.
- * Separated from the API route so they can be unit tested without Next.js deps.
- */
+import type {
+  TokenRiskAssessment,
+  RiskLevel,
+  RiskRecommendation,
+  RiskFactor,
+  ScoringWeights,
+} from '../types';
 
-import type { TokenRiskAssessment, RiskLevel, RiskRecommendation, RiskFactor, ScoringWeights } from '@/types';
-
-// --- Constants ---
 export const SCORING_VERSION = 'v1.0.0';
 export const WEIGHTS: ScoringWeights = {
   creatorHistory: 0.35,
   contractHealth: 0.25,
-  tradingPatterns: 0.20,
-  liquidityProgress: 0.20,
+  tradingPatterns: 0.2,
+  liquidityProgress: 0.2,
 };
 export const DISCLAIMER =
   'This risk score is a heuristic analysis based on on-chain data. It is not financial advice. ' +
   'Scores may not capture all risks. Always conduct your own research before trading.';
-
-// --- Main Scoring ---
 
 export function computeRiskAssessment(
   token: any,
@@ -34,12 +30,11 @@ export function computeRiskAssessment(
   const tradingRisk = assessTradingRisk(token, tradeMetrics, redFlags);
   const liquidityRisk = assessLiquidityRisk(token, creatorWithdrawals, redFlags);
 
-  // Weighted overall score
   const overallScore = Math.round(
     creatorRisk.score * WEIGHTS.creatorHistory +
-    contractRisk.score * WEIGHTS.contractHealth +
-    tradingRisk.score * WEIGHTS.tradingPatterns +
-    liquidityRisk.score * WEIGHTS.liquidityProgress
+      contractRisk.score * WEIGHTS.contractHealth +
+      tradingRisk.score * WEIGHTS.tradingPatterns +
+      liquidityRisk.score * WEIGHTS.liquidityProgress
   );
 
   const recommendation = getRecommendation(overallScore, redFlags.length);
@@ -59,7 +54,7 @@ export function computeRiskAssessment(
   };
 }
 
-// --- Individual Factor Scoring ---
+export const scoreV1 = computeRiskAssessment;
 
 export function assessCreatorRisk(token: any, creatorTokens: any[], redFlags: string[]): RiskFactor {
   let score = 0;
@@ -68,24 +63,19 @@ export function assessCreatorRisk(token: any, creatorTokens: any[], redFlags: st
   const graduated = creatorTokens.filter((t: any) => t.isGraduated).length;
   const notGraduated = totalCreated - graduated;
 
-  // New creator (no history) — moderate risk
   if (totalCreated <= 1) {
     score += 35;
   } else if (graduated > 0 && graduated / totalCreated >= 0.5) {
-    // Good track record
     score += 10;
   } else {
-    // Poor track record
     score += 60;
   }
 
-  // Flag: multiple failed tokens
   if (notGraduated >= 3) {
     redFlags.push(`Creator has ${notGraduated} tokens that never graduated`);
     score += 20;
   }
 
-  // Flag: rapid token creation (serial launcher)
   if (totalCreated >= 5) {
     const sortedByTime = [...creatorTokens].sort(
       (a: any, b: any) => Number(b.createdAt) - Number(a.createdAt)
@@ -104,9 +94,10 @@ export function assessCreatorRisk(token: any, creatorTokens: any[], redFlags: st
   return {
     score,
     level: scoreToLevel(score),
-    details: totalCreated <= 1
-      ? 'New creator with no prior token history'
-      : `Creator has launched ${totalCreated} tokens (${graduated} graduated)`,
+    details:
+      totalCreated <= 1
+        ? 'New creator with no prior token history'
+        : `Creator has launched ${totalCreated} tokens (${graduated} graduated)`,
   };
 }
 
@@ -116,14 +107,11 @@ export function assessContractRisk(token: any, redFlags: string[]): RiskFactor {
   const totalSupply = BigInt(token.totalSupply || '0');
   const soldSupply = BigInt(token.soldSupply || '0');
 
-  // Check for extreme supply (potential manipulation)
   if (totalSupply > BigInt('1000000000000000000000000000000')) {
-    // > 1 trillion tokens (in 18-decimal wei)
     score += 30;
     redFlags.push('Extremely high total supply (>1 trillion tokens)');
   }
 
-  // Check if very little supply has been sold relative to age
   const ageSeconds = Math.floor(Date.now() / 1000) - Number(token.createdAt || 0);
   const ageDays = ageSeconds / 86400;
 
@@ -136,11 +124,10 @@ export function assessContractRisk(token: any, redFlags: string[]): RiskFactor {
     }
   }
 
-  // Token age factor
   if (ageDays < 1) {
-    score += 20; // Very new
+    score += 20;
   } else if (ageDays < 7) {
-    score += 10; // Recent
+    score += 10;
   }
 
   score = Math.min(score, 100);
@@ -148,9 +135,8 @@ export function assessContractRisk(token: any, redFlags: string[]): RiskFactor {
   return {
     score,
     level: scoreToLevel(score),
-    details: ageDays < 1
-      ? 'Token launched less than 24 hours ago'
-      : `Token is ${Math.floor(ageDays)} days old`,
+    details:
+      ageDays < 1 ? 'Token launched less than 24 hours ago' : `Token is ${Math.floor(ageDays)} days old`,
   };
 }
 
@@ -164,7 +150,6 @@ export function assessTradingRisk(
   const { buyTrades, sellTrades } = tradeMetrics;
   const totalTrades = buyTrades.length + sellTrades.length;
 
-  // No trades yet
   if (totalTrades === 0) {
     return {
       score: 40,
@@ -173,7 +158,6 @@ export function assessTradingRisk(
     };
   }
 
-  // Unique traders analysis
   const allTraders = new Set([
     ...buyTrades.map((t) => t.trader.toLowerCase()),
     ...sellTrades.map((t) => t.trader.toLowerCase()),
@@ -186,7 +170,6 @@ export function assessTradingRisk(
     score += 20;
   }
 
-  // Volume concentration — check if any single trader dominates
   const traderVolume = new Map<string, bigint>();
   let totalVolume = 0n;
 
@@ -208,7 +191,6 @@ export function assessTradingRisk(
     }
   }
 
-  // Buy/sell ratio — heavy selling is a warning sign
   const buyVolume = buyTrades.reduce((sum, t) => sum + BigInt(t.usdcAmount || '0'), 0n);
   const sellVolume = sellTrades.reduce((sum, t) => sum + BigInt(t.usdcAmount || '0'), 0n);
 
@@ -240,12 +222,10 @@ export function assessLiquidityRisk(
   const soldSupply = BigInt(token.soldSupply || '0');
   const isGraduated = token.isGraduated;
 
-  // Graduation progress
   if (totalSupply > 0n) {
     const progressPercent = Number((soldSupply * 10000n) / totalSupply) / 100;
 
     if (isGraduated) {
-      // Graduated — check creator withdrawal patterns
       const graduation = token.graduation;
       if (graduation && creatorWithdrawals.length > 0) {
         const creatorReserve = BigInt(graduation.creatorReserve || '0');
@@ -269,7 +249,6 @@ export function assessLiquidityRisk(
         }
       }
     } else {
-      // Not graduated — assess progress health
       const ageSeconds = Math.floor(Date.now() / 1000) - Number(token.createdAt || 0);
       const ageDays = ageSeconds / 86400;
 
@@ -279,30 +258,24 @@ export function assessLiquidityRisk(
       } else if (ageDays > 7 && progressPercent < 5) {
         score += 25;
       } else if (progressPercent > 0) {
-        // Healthy progression
         score += Math.max(0, 20 - Math.floor(progressPercent / 5));
       } else {
-        score += 30; // No progress at all
+        score += 30;
       }
     }
   }
 
   score = Math.min(score, 100);
 
-  const progressPct = totalSupply > 0n
-    ? (Number((soldSupply * 10000n) / totalSupply) / 100).toFixed(1)
-    : '0';
+  const progressPct =
+    totalSupply > 0n ? (Number((soldSupply * 10000n) / totalSupply) / 100).toFixed(1) : '0';
 
   return {
     score,
     level: scoreToLevel(score),
-    details: isGraduated
-      ? 'Token has graduated (80% supply sold)'
-      : `Graduation progress: ${progressPct}%`,
+    details: isGraduated ? 'Token has graduated (80% supply sold)' : `Graduation progress: ${progressPct}%`,
   };
 }
-
-// --- Helpers ---
 
 export function scoreToLevel(score: number): RiskLevel {
   if (score <= 25) return 'low';

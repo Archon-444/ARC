@@ -1,305 +1,99 @@
-# ARC — NFT Marketplace + Token Launchpad on Arc Blockchain
+# ARC — Trust Layer for Circle-Native Agent Commerce
 
-A full-stack marketplace and **token launcher** on Circle's Arc blockchain: USDC for gas and payments, sub-second finality, and a launcher-first loop (launch → token page → discovery).
+> **Strategic pivot in progress.** ARC is being repositioned from "NFT marketplace + token launchpad" into the trust, identity, and editorial-verification layer for agent commerce on Circle's Arc blockchain. See [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) for the why and the 90-day plan.
 
-## Version 0.4 — Core + Token Launcher
+## What ARC is becoming
 
-**Current Status:** Core marketplace and token launcher flows implemented. Security remediation and production infra in progress.
+The independent trust layer Circle Agent Stack and Coinbase x402 Bazaar do not provide:
 
-### Completed
+- **`@arc/mcp-server`** — an MCP server that exposes `arc_trust_read`, `arc_search`, and `arc_passport_get` so any Claude / Codex / Cursor / Bazaar-aware agent can look up agent and counterparty trust before transacting.
+- **`@arc/trust-api`** — a pay-per-call x402 trust-read API priced at $0.01 / $0.05 per call, settled in USDC on Base mainnet via the public x402 facilitator. Decouples revenue from Arc mainnet timing.
+- **ARC Passport** — an Arc-native, ERC-8004-aligned identity primitive (Identity → Reputation → narrow Validation, behind an adapter so DRAFT-spec changes do not require migration).
+- **AttestationRegistry + schemas** — EIP-712 typed-data attestations covering KYB, editorial review, treasury policy, **token suitability** (DFSA-mapped), and **stablecoin reserves** (ADGM FRT-mapped) so MENA institutional firms have machine-readable evidence for the documented suitability assessments their regulators now require.
 
-- **Marketplace**: Listings, auctions, collections, NFT detail pages, search, filtering
-- **Token launcher**: Short launch flow (name, ticker, image, socials; bonding curve behind “Advanced”), success → Open token market / Copy address / Share link / Launch another
-- **Token page**: Market-first layout — identity, price, graduation progress, recent trades, one buy CTA; copy contract/share and socials in hero; Connected routes, Distribution, Community in collapsible Details
-- **Token discovery**: First-class in Explore (New, Trending, Recent activity, Nearing graduation, Graduated) with launcher-native cards; Home “Explore tokens” CTA
-- **Realtime**: Backend token WebSocket room (`token:<address>`), `GET /v1/activity/token/:address`, `POST /v1/activity/token/broadcast`; frontend `useTokenActivity` and `subscribeToToken`
-- **Trust layer**: Footer Legal & company; compliance line; trust in footer/collapsible, not in main loop
+## What ARC was
 
-See [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) for security findings. Historical gap analysis and phase docs live under [docs/archived/](./docs/archived/).
+A full-stack NFT marketplace + token launchpad. The smart contracts (`ArcMarketplace`, `ArcTokenFactory`, `ArcBondingCurveAMM`, `FeeVault`, `ProfileRegistry`, `StakingRewards`, `SimpleGovernance`, diamond facets) remain deployed on Arc testnet and are **preserved as primitives**. They are not the product; they are not the focus of new feature work. See [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) for the freeze scope.
 
-## Features
-
-### Smart Contracts
-- **Fixed-Price Listings**: List NFTs for sale at a fixed USDC price
-- **English Auctions**: Time-bound auctions with automatic bid refunds
-- **USDC Payments**: All transactions denominated in USDC
-- **Instant Finality**: Sub-second transaction confirmation
-- **Transparent Royalties**: Automatic creator royalty distribution via FeeVault
-- **User Profiles**: On-chain profile registry with off-chain metadata
-- **Staking & Governance**: StakingRewards and SimpleGovernance contracts
-- **Token Launcher**: ArcTokenFactory + ArcBondingCurveAMM (bonding curve per token; graduation, staking, creator reserve)
-
-### Frontend
-- **Token launcher**: Launch page (compact form, live preview, advanced bonding curve), token market page (price, graduation, trades, buy/sell), discovery (New / Trending / Recent / Nearing graduation / Graduated)
-- **Marketplace**: Advanced filtering, Typesense search, collection and NFT detail pages, media viewer, price history, activity feed
-- **Real-time**: WebSocket for NFT/collection activity; token activity via `subscribeToToken` and `useTokenActivity`
-- **PWA**: Service worker, offline page, install prompts
-- **Dark mode**: Theme toggle with system preference detection
-
-### Quality & Testing
-- **Unit Tests**: 160 frontend tests (Jest + React Testing Library), 1,354 contract tests
-- **E2E Tests**: Playwright with 198 test cases across 7 specs
-- **Accessibility**: Skip links, LiveRegion, keyboard navigation, ARIA utilities
-- **Performance**: Core Web Vitals monitoring, bundle analysis
-- **SEO**: Sitemap, robots.txt, JSON-LD structured data
-
-## Architecture
+## Monorepo layout
 
 ```
-ArcMarket/
-├── contracts/              # Smart contracts (Solidity 0.8.24)
-│   ├── contracts/
-│   │   ├── ArcMarketplace.sol      # Core marketplace logic
-│   │   ├── FeeVault.sol            # Royalty & fee distribution
-│   │   ├── ProfileRegistry.sol     # User profiles
-│   │   ├── StakingRewards.sol      # Staking rewards
-│   │   ├── SimpleGovernance.sol    # DAO governance
-│   │   ├── ArcTokenFactory.sol     # Token launcher
-│   │   ├── ArcBondingCurveAMM.sol  # Bonding curve AMM
-│   │   └── archive/                # Deprecated v0.1 contracts
-│   └── test/                       # Contract tests (1,354 cases)
-│
-├── frontend/               # Next.js 16 + TypeScript + Tailwind v4
-│   ├── src/
-│   │   ├── app/            # App router pages + 15 API routes
-│   │   ├── components/     # React components (ui, nft, navigation)
-│   │   ├── hooks/          # Custom React hooks (marketplace, token, staking)
-│   │   ├── lib/            # Utilities (wagmi, animations, accessibility)
-│   │   └── services/       # API and WebSocket services
-│   ├── e2e/                # Playwright E2E tests (198 cases)
-│   └── public/             # Static assets, PWA manifest, service worker
-│
-├── subgraph/               # The Graph subgraph for indexing
-│   ├── schema.graphql      # GraphQL schema
-│   ├── subgraph.yaml       # Data source config
-│   └── src/                # AssemblyScript event handlers
-│
-├── backend/                # Express REST API + WebSocket
-│   ├── src/                # Routes (activity, NFT, offers, …), websocket (token + NFT rooms)
-│   ├── TOKEN_ACTIVITY_BROADCAST.md   # How to push token trade/graduation events
-│   └── README.md           # API and WebSocket docs
-│
-├── subgraph/               # The Graph indexing (marketplace + token launcher)
-│   ├── DEPLOY.md           # Set ArcTokenFactory address before deploy
-│   ├── SUBGRAPH_DEPLOYMENT.md
-│   └── schema.graphql     # LaunchedToken, TokenTrade, TokenGraduation, …
-│
-├── .github/workflows/      # CI/CD
-├── docs/archived/          # Historical plans, phase docs, audits
-└── SECURITY_AUDIT.md       # Security findings
+ARC/
+├── frontend/                    # Next.js 16 app (trust-layer routes incoming; marketplace links removed from nav)
+├── backend/                     # Express REST + WebSocket (narrowing to passport/attestation indexing)
+├── contracts/                   # Solidity 0.8.24 (Passport + AttestationRegistry incoming)
+├── subgraph/                    # The Graph indexing
+├── packages/
+│   └── trust-core/              # Scoring engine + cache helpers (extracted from frontend)
+├── apps/                        # NEW — trust-api, mcp-server, indexer (added W3+)
+├── tsconfig.base.json           # shared TS config
+├── package.json                 # npm workspaces root
+├── STRATEGIC_PIVOT.md           # pivot rationale + freeze notice
+└── CLAUDE.md                    # project conventions
 ```
 
-## Production Readiness
-
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Smart contracts | Production-ready | Marketplace + ArcTokenFactory/AMM tested |
-| Frontend UI | Production-ready | Marketplace + token launch, token page, explore tokens |
-| Circle SDK | Production-ready | Social login, wallet management, transactions |
-| Subgraph | Partially ready | Set ArcTokenFactory address in `subgraph.yaml` before deploy; see [subgraph/DEPLOY.md](./subgraph/DEPLOY.md) |
-| Backend API | Standalone | Express + WebSocket; token activity: `GET /v1/activity/token/:address`, `POST /v1/activity/token/broadcast`; frontend also uses GraphQL + Next.js API routes |
-| Real-time | Partial | WebSocket token room + `useTokenActivity`; set `NEXT_PUBLIC_WS_URL` for live token updates |
-| Token launcher | Implemented | Launch flow, token page, discovery (New/Trending/Recent/Nearing/Graduated), LauncherTokenCard; indexer can call broadcast for live feed |
-
-See [DAPPS_ALIGNMENT_REVIEW.md](./DAPPS_ALIGNMENT_REVIEW.md) for the full alignment audit.
-
-### Frontend shell
-
-Shell and design-system documentation lives in `frontend/docs/`: [REGRESSION_CHECKLIST.md](./frontend/docs/REGRESSION_CHECKLIST.md) (mobile nav and shell checks), [DESIGN_TOKENS.md](./frontend/docs/DESIGN_TOKENS.md) (design tokens and Tailwind usage).
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 20+ and npm 9+
-- Git
-- Wallet with Arc testnet funds (for contract deployment)
-
-### Installation
+## Quick start
 
 ```bash
-# Clone the repository
-git clone https://github.com/Archon-444/ARC.git
-cd ARC
-
-# Install contract dependencies
-cd contracts && npm install
-
-# Install frontend dependencies
-cd ../frontend && npm install
+npm install                       # workspace install at repo root
+npm --workspace frontend run dev  # web app
+npm --workspace @arc/trust-core test
 ```
 
-### Configuration
+Frontend specifics still apply per [CLAUDE.md](./CLAUDE.md): path alias `@/*` → `frontend/src/*`, design tokens via `primary-*` / `accent-*` / `error-*`, mobile-first breakpoints, wagmi + viem + RainbowKit, Circle App Kit for wallet integration.
 
-Create `frontend/.env.local` from the example:
+## Deploy posture
 
-```env
-# Circle SDK
-NEXT_PUBLIC_CIRCLE_ENVIRONMENT=testnet
-NEXT_PUBLIC_CIRCLE_APP_ID_TESTNET=your_app_id
-CIRCLE_API_KEY_TESTNET=your_api_key
+| Component | Chain | Why |
+|---|---|---|
+| ARC Passport, adapters, AttestationRegistry | Arc testnet | Product truth where agent commerce happens |
+| Existing marketplace + launcher contracts | Arc testnet (frozen) | Read-only references |
+| `@arc/trust-api` x402 settlement | Base mainnet USDC via x402 facilitator | Revenue decoupled from Arc mainnet timing |
+| `@arc/mcp-server` | Stateless container (Fly/Render/Vercel) | Calls `trust-api` over HTTPS |
+| `apps/web` | Vercel | SSR via indexer + Arc RPC |
 
-# Web3
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id
-NEXT_PUBLIC_RPC_URL=https://rpc.testnet.arc.network
+Arc mainnet is upside, not a dependency. A one-week migration plan stays ready.
 
-# Contract Addresses
-NEXT_PUBLIC_MARKETPLACE_ADDRESS=0x...
-NEXT_PUBLIC_FEE_VAULT_ADDRESS=0x...
-NEXT_PUBLIC_USDC_ADDRESS=0x...
-NEXT_PUBLIC_TOKEN_FACTORY_ADDRESS=0x...   # For token launcher; also set in subgraph (see subgraph/DEPLOY.md)
+## Vertical
 
-# Optional: backend + WebSocket (token activity realtime)
-NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
-NEXT_PUBLIC_WS_URL=ws://localhost:3001/ws
+**MENA institutional and treasury-oriented agent commerce** is the first vertical:
 
-# Auth
-NEXTAUTH_SECRET=your_random_secret
-NEXTAUTH_URL=http://localhost:3000
-```
+- DFSA's Crypto Token framework (effective Jan 12, 2026) requires firms to document token suitability — `token.suitability.v1` attestations map directly onto that evidentiary burden.
+- ADGM's FRT regime + CBUAE's Foreign Payment Token regime (USDU registered Jan 29, 2026) create a regulated stablecoin corridor — `stablecoin.reserves.v1` attestations capture reserve, governance, disclosure, prudential, and redemption coverage.
+- The founder is UAE-based; the operating motion (counsel, compliance docs, design-partner BD) is location- and time-zone-dependent.
 
-### Development
+This is **not** "regulation solved." Every institutional surface is counsel-led, and counsel review precedes any pitch.
 
-```bash
-# Start frontend dev server
-cd frontend
-npm run dev
+## What's frozen
 
-# Run unit tests
-npm test
+See [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) for the full freeze scope. Short version: no new investment in generic NFT marketplace UX, token launcher consumer features, rewards/staking UX, social/feed features. The contracts stay; the consumer surface does not get new work.
 
-# Run E2E tests (requires playwright browsers)
-npx playwright install
-npm run test:e2e
+## Standards posture
 
-# Build for production
-npm run build
+- **ERC-8004**: DRAFT. We are aligned via adapter (`packages/erc8004-adapter`, coming W8), staged Identity → Reputation → narrow Validation. We publish a public compatibility matrix. We do not market as "compliant."
+- **x402**: rely on the public facilitator for V0 settlement on Base mainnet USDC. No custom EIP-3009 path until economics demand it.
+- **MCP**: stdio transport first per the spec recommendation; Streamable HTTP added later.
+- **EIP-712 attestations**: bodies in IPFS/S3, hashes on-chain via `AttestationRegistry`.
 
-# Analyze bundle
-npm run analyze
-```
+## Plan
 
-## Testing
-
-### Unit Tests (160 tests)
-
-```bash
-npm test                    # Run all tests
-npm run test:watch          # Watch mode
-npm run test:coverage       # Coverage report
-```
-
-### E2E Tests (198 test cases)
-
-```bash
-npm run test:e2e            # Run all E2E tests
-npm run test:e2e:ui         # Interactive UI mode
-npm run test:e2e:headed     # See browser
-npm run test:e2e:report     # View HTML report
-```
-
-Test coverage:
-- Button, Modal, Badge, EmptyState components
-- NFTCard, NFTGrid, NFTCardSkeleton
-- Homepage, navigation, search, explore pages
-- Accessibility, PWA, SEO features
-
-## Smart Contracts
-
-### ArcMarketplace.sol
-
-```solidity
-// Listings
-function listItem(address collection, uint256 tokenId, uint256 price) external
-function buyItem(address collection, uint256 tokenId) external
-function cancelListing(address collection, uint256 tokenId) external
-
-// Auctions
-function createAuction(...) external
-function placeBid(address collection, uint256 tokenId, uint256 bidAmount) external
-function settleAuction(address collection, uint256 tokenId) external
-```
-
-### FeeVault.sol
-
-```solidity
-function setCollectionSplits(address collection, CollectionSplit[] calldata splits) external
-function setGlobalSplits(GlobalSplit[] calldata splits) external
-function distribute(address collection, uint256 tokenId, uint256 amount) external
-```
-
-## Security
-
-See [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) for the full security audit report.
-
-**Key Security Features:**
-- ReentrancyGuard on all state-changing contract functions
-- Session validation on API endpoints
-- IDOR protection on token refresh
-- No sensitive data exposure in error responses
-- Security headers (HSTS, X-Frame-Options, CSP, etc.)
-
-## Roadmap
-
-### Completed
-- [x] Phase 1: Foundation (testing, design system)
-- [x] Phase 2: Critical Features (filtering, search, collections)
-- [x] Phase 3: UX Enhancements (animations, WebSocket, PWA)
-- [x] Phase 4: Performance & Polish (Web Vitals, accessibility, SEO)
-- [x] Security Audit
-
-### Pre-Launch
-- [ ] Security remediation (IDOR fixes, rate limiting)
-- [ ] Infrastructure setup (Redis, PostgreSQL, monitoring)
-- [ ] WebSocket integration completion
-- [ ] User acceptance testing
-- [ ] Production deployment configuration
-- [ ] Beta launch
-
-### v0.5 - Advanced Features
-- Lazy minting for creators
-- Offer system for unlisted NFTs
-- Bulk operations (batch listing/buying)
-- Analytics dashboard
+The 90-day execution plan lives at `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`. Weekly milestones, critical files, and verification gates are listed there.
 
 ## Documentation
 
-- [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) — Security audit findings
-- [DAPPS_ALIGNMENT_REVIEW.md](./DAPPS_ALIGNMENT_REVIEW.md) — Code-vs-documentation alignment audit
-- [CLAUDE.md](./CLAUDE.md) — Project context and conventions (for AI and contributors)
-- [MASTER_REFACTOR_PLAN.md](./MASTER_REFACTOR_PLAN.md) — Forward-looking operating model
-- [subgraph/DEPLOY.md](./subgraph/DEPLOY.md) — Set ArcTokenFactory address before subgraph deploy
-- [docs/archived/](./docs/archived/) — Historical plans, phase status, gap analysis, audits
-- [backend/TOKEN_ACTIVITY_BROADCAST.md](./backend/TOKEN_ACTIVITY_BROADCAST.md) — Push token trade/graduation events to WebSocket
-- [frontend/e2e/README.md](./frontend/e2e/README.md) — E2E testing guide
-
-## Contributing
-
-```bash
-# Fork and clone
-git clone https://github.com/YOUR_USERNAME/ARC.git
-
-# Create feature branch
-git checkout -b feature/your-feature
-
-# Make changes and test
-npm run lint
-npm run type-check
-npm test
-
-# Submit pull request
-```
+- [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) — pivot rationale and freeze notice
+- [CLAUDE.md](./CLAUDE.md) — project conventions
+- [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) — security audit findings (carryover from v0.4)
+- [DAPPS_ALIGNMENT_REVIEW.md](./DAPPS_ALIGNMENT_REVIEW.md) — code-vs-documentation audit
+- [subgraph/DEPLOY.md](./subgraph/DEPLOY.md) — subgraph deployment notes
+- [backend/TOKEN_ACTIVITY_BROADCAST.md](./backend/TOKEN_ACTIVITY_BROADCAST.md) — legacy token activity broadcast (frozen)
+- [docs/archived/](./docs/archived/) — historical phase docs
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT.
 
 ## Links
 
-- **Circle Arc Blockchain**: https://www.circle.com/en/circle-arc
-- **Documentation**: Coming Soon
-- **Discord**: Coming Soon
-
----
-
-**Built for the Arc ecosystem**
+- Circle Arc: https://www.circle.com/en/circle-arc
+- Branch: `claude/trust-layer-agents-sNcay`
