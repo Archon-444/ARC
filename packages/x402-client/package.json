@@ -1,0 +1,33 @@
+{
+  "name": "@arc/x402-client",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Facilitator-backed x402 (HTTP 402 Payment Required) middleware and types for ARC trust-api. Resource-server side only — no key custody, no client wallet.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./middleware": {
+      "types": "./src/middleware.ts",
+      "default": "./src/middleware.ts"
+    },
+    "./facilitator": {
+      "types": "./src/facilitator.ts",
+      "default": "./src/facilitator.ts"
+    },
+    "./constants": {
+      "types": "./src/constants.ts",
+      "default": "./src/constants.ts"
+    }
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "typescript": "^5.9.3"
+  }
+}

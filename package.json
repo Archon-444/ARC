@@ -16,8 +16,13 @@
     "test:web": "npm --workspace frontend test",
     "type-check:web": "npm --workspace frontend run type-check",
     "lint:web": "npm --workspace frontend run lint",
-    "build:trust-core": "npm --workspace @arc/trust-core run build",
     "test:trust-core": "npm --workspace @arc/trust-core test",
+    "type-check:trust-core": "npm --workspace @arc/trust-core run type-check",
+    "type-check:x402-client": "npm --workspace @arc/x402-client run type-check",
+    "dev:trust-api": "npm --workspace @arc/trust-api run dev",
+    "build:trust-api": "npm --workspace @arc/trust-api run build",
+    "type-check:trust-api": "npm --workspace @arc/trust-api run type-check",
+    "smoke:trust-api": "npm --workspace @arc/trust-api run smoke",
     "test:packages": "npm --workspaces --if-present test"
   }
 }
