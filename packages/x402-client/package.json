@@ -21,6 +21,10 @@
     "./constants": {
       "types": "./src/constants.ts",
       "default": "./src/constants.ts"
+    },
+    "./sign": {
+      "types": "./src/sign.ts",
+      "default": "./src/sign.ts"
     }
   },
   "scripts": {

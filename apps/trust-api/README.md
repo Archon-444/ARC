@@ -43,19 +43,49 @@ npm install
 npm --workspace @arc/trust-api run dev
 ```
 
-## Smoke
+## Smoke (3 levels)
+
+### `npm run smoke` — quote-side only (W3 gate)
 
 ```bash
 ARC_PAYTO=0x... npm --workspace @arc/trust-api run smoke
 ```
 
-The smoke script asserts:
+Asserts:
 
 1. `GET /v1/health` → 200, returns `status: "ok"`.
 2. `GET /v1/passport/:address` → 200, returns the W3 placeholder.
 3. `POST /v1/trust/read` without `X-PAYMENT` → 402 with a well-formed `accepts[0]` matching the configured network, asset, and `maxAmountRequired` of `10000` (i.e. $0.01 in USDC base units).
 
-A real paid round-trip (signed EIP-3009 envelope, live facilitator settlement) is the W4 acceptance gate and lives in `test/paid.e2e.ts` once a funded test wallet is available.
+### `npm run smoke:paid-mock` — full wire protocol (W4 gate, no keys)
+
+```bash
+npm --workspace @arc/trust-api run smoke:paid-mock
+```
+
+Asserts the full paid round-trip against a stubbed facilitator:
+
+1. 402 quote with the right `maxAmountRequired`.
+2. EIP-712 typed-data is built correctly for `TransferWithAuthorization` on Base mainnet USDC.
+3. `X-PAYMENT` header decodes; middleware calls `verify` exactly once.
+4. Handler returns 200 with a `scoreV1` assessment.
+5. `X-Payment-Response` header is attached after the handler finishes, with a base64-encoded `SettleResponse` containing `success: true` and the stub `transaction` hash.
+
+No keys, no network, no spending. This is what CI runs by default.
+
+### `npm run smoke:paid-live` — real USDC on Base mainnet (W4 acceptance gate)
+
+```bash
+RUN_LIVE=1 \
+  ARC_TEST_PRIVATE_KEY=0x... \
+  ARC_PAYTO=0x... \
+  ARC_TRUST_API_URL=https://trust.example.com \
+  npm --workspace @arc/trust-api run smoke:paid-live
+```
+
+Without `RUN_LIVE=1` the script exits 0 with a notice; with it, it signs a real EIP-3009 `transferWithAuthorization` for USDC on Base mainnet via viem, sends `X-PAYMENT` to the running trust-api, and asserts the live facilitator returns a real `transaction` hash in `X-Payment-Response`.
+
+Cost per run: **$0.01 USDC + gas**. Each run uses a fresh random nonce.
 
 ## Architecture pointers
 

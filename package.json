@@ -23,6 +23,8 @@
     "build:trust-api": "npm --workspace @arc/trust-api run build",
     "type-check:trust-api": "npm --workspace @arc/trust-api run type-check",
     "smoke:trust-api": "npm --workspace @arc/trust-api run smoke",
+    "smoke:trust-api:paid-mock": "npm --workspace @arc/trust-api run smoke:paid-mock",
+    "smoke:trust-api:paid-live": "npm --workspace @arc/trust-api run smoke:paid-live",
     "test:packages": "npm --workspaces --if-present test"
   }
 }

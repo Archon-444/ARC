@@ -38,8 +38,13 @@ declare module 'express' {
     use(...handlers: Array<RequestHandler | ErrorRequestHandler | Router>): Router;
   }
 
+  export interface ListenServer {
+    close(cb?: () => void): void;
+    address(): string | { port: number; family: string; address: string } | null;
+  }
+
   export interface Application extends Router {
-    listen(port: number, cb?: () => void): { close(cb?: () => void): void };
+    listen(port: number, cb?: () => void): ListenServer;
     use(...handlers: Array<RequestHandler | ErrorRequestHandler | Router | string>): Application;
   }
 
