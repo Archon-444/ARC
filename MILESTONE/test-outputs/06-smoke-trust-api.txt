@@ -1,0 +1,18 @@
+
+> arc-monorepo@0.0.0 smoke:trust-api
+> npm --workspace @arc/trust-api run smoke
+
+
+> @arc/trust-api@0.0.1 smoke
+> ts-node scripts/smoke.ts
+
+[trust-api] ARC_PAYTO is not set; paid routes will return 500 until configured.
+{"timestamp":"2026-05-13T13:23:08.193Z","requestId":"bf75651e-0385-4fec-9d01-5f4997ca193a","method":"GET","path":"/v1/health","status":200,"duration_ms":4,"ip":"127.0.0.1"}
+  GET /v1/health: 200
+{"timestamp":"2026-05-13T13:23:08.206Z","requestId":"e73e0130-333f-429a-aa9d-4181a0f6986c","method":"GET","path":"/v1/passport/0x1234567890abcdef1234567890abcdef12345678","status":200,"duration_ms":2,"ip":"127.0.0.1"}
+  GET /v1/passport/:address: 200
+{"timestamp":"2026-05-13T13:23:08.227Z","requestId":"b4b62edf-669e-4dad-bed7-e1e97874506c","method":"POST","path":"/v1/trust/read","status":402,"duration_ms":1,"ip":"127.0.0.1"}
+  POST /v1/trust/read without payment: 402
+{"timestamp":"2026-05-13T13:23:08.232Z","requestId":"4bc80e9f-e049-49a5-a8db-d52d025bc38a","method":"POST","path":"/v1/trust/read/deep","status":402,"duration_ms":1,"ip":"127.0.0.1"}
+  POST /v1/trust/read/deep without payment (W5 placeholder): 402
+smoke OK

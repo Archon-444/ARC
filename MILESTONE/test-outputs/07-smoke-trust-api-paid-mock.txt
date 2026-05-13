@@ -1,0 +1,15 @@
+
+> arc-monorepo@0.0.0 smoke:trust-api:paid-mock
+> npm --workspace @arc/trust-api run smoke:paid-mock
+
+
+> @arc/trust-api@0.0.1 smoke:paid-mock
+> ts-node scripts/paid-mock.ts
+
+  [quote] 402 maxAmountRequired=10000
+  [envelope] header.length=648
+  [paid] 200 overallScore=6 settle.tx=0xdeadbeefdead…
+  [settle-fail] 402 error="settlement failed: stub: settle rejected (insufficient gas)"
+  [deep-quote] 402 maxAmountRequired=50000
+  [deep-501] 501 no facilitator calls, no X-Payment-Response
+paid-mock OK

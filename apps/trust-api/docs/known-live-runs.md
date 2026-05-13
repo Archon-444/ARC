@@ -37,7 +37,8 @@ different facilitator, would settle again.
 
 | Date (UTC) | Network | Payer | Pay-to | Amount | Tx hash | trust-api commit | Notes |
 |---|---|---|---|---|---|---|---|
-| _pending_ | base-mainnet | `0x…` | `0x…` | `$0.01` | `0x…` | `14a2018` (W5 spine) | First post-W5 live run; capture latency p50/p95. |
+| 2026-05-13 | base-mainnet | _deferred_ | _deferred_ | `$0.01` | _deferred_ | `64f3dfe` (W7 docs tip) | **Deferred for the W5–W7 milestone gate.** No funded Base mainnet wallet wired into the dev environment for this milestone. `smoke:paid-mock` (W5) + structural paid inspector test (W7.2) stand in as the verification surface; live `smoke:paid-live` will be fired before W8 closes. See [`MILESTONE_W5_W7.md`](../../../MILESTONE_W5_W7.md). |
+| _pending_ | base-mainnet | `0x…` | `0x…` | `$0.01` | `0x…` | `14a2018` (W5 spine) | First post-W5 live run; capture latency p50/p95. Will replace the deferral row above. |
 
 ## Status
 
@@ -45,5 +46,9 @@ different facilitator, would settle again.
   before W6 (`apps/mcp-server`) starts. The plan also explicitly
   allows deferring the live run with a documented reason (so this is
   the gate, not a blocker); the row is the preferred outcome.
+- **W5–W7 milestone** — deferral row appended on 2026-05-13. The
+  in-tree gates captured in
+  [`MILESTONE/test-outputs/`](../../../MILESTONE/test-outputs/) stand
+  in for the live tx until a funded host is available.
 - **W12 hardening** — once we have ≥ 10 live runs, fold p50/p95 latency
   and any settle-failure incidents into the W12 load-test report.

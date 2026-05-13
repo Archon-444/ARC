@@ -1,0 +1,12 @@
+
+> arc-monorepo@0.0.0 type-check:mcp-server
+> npm --workspace @arc/mcp-server run type-check
+
+
+> @arc/mcp-server@0.0.1 type-check
+> tsc --noEmit
+
+
+> @arc/mcp-server@0.0.1 build
+> tsc
+

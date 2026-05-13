@@ -1,0 +1,51 @@
+
+> @arc/trust-core@0.0.1 test
+> jest
+
+PASS src/__tests__/scoring.test.ts
+  scoreToLevel
+    ✓ returns low for score 0 (2 ms)
+    ✓ returns low for score 25 (1 ms)
+    ✓ returns medium for score 26
+    ✓ returns medium for score 50
+    ✓ returns high for score 51
+    ✓ returns high for score 100
+  getRecommendation
+    ✓ returns safe_buy for low score with no red flags (1 ms)
+    ✓ returns moderate_buy for medium score
+    ✓ returns speculative for high score (1 ms)
+    ✓ returns avoid for very high score
+    ✓ returns speculative when 2 red flags regardless of score
+    ✓ returns avoid when 3+ red flags regardless of score
+  assessCreatorRisk
+    ✓ gives moderate score for brand new creator (first token) (1 ms)
+    ✓ gives low score for creator with good track record (1 ms)
+    ✓ gives high score for creator with poor track record (1 ms)
+    ✓ flags serial launcher (high frequency)
+    ✓ caps score at 100
+  assessContractRisk
+    ✓ gives low score for mature token with sales (2 ms)
+    ✓ gives higher score for brand new token
+    ✓ flags extremely high supply (1 ms)
+    ✓ penalizes stale tokens with low sales
+  assessTradingRisk
+    ✓ returns moderate score for no trades (1 ms)
+    ✓ gives low score for diverse organic trading (1 ms)
+    ✓ flags trading concentrated among few wallets
+    ✓ flags single wallet volume dominance (1 ms)
+    ✓ flags heavy sell pressure
+  assessLiquidityRisk
+    ✓ gives low score for healthy graduated token
+    ✓ flags rapid creator treasury withdrawal after graduation (1 ms)
+    ✓ flags stalled token below 10% for 14+ days
+    ✓ gives moderate score for token with no progress (1 ms)
+    ✓ gives healthy score for actively progressing token
+  composite scoring scenarios
+    ✓ new token by new creator = moderate overall (1 ms)
+    ✓ serial rugger = high risk with multiple red flags
+
+Test Suites: 1 passed, 1 total
+Tests:       33 passed, 33 total
+Snapshots:   0 total
+Time:        1.282 s
+Ran all test suites.

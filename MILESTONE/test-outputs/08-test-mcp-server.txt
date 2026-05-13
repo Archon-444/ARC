@@ -1,0 +1,33 @@
+
+> arc-monorepo@0.0.0 test:mcp-server
+> npm --workspace @arc/mcp-server test
+
+
+> @arc/mcp-server@0.0.1 test
+> tsx test/inspector.spec.ts && tsx test/inspector-http.spec.ts && tsx test/inspector-paid.spec.ts
+
+  [stub] http://127.0.0.1:46633
+[child] [arc-mcp-server] connected stdio transport (trustApi=http://127.0.0.1:46633, stub-quote mode)
+  [listTools] arc_trust_read, arc_passport_get, arc_search
+  [arc_passport_get] status=not_indexed
+  [arc_passport_get invalid] isError=true
+  [arc_trust_read] payment_required maxAmountRequired=10000
+  [arc_search] not_indexed results=0
+inspector OK
+  [stub] http://127.0.0.1:33121
+  [http] http://127.0.0.1:46781/mcp
+  [listTools] arc_trust_read, arc_passport_get, arc_search
+  [arc_passport_get] status=not_indexed
+  [arc_passport_get invalid] isError=true
+  [arc_trust_read] payment_required maxAmountRequired=10000
+  [arc_search] not_indexed results=0
+  [health] transport=http
+inspector-http OK
+  [stub] http://127.0.0.1:35107 mode=paid-on-header
+[child] [arc-mcp-server] connected stdio transport (trustApi=http://127.0.0.1:35107, signing-payer mode)
+  [arc_trust_read paid] composite=78 tx=0xtest_tx_hash_2
+  [x-payment] scheme=exact from=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+  [stub] http://127.0.0.1:35369 mode=settle-fail
+[child] [arc-mcp-server] connected stdio transport (trustApi=http://127.0.0.1:35369, signing-payer mode)
+  [arc_trust_read settle-fail] settleError=insufficient_funds
+inspector-paid OK

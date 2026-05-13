@@ -1,0 +1,16 @@
+
+> arc-monorepo@0.0.0 type-check:x402-client
+> npm --workspace @arc/x402-client run type-check
+
+
+> @arc/x402-client@0.0.1 type-check
+> tsc --noEmit
+
+
+> arc-monorepo@0.0.0 build:x402-client
+> npm --workspace @arc/x402-client run build
+
+
+> @arc/x402-client@0.0.1 build
+> tsc -p tsconfig.build.json
+

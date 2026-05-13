@@ -1,0 +1,8 @@
+
+> arc-monorepo@0.0.0 type-check:trust-api
+> npm --workspace @arc/trust-api run type-check
+
+
+> @arc/trust-api@0.0.1 type-check
+> tsc --noEmit
+
