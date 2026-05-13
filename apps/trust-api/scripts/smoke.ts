@@ -63,6 +63,22 @@ async function main(): Promise<void> {
       }
     );
 
+    await check(
+      'POST /v1/trust/read/deep without payment (W5 placeholder)',
+      `${base}/v1/trust/read/deep`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ target: '0x1234567890abcdef1234567890abcdef12345678' }),
+      },
+      (status, body) => {
+        assert(status === 402, `deep status ${status}`);
+        assert(body.x402Version === 1, 'deep x402Version');
+        const req = body.accepts?.[0];
+        assert(req && req.maxAmountRequired === '50000', `deep maxAmountRequired=${req?.maxAmountRequired}`);
+      }
+    );
+
     console.log('smoke OK');
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));

@@ -1,18 +1,58 @@
-import express from 'express';
-import { loadConfig } from './config';
+import express, { Request, Response } from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import compression from 'compression';
+
+import { loadConfig, TrustApiConfig } from './config';
 import { healthHandler } from './routes/health';
 import { passportHandler } from './routes/passport';
 import { makeTrustRoutes } from './routes/trust';
+import { makeTrustDeepRoutes } from './routes/trust-deep';
+import { requestId } from './middleware/request-id';
+import { logger } from './middleware/logger';
+import { globalLimiter, paidLimiter } from './middleware/rate-limit';
+import { errorHandler } from './middleware/error';
 
-export function createApp(cfg = loadConfig()) {
+/**
+ * trust-api app factory. Wiring order, adopted from backend/src/server.ts:
+ *
+ *   request-id → helmet → cors → global rate-limit → body → compression
+ *   → logger → routes → 404 → error handler
+ *
+ * Paid routes additionally pass through `paidLimiter`, keyed off the
+ * verified x402 payer when available so a single payer (or anonymous IP)
+ * cannot burn facilitator capacity with rapid-fire bad payloads.
+ */
+export function createApp(cfg: TrustApiConfig = loadConfig()) {
   const app = express();
+
+  app.use(requestId());
+  app.use(helmet());
+  app.use(
+    cors({
+      origin: process.env.TRUST_API_CORS_ORIGIN ?? '*',
+      credentials: false,
+    })
+  );
+  app.use('/v1/', globalLimiter());
   app.use(express.json({ limit: '64kb' }));
+  app.use(compression());
+  app.use(logger());
 
   app.get('/v1/health', healthHandler);
   app.get('/v1/passport/:address', passportHandler);
 
   const trust = makeTrustRoutes(cfg);
-  app.post('/v1/trust/read', trust.readPaywall as any, trust.readHandler);
+  app.post('/v1/trust/read', paidLimiter(), trust.readPaywall as any, trust.readHandler);
+
+  const deep = makeTrustDeepRoutes(cfg);
+  app.post('/v1/trust/read/deep', paidLimiter(), deep.paywall, deep.handler);
+
+  app.use((req: Request, res: Response) => {
+    res.status(404).json({ message: 'Route not found', path: req.path });
+  });
+
+  app.use(errorHandler());
 
   return app;
 }
@@ -22,8 +62,16 @@ if (require.main === module) {
   const app = createApp(cfg);
   app.listen(cfg.port, () => {
     console.log(
-      `[trust-api] listening on :${cfg.port} ` +
-        `network=${cfg.network} facilitator=${cfg.facilitatorUrl} payTo=${cfg.payTo || '(unset)'}`
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: 'info',
+        service: '@arc/trust-api',
+        msg: 'listening',
+        port: cfg.port,
+        network: cfg.network,
+        facilitator: cfg.facilitatorUrl,
+        payTo: cfg.payTo || null,
+      })
     );
   });
 }
