@@ -26,12 +26,16 @@ import {
   counselKybV1,
   editorialReviewV1,
   treasuryPolicyV1,
+  tokenSuitabilityV1,
+  stablecoinReservesV1,
   makeAttestationDomain,
   signAttestation,
   verifyAttestation,
   type CounselKybBody,
   type EditorialReviewBody,
   type TreasuryPolicyBody,
+  type TokenSuitabilityBody,
+  type StablecoinReservesBody,
   type AttestationSchema,
 } from '../src/index.js';
 
@@ -102,6 +106,59 @@ function treasuryBody(): TreasuryPolicyBody {
     policyCid: 'bafybeicid-policy',
     policyHash: keccak256(stringToBytes('policy-bytes')) as `0x${string}`,
     notes: 'Approved at the May 2026 treasury committee.',
+  };
+}
+
+const TOKEN_ADDR = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address;
+const STABLE_ADDR = '0x4444444444444444444444444444444444444444' as Address;
+
+function tokenSuitabilityBody(): TokenSuitabilityBody {
+  return {
+    subject: SUBJECT,
+    token: TOKEN_ADDR,
+    reviewedAt: '2026-01-12',
+    expiresAt: '2027-01-12',
+    outcome: 'suitable-with-conditions',
+    jurisdiction: 'DIFC',
+    scoreBand: 72,
+    criteria: {
+      characteristics: 80,
+      regulatoryStatus: 65,
+      marketProfile: 78,
+      technology: 85,
+      amlSanctions: 60,
+      legislationImpact: 70,
+    },
+    counsel: COUNSEL_ADDR,
+    reportCid: 'bafybeicid-token-suitability',
+    reportHash: keccak256(stringToBytes('token-suitability-report')) as `0x${string}`,
+    notes: 'Suitable for institutional treasury custody; retail distribution out of scope.',
+  };
+}
+
+function stablecoinReservesBody(): StablecoinReservesBody {
+  return {
+    subject: STABLE_ADDR,
+    ticker: 'USDU',
+    asOf: '2026-04-30',
+    expiresAt: '2026-07-31',
+    outcome: 'in-compliance',
+    jurisdiction: 'ADGM',
+    criteria: {
+      reserveQuality: 95,
+      audit: 90,
+      governance: 85,
+      disclosure: 88,
+      prudential: 92,
+      redemption: 80,
+    },
+    reservesUsd: 1_050_000_000_000n, // $1.05B in USDC base units
+    circulatingSupply: 1_000_000_000_000n, // $1.00B
+    circulatingSupplyDecimals: 6,
+    auditor: TREASURY_ADDR,
+    reportCid: 'bafybeicid-reserves',
+    reportHash: keccak256(stringToBytes('reserves-report')) as `0x${string}`,
+    notes: 'Q1 2026 audit; reserves > supply ($1.05B vs $1.00B).',
   };
 }
 
@@ -214,6 +271,29 @@ async function main(): Promise<void> {
     expectedSigner: TREASURY_ADDR,
     body: treasuryBody(),
     tamper: (b) => ({ ...b, perDayCeiling: 1n }),
+  });
+
+  await runRoundTrip<TokenSuitabilityBody>({
+    label: 'token.suitability.v1',
+    schema: tokenSuitabilityV1,
+    pk: COUNSEL_PK,
+    expectedSigner: COUNSEL_ADDR,
+    body: tokenSuitabilityBody(),
+    // Tamper a nested struct field — verifies the EIP-712 nested type
+    // encoding traverses correctly so changes inside `criteria` flip
+    // the digest.
+    tamper: (b) => ({ ...b, criteria: { ...b.criteria, amlSanctions: 5 } }),
+  });
+
+  await runRoundTrip<StablecoinReservesBody>({
+    label: 'stablecoin.reserves.v1',
+    schema: stablecoinReservesV1,
+    pk: TREASURY_PK,
+    expectedSigner: TREASURY_ADDR,
+    body: stablecoinReservesBody(),
+    // Tamper the reserves number — under-reserving would be the
+    // exact thing an adversary would try to mask.
+    tamper: (b) => ({ ...b, reservesUsd: 1n }),
   });
 
   console.log('attestations OK');

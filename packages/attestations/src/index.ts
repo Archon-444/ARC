@@ -65,3 +65,15 @@ export type { EditorialReviewBody } from './schemas/editorial-review-v1.js';
 
 export { treasuryPolicyV1 } from './schemas/treasury-policy-v1.js';
 export type { TreasuryPolicyBody } from './schemas/treasury-policy-v1.js';
+
+export { tokenSuitabilityV1 } from './schemas/token-suitability-v1.js';
+export type {
+  TokenSuitabilityBody,
+  TokenSuitabilityOutcome,
+} from './schemas/token-suitability-v1.js';
+
+export { stablecoinReservesV1 } from './schemas/stablecoin-reserves-v1.js';
+export type {
+  StablecoinReservesBody,
+  StablecoinReservesOutcome,
+} from './schemas/stablecoin-reserves-v1.js';

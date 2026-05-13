@@ -21,6 +21,14 @@
     "./schemas/treasury-policy-v1": {
       "types": "./dist/schemas/treasury-policy-v1.d.ts",
       "default": "./dist/schemas/treasury-policy-v1.js"
+    },
+    "./schemas/token-suitability-v1": {
+      "types": "./dist/schemas/token-suitability-v1.d.ts",
+      "default": "./dist/schemas/token-suitability-v1.js"
+    },
+    "./schemas/stablecoin-reserves-v1": {
+      "types": "./dist/schemas/stablecoin-reserves-v1.d.ts",
+      "default": "./dist/schemas/stablecoin-reserves-v1.js"
     }
   },
   "files": ["dist"],
