@@ -7,8 +7,9 @@ Pay-per-call trust-read API. Facilitator-backed x402 paywall on Base mainnet USD
 - `GET  /v1/health` — uptime + service identity, free.
 - `GET  /v1/passport/:address` — free placeholder. Returns live data starting W8 (`ArcPassport.sol` on Arc testnet).
 - `POST /v1/trust/read` — paywalled at $0.01 via x402, returns `scoreV1` of the target address. **Data source is a deterministic stub** so the paywall + facilitator integration can be smoke-tested end-to-end; the real source plugs in W8-W10.
+- `POST /v1/trust/read/deep` — W5 placeholder. Without `X-PAYMENT` returns the 402 quote at $0.05 (50000 base units) so clients can bind to the price now. With `X-PAYMENT` the middleware skips verify+settle entirely (`quoteOnly: true`) and the handler returns 501 with `{ error, etaWeek: 10, notice }`. No money moves until W10 editorial commentary lands.
 
-`POST /v1/trust/read/deep` ($0.05) ships in W10 with the Anthropic-generated editorial commentary (purpose-built prompt cache; not extracted from the existing Anthropic route in the frontend).
+The Anthropic-generated editorial commentary behind the deep tier ships in W10 with a purpose-built prompt cache (not extracted from the existing Anthropic route in the frontend).
 
 ## Settlement
 
@@ -57,19 +58,33 @@ Asserts:
 2. `GET /v1/passport/:address` → 200, returns the W3 placeholder.
 3. `POST /v1/trust/read` without `X-PAYMENT` → 402 with a well-formed `accepts[0]` matching the configured network, asset, and `maxAmountRequired` of `10000` (i.e. $0.01 in USDC base units).
 
-### `npm run smoke:paid-mock` — full wire protocol (W4 gate, no keys)
+### `npm run smoke:paid-mock` — full wire protocol (W5, three scenarios)
 
 ```bash
 npm --workspace @arc/trust-api run smoke:paid-mock
 ```
 
-Asserts the full paid round-trip against a stubbed facilitator:
+Asserts the full paid round-trip against a stubbed facilitator across three scenarios:
+
+**(A) Success path** — verify + settle return OK:
 
 1. 402 quote with the right `maxAmountRequired`.
 2. EIP-712 typed-data is built correctly for `TransferWithAuthorization` on Base mainnet USDC.
-3. `X-PAYMENT` header decodes; middleware calls `verify` exactly once.
+3. `X-PAYMENT` decodes; middleware calls `verify` exactly once.
 4. Handler returns 200 with a `scoreV1` assessment.
-5. `X-Payment-Response` header is attached after the handler finishes, with a base64-encoded `SettleResponse` containing `success: true` and the stub `transaction` hash.
+5. `facilitator.settle()` is called **synchronously inside the response lifecycle** (no `res.on('finish')` race). `X-Payment-Response` is attached on the same flush as the 200 body, base64-encoding a `SettleResponse` with `success: true` and the stub `transaction` hash.
+
+**(B) Settle-failure path** — `facilitator.settle()` rejects:
+
+1. The middleware drops the handler's 200 body.
+2. The response becomes 402 with `{ x402Version: 1, error: "settlement failed: ...", accepts: [...] }`.
+3. `X-Payment-Response` still flows, carrying `{ success: false, errorReason }` so the client can retry with a fresh nonce.
+
+**(C) `quoteOnly` placeholder path** — the deep-tier route:
+
+1. `POST /v1/trust/read/deep` without `X-PAYMENT` returns the 402 quote with `maxAmountRequired: "50000"` ($0.05).
+2. With `X-PAYMENT` the middleware skips verify and settle entirely (`facilitator.verifyCalls` and `settleCalls` unchanged) and the handler returns 501.
+3. No `X-Payment-Response` header is emitted. No money moves.
 
 No keys, no network, no spending. This is what CI runs by default.
 
@@ -87,10 +102,18 @@ Without `RUN_LIVE=1` the script exits 0 with a notice; with it, it signs a real 
 
 Cost per run: **$0.01 USDC + gas**. Each run uses a fresh random nonce.
 
+## Known live runs
+
+The W4 acceptance gate ("real USDC settles on Base mainnet via the live facilitator") is captured in [`docs/known-live-runs.md`](docs/known-live-runs.md). Each entry pins a `(date, payer, payTo, amount, tx hash, commit)` tuple so we can prove a real round-trip from a funded host. Add a row each time `smoke:paid-live` settles.
+
 ## Architecture pointers
 
-- `src/index.ts` — Express bootstrap.
+- `src/index.ts` — Express bootstrap. Wiring order: request-id → helmet → cors → globalLimiter → body → compression → logger → routes → 404 → errorHandler.
 - `src/config.ts` — env loading.
-- `src/routes/{health,passport,trust}.ts` — route handlers.
+- `src/errors.ts` + `src/middleware/error.ts` — `APIError` shape ported from `backend/`, JSON error response with `requestId`.
+- `src/middleware/request-id.ts` — `x-request-id` echo / UUID generate.
+- `src/middleware/logger.ts` — structured one-line-per-request JSON access log, includes `payer` when the paywall has verified.
+- `src/middleware/rate-limit.ts` — global per-IP limiter on `/v1/*` (defaults `RATE_LIMIT_WINDOW_MS=60_000`, `RATE_LIMIT_MAX=120`) plus a paid-route limiter keyed off `req.x402.payer ?? ip` (defaults `PAID_RATE_LIMIT_WINDOW_MS=60_000`, `PAID_RATE_LIMIT_MAX=30`).
+- `src/routes/{health,passport,trust,trust-deep}.ts` — route handlers. `trust-deep` is the W5 `quoteOnly: true` placeholder; see [`docs/known-live-runs.md`](docs/known-live-runs.md) for live-settlement evidence on the $0.01 tier.
 - `src/sources/heuristic.ts` — V0 stub data source. Replace at W8 with `@arc/passport-sdk` reads and `@arc/attestations` lookups.
-- Paywall: `@arc/x402-client/requirePayment`, configured per call via `buildRequirement(cfg, $0.01, resource)`.
+- Paywall: `@arc/x402-client/requirePayment` — synchronous settle (verify → wrap `res.json` → handler → settle → respond) with a configurable `settleTimeoutMs` (default 30s) and a `quoteOnly` placeholder mode. JSON responses only; streaming/SSE/file downloads are out of scope for W5.
