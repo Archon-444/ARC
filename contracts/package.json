@@ -5,13 +5,16 @@
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
+    "test:passport": "hardhat test test/passport/*.test.js",
     "test:coverage": "hardhat coverage",
     "compile": "hardhat compile",
+    "check-passport": "node scripts/check-passport.js",
     "clean": "hardhat clean",
     "deploy:local": "hardhat run scripts/deploy.js --network hardhat",
     "deploy:arc": "hardhat run scripts/deploy-arc.js --network arcTestnet",
     "deploy:arc-testnet": "hardhat run scripts/deploy-arc.js --network arcTestnet",
     "deploy:arc-mainnet": "hardhat run scripts/deploy-arc.js --network arcMainnet",
+    "deploy:passport:arc-testnet": "hardhat run scripts/deploy-passport.js --network arcTestnet",
     "verify:arc-testnet": "hardhat verify --network arcTestnet",
     "verify:arc-mainnet": "hardhat verify --network arcMainnet",
     "console:arc": "hardhat console --network arcTestnet",
@@ -24,11 +27,15 @@
     "dotenv": "^16.3.1"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
     "@nomicfoundation/hardhat-ethers": "^3.0.0",
+    "@nomicfoundation/hardhat-ignition": "^0.15.16",
+    "@nomicfoundation/hardhat-ignition-ethers": "^0.15.17",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "@nomicfoundation/ignition-core": "^0.15.15",
+    "@openzeppelin/contracts": "^5.4.0",
     "@typechain/ethers-v6": "^0.5.0",
     "@typechain/hardhat": "^9.0.0",
     "@types/chai": "^4.2.0",
@@ -38,7 +45,6 @@
     "hardhat": "^2.22.0",
     "hardhat-gas-reporter": "^1.0.8",
     "solidity-coverage": "^0.8.0",
-    "typechain": "^8.3.0",
-    "@openzeppelin/contracts": "^5.4.0"
+    "typechain": "^8.3.0"
   }
 }
