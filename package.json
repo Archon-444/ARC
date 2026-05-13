@@ -30,6 +30,10 @@
     "build:mcp-server": "npm --workspace @arc/mcp-server run build",
     "type-check:mcp-server": "npm --workspace @arc/mcp-server run type-check",
     "test:mcp-server": "npm --workspace @arc/mcp-server test",
+    "build:passport-sdk": "npm --workspace @arc/passport-sdk run build",
+    "type-check:passport-sdk": "npm --workspace @arc/passport-sdk run type-check",
+    "test:passport-sdk": "npm --workspace @arc/passport-sdk test",
+    "check-passport-contracts": "npm --workspace contracts run check-passport",
     "test:packages": "npm --workspaces --if-present test"
   }
 }

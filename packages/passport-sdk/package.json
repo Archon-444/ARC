@@ -1,0 +1,28 @@
+{
+  "name": "@arc/passport-sdk",
+  "version": "0.0.1",
+  "private": true,
+  "description": "TypeScript client for ArcPassport on Arc testnet. Typed reads (getPassport, resolveBySubject), typed writes (mintSelf, updateMetadata, revoke), and adapter-pluggable through the IERC8004Identity interface. ABIs are in-tree and hand-curated (regenerate with regen-abi.sh from contracts artifacts when the contract changes).",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "type-check": "tsc --noEmit",
+    "test": "tsx test/index.test.ts"
+  },
+  "dependencies": {
+    "viem": "^2.48.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  }
+}
