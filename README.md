@@ -39,13 +39,15 @@ npm install                       # workspace install at repo root
 npm --workspace frontend run dev  # web app
 npm --workspace @arc/trust-core test
 
-# Trust layer (W3–W6 — landed)
+# Trust layer (W3–W7 — landed)
 npm run dev:trust-api             # @arc/trust-api on :3030 (x402 paywall)
 npm run smoke:trust-api           # health + 402 quote shape
 npm run smoke:trust-api:paid-mock # paid round-trip vs mock facilitator
-npm run build:mcp-server          # @arc/mcp-server (stdio MCP)
-npm run test:mcp-server           # programmatic Inspector: lists tools,
-                                  # exercises all three end-to-end
+npm run build:x402-client         # required before mcp-server (CJS dist)
+npm run build:mcp-server          # @arc/mcp-server (stdio + http MCP)
+npm run test:mcp-server           # 3 inspector specs back-to-back:
+                                  #   stdio + http + signing-payer
+npm --workspace @arc/mcp-server run dev:http  # Streamable HTTP on :8080
 ```
 
 Frontend specifics still apply per [CLAUDE.md](./CLAUDE.md): path alias `@/*` → `frontend/src/*`, design tokens via `primary-*` / `accent-*` / `error-*`, mobile-first breakpoints, wagmi + viem + RainbowKit, Circle App Kit for wallet integration.
@@ -85,7 +87,7 @@ See [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) for the full freeze scope. Short 
 
 ## Plan
 
-The 90-day execution plan lives at `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`. Weekly milestones, critical files, and verification gates are listed there. Slice status is tracked in [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md#shipped-to-date) — **W1–W6 are landed on this branch; W7 (Streamable HTTP + skill + listing) is next.**
+The 90-day execution plan lives at `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`. Weekly milestones, critical files, and verification gates are listed there. Slice status is tracked in [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md#shipped-to-date) — **W1–W7 are landed on this branch; W8 (`ArcPassport.sol` + identity adapter on Arc testnet) is next.**
 
 ## Documentation
 
