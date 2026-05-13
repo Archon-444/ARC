@@ -6,9 +6,13 @@
   "scripts": {
     "test": "hardhat test",
     "test:passport": "hardhat test test/passport/*.test.js",
+    "test:reputation": "hardhat test test/reputation/*.test.js",
+    "test:attestations": "hardhat test test/attestations/*.test.js",
+    "test:trust-contracts": "hardhat test test/passport/*.test.js test/reputation/*.test.js test/attestations/*.test.js",
     "test:coverage": "hardhat coverage",
     "compile": "hardhat compile",
     "check-passport": "node scripts/check-passport.js",
+    "check-contracts": "node scripts/check-contracts.js",
     "clean": "hardhat clean",
     "deploy:local": "hardhat run scripts/deploy.js --network hardhat",
     "deploy:arc": "hardhat run scripts/deploy-arc.js --network arcTestnet",
