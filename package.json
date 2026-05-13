@@ -33,6 +33,9 @@
     "build:passport-sdk": "npm --workspace @arc/passport-sdk run build",
     "type-check:passport-sdk": "npm --workspace @arc/passport-sdk run type-check",
     "test:passport-sdk": "npm --workspace @arc/passport-sdk test",
+    "build:attestations": "npm --workspace @arc/attestations run build",
+    "type-check:attestations": "npm --workspace @arc/attestations run type-check",
+    "test:attestations": "npm --workspace @arc/attestations test",
     "check-passport-contracts": "npm --workspace contracts run check-passport",
     "check-trust-contracts": "npm --workspace contracts run check-contracts",
     "test:packages": "npm --workspaces --if-present test"

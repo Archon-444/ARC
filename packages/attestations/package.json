@@ -1,0 +1,40 @@
+{
+  "name": "@arc/attestations",
+  "version": "0.0.1",
+  "private": true,
+  "description": "EIP-712 attestation schemas + sign/verify helpers for ARC's AttestationRegistry. Ships counsel.kyb.v1, editorial.review.v1, treasury.policy.v1 in W9; MENA-mapped token.suitability.v1 + stablecoin.reserves.v1 land in W10. Off-chain workflow: build a body matching the schema, sign typed-data with viem, get the EIP-712 digest as `dataHash`, anchor on-chain via AttestationRegistry.attest(...).",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./schemas/counsel-kyb-v1": {
+      "types": "./dist/schemas/counsel-kyb-v1.d.ts",
+      "default": "./dist/schemas/counsel-kyb-v1.js"
+    },
+    "./schemas/editorial-review-v1": {
+      "types": "./dist/schemas/editorial-review-v1.d.ts",
+      "default": "./dist/schemas/editorial-review-v1.js"
+    },
+    "./schemas/treasury-policy-v1": {
+      "types": "./dist/schemas/treasury-policy-v1.d.ts",
+      "default": "./dist/schemas/treasury-policy-v1.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "type-check": "tsc --noEmit",
+    "test": "tsx test/index.test.ts"
+  },
+  "dependencies": {
+    "viem": "^2.48.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  }
+}
