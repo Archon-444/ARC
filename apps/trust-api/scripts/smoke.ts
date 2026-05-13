@@ -64,7 +64,7 @@ async function main(): Promise<void> {
     );
 
     await check(
-      'POST /v1/trust/read/deep without payment (W5 placeholder)',
+      'POST /v1/trust/read/deep without payment (W10 deep tier)',
       `${base}/v1/trust/read/deep`,
       {
         method: 'POST',

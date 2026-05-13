@@ -3,7 +3,7 @@
  *
  * Proves the trust-api's wire protocol round-trip without keys or network.
  *
- * Three scenarios exercise the W5 synchronous-settle middleware:
+ * Four scenarios exercise the W5/W10 middleware + deep tier:
  *
  *   (A) Success path — verify + settle return success, the response
  *       carries the original 200 body AND X-Payment-Response on the
@@ -12,9 +12,14 @@
  *       middleware drops the handler body, returns 402 with
  *       `error: "settlement failed: ..."` and an X-Payment-Response
  *       carrying `{ success: false, errorReason }`.
- *   (C) quoteOnly path (deep tier placeholder) — payment header
- *       present, but the middleware skips verify and settle entirely
- *       and lets the handler return 501. No facilitator calls recorded.
+ *   (C) Deep tier quote — no payment header returns 402 at $0.05.
+ *   (D) Deep tier paid (W10) — payment header present, verify+settle
+ *       run, handler returns 200 with `{ assessment, commentary,
+ *       source, cache: { hit, key, generatedAt } }`. The stub `source`
+ *       is used because ARC_ANTHROPIC_API_KEY is unset in CI.
+ *   (D2) Deep tier cache hit — repeating the same target returns
+ *        cache.hit=true while still settling the payment (the cache
+ *        is on the editorial layer only).
  *
  * Real cryptographic verification against the live facilitator is
  * exercised by paid-smoke.ts (gated by RUN_LIVE=1 + ARC_TEST_PRIVATE_KEY).
@@ -46,6 +51,7 @@ import { v0HeuristicAssessment } from '../src/sources/heuristic';
 import { healthHandler } from '../src/routes/health';
 import { passportHandler } from '../src/routes/passport';
 import { requirePayment } from '@arc/x402-client';
+import { stubCommentary } from '../src/editorial/stub';
 
 const PAYER = '0x1111111111111111111111111111111111111111';
 const PAYTO = '0x2222222222222222222222222222222222222222';
@@ -147,14 +153,55 @@ function makeStubApp(facilitator: StubFacilitator) {
     }
   );
 
+  // W10 deep tier — real handler, stub-source commentary (no API key).
+  const deepCache = new TtlCache<{
+    commentary: any;
+    source: 'editorial' | 'stub';
+    generatedAt: string;
+  }>({ ttlMs: 60 * 60 * 1000 });
+
   app.post(
     '/v1/trust/read/deep',
-    requirePayment({ accepts: deepRequirement, facilitator, quoteOnly: true }) as any,
-    (_req, res) => {
-      res.status(501).json({
-        error: 'editorial deep tier ships W10',
-        etaWeek: 10,
-        notice: 'no settlement attempted; resubmit your X-PAYMENT after W10.',
+    requirePayment({ accepts: deepRequirement, facilitator }) as any,
+    (req, res) => {
+      const target = String((req.body && req.body.target) || '').toLowerCase();
+      const assessment = v0HeuristicAssessment(target);
+      const scoreV1 = {
+        composite: assessment.overallScore,
+        factors: {
+          creator: assessment.creatorRisk.score,
+          contract: assessment.contractRisk.score,
+          trading: assessment.tradingRisk.score,
+          liquidity: assessment.liquidityRisk.score,
+        },
+      };
+
+      const hit = deepCache.get(target);
+      if (hit) {
+        res.status(200).json({
+          target,
+          assessment,
+          commentary: hit.commentary,
+          source: hit.source,
+          cache: { hit: true, key: target, generatedAt: hit.generatedAt },
+        });
+        return;
+      }
+
+      const commentary = stubCommentary(target, scoreV1);
+      const entry = {
+        commentary,
+        source: 'stub' as const,
+        generatedAt: new Date().toISOString(),
+      };
+      deepCache.set(target, entry);
+
+      res.status(200).json({
+        target,
+        assessment,
+        commentary,
+        source: 'stub',
+        cache: { hit: false, key: target, generatedAt: entry.generatedAt },
       });
     }
   );
@@ -240,7 +287,8 @@ async function main(): Promise<void> {
     log('settle-fail', `402 error="${failedBody.error}"`);
     facilitator.settleMode = 'ok';
 
-    // (C) quoteOnly placeholder path (deep tier) -------------------------
+    // (C) deep tier live (W10) -------------------------------------------
+    // No payment -> 402 quote at $0.05.
     const deepQuoteResp = await fetchJson(`${base}/v1/trust/read/deep`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -254,6 +302,9 @@ async function main(): Promise<void> {
     );
     log('deep-quote', `402 maxAmountRequired=${deepQuoteResp.body.accepts[0].maxAmountRequired}`);
 
+    // Paid path (stub commentary because ARC_ANTHROPIC_API_KEY is unset
+    // in the mock): verify+settle happen, X-Payment-Response is set, the
+    // response body carries the assessment + commentary + cache miss.
     const deepRequirement = deepQuoteResp.body.accepts[0] as PaymentRequirement;
     const deepHeader = makePaymentHeader(deepRequirement, '0x' + 'ef'.repeat(32));
     const beforeDeepVerify = facilitator.verifyCalls;
@@ -263,24 +314,65 @@ async function main(): Promise<void> {
       headers: { 'content-type': 'application/json', 'x-payment': deepHeader },
       body: JSON.stringify({ target: TARGET }),
     });
-    assertEq(deepResp.status, 501, 'deep tier returns 501 when payment header present');
+    assertEq(deepResp.status, 200, 'deep tier paid call returns 200');
     const deepBody = JSON.parse(deepResp.text);
-    assertEq(deepBody.etaWeek, 10, 'deep tier signals etaWeek=10');
+    assertEq(deepBody.target, TARGET, 'deep body target echoes');
+    assert(deepBody.assessment, 'deep body carries assessment');
+    assert(deepBody.commentary, 'deep body carries commentary');
+    assertEq(deepBody.source, 'stub', 'no ARC_ANTHROPIC_API_KEY -> stub source');
+    assertEq(deepBody.cache.hit, false, 'first deep call is a cache miss');
+    assert(
+      ['low-risk', 'moderate-risk', 'elevated-risk', 'do-not-engage'].includes(
+        deepBody.commentary.verdict
+      ),
+      'commentary.verdict is one of the four bands'
+    );
     assertEq(
       facilitator.verifyCalls - beforeDeepVerify,
-      0,
-      'quoteOnly skips facilitator.verify entirely'
+      1,
+      'deep paid path: facilitator.verify called once'
     );
     assertEq(
       facilitator.settleCalls - beforeDeepSettle,
-      0,
-      'quoteOnly skips facilitator.settle entirely'
+      1,
+      'deep paid path: facilitator.settle called once'
     );
-    assert(
-      deepResp.headers.get('x-payment-response') == null,
-      'quoteOnly emits no X-Payment-Response (no settlement happened)'
+    const deepXpr = deepResp.headers.get('x-payment-response');
+    assert(deepXpr != null, 'deep paid response carries X-Payment-Response');
+    const deepSettled = JSON.parse(Buffer.from(deepXpr!, 'base64').toString('utf8'));
+    assertEq(deepSettled.success, true, 'deep settled.success=true');
+    log('deep-paid', `200 verdict=${deepBody.commentary.verdict} source=${deepBody.source}`);
+
+    // Second call against the same target must HIT the response cache —
+    // no Anthropic / stub regeneration, and the payment still settles
+    // (the cache is on the editorial layer only, not the paywall).
+    const beforeCacheVerify = facilitator.verifyCalls;
+    const beforeCacheSettle = facilitator.settleCalls;
+    const cacheHeader = makePaymentHeader(deepRequirement, '0x' + 'ee'.repeat(32));
+    const deepRepeat = await fetchRaw(`${base}/v1/trust/read/deep`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-payment': cacheHeader },
+      body: JSON.stringify({ target: TARGET }),
+    });
+    assertEq(deepRepeat.status, 200, 'repeat deep call returns 200');
+    const repeatBody = JSON.parse(deepRepeat.text);
+    assertEq(repeatBody.cache.hit, true, 'repeat call is a cache HIT');
+    assertEq(
+      repeatBody.cache.generatedAt,
+      deepBody.cache.generatedAt,
+      'cached generatedAt is preserved across the hit'
     );
-    log('deep-501', '501 no facilitator calls, no X-Payment-Response');
+    assertEq(
+      facilitator.verifyCalls - beforeCacheVerify,
+      1,
+      'cache hit still settles: verify called once'
+    );
+    assertEq(
+      facilitator.settleCalls - beforeCacheSettle,
+      1,
+      'cache hit still settles: settle called once'
+    );
+    log('deep-cache-hit', `200 cache.hit=true generatedAt preserved`);
 
     console.log('paid-mock OK');
   } finally {

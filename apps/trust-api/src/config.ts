@@ -14,6 +14,15 @@ export interface TrustApiConfig {
   facilitatorApiKey?: string;
   network: string;
   asset: string;
+  /**
+   * Optional. When set, the W10 deep-tier route calls Haiku 4.5 for
+   * editorial commentary with prompt caching. When unset, the route
+   * still settles (paid-tier wire shape unchanged) but returns
+   * deterministic stub commentary so CI and unfunded deployments work.
+   */
+  anthropicApiKey?: string;
+  /** Deep-tier response cache TTL in ms. Default: 1 hour. */
+  deepCacheTtlMs: number;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): TrustApiConfig {
@@ -26,6 +35,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): TrustApiConfig
       '[trust-api] ARC_PAYTO is not set; paid routes will return 500 until configured.'
     );
   }
+  const deepCacheTtlMs = Number(env.ARC_DEEP_CACHE_TTL_MS ?? 60 * 60 * 1000);
+
   return {
     port,
     payTo,
@@ -33,5 +44,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): TrustApiConfig
     facilitatorApiKey: env.ARC_X402_FACILITATOR_API_KEY,
     network: env.ARC_X402_NETWORK ?? BASE_MAINNET.network,
     asset: env.ARC_X402_ASSET ?? BASE_MAINNET.usdcAddress,
+    anthropicApiKey: env.ARC_ANTHROPIC_API_KEY,
+    deepCacheTtlMs,
   };
 }

@@ -46,7 +46,9 @@ export function createApp(cfg: TrustApiConfig = loadConfig()) {
   app.post('/v1/trust/read', paidLimiter(), trust.readPaywall as any, trust.readHandler);
 
   const deep = makeTrustDeepRoutes(cfg);
-  app.post('/v1/trust/read/deep', paidLimiter(), deep.paywall, deep.handler);
+  app.post('/v1/trust/read/deep', paidLimiter(), deep.paywall, (req, res, next) => {
+    deep.handler(req, res).catch(next);
+  });
 
   app.use((req: Request, res: Response) => {
     res.status(404).json({ message: 'Route not found', path: req.path });
