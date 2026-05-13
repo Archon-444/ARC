@@ -48,6 +48,13 @@ npm run build:mcp-server          # @arc/mcp-server (stdio + http MCP)
 npm run test:mcp-server           # 3 inspector specs back-to-back:
                                   #   stdio + http + signing-payer
 npm --workspace @arc/mcp-server run dev:http  # Streamable HTTP on :8080
+
+# Passport (W8 — landed in tree)
+npm run check-passport-contracts  # offline solc-js compile gate
+npm run test:passport-sdk         # 8 SDK unit tests (stubbed RPC)
+# Full Hardhat tests + Arc testnet deploy are user-fired:
+npm --workspace contracts run test:passport         # 44 specs, needs internet
+npm --workspace contracts run deploy:passport:arc-testnet
 ```
 
 Frontend specifics still apply per [CLAUDE.md](./CLAUDE.md): path alias `@/*` → `frontend/src/*`, design tokens via `primary-*` / `accent-*` / `error-*`, mobile-first breakpoints, wagmi + viem + RainbowKit, Circle App Kit for wallet integration.
@@ -87,7 +94,7 @@ See [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) for the full freeze scope. Short 
 
 ## Plan
 
-The 90-day execution plan lives at `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`. Weekly milestones, critical files, and verification gates are listed there. Slice status is tracked in [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md#shipped-to-date) — **W1–W7 are landed on this branch; W8 (`ArcPassport.sol` + identity adapter on Arc testnet) is next.**
+The 90-day execution plan lives at `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`. Weekly milestones, critical files, and verification gates are listed there. Slice status is tracked in [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md#shipped-to-date) — **W1–W8 are landed on this branch (W8 in tree; Arc testnet deploy is user-fired). W9 (`AttestationRegistry.sol` + first attestation schemas) is next.**
 
 ## Documentation
 
