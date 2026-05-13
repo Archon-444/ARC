@@ -28,7 +28,7 @@ const ROOT = path.resolve(__dirname, '..');
 const CONTRACTS_BASE = path.join(ROOT, 'contracts');
 const OZ_BASE = path.resolve(ROOT, '..', 'node_modules', '@openzeppelin', 'contracts');
 
-const DEFAULT_GROUPS = ['passport', 'reputation', 'attestations'];
+const DEFAULT_GROUPS = ['passport', 'reputation', 'attestations', 'validation'];
 
 function readSources(group) {
   const root = path.join(CONTRACTS_BASE, group);
