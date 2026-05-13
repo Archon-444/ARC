@@ -1,0 +1,47 @@
+# fly.toml — @arc/mcp-server
+#
+# Single Fly machine, HTTP transport, /health probe. Sessions live
+# per-machine (Streamable HTTP transport state is in-memory) so we
+# do not auto-stop. Scale horizontally by region only when MCP load
+# justifies it; in W7 a single machine is correct.
+#
+# Deploy from the repo root:
+#   fly deploy --config apps/mcp-server/fly.toml --dockerfile apps/mcp-server/Dockerfile
+#
+# Required secrets (set with `fly secrets set NAME=...`):
+#   ARC_TRUST_API_URL          - required
+#
+# Optional secrets:
+#   ARC_MCP_PAYER_PRIVATE_KEY  - if set, server signs $0.01 USDC payments
+#                                on behalf of agents (signing-payer mode)
+#   MCP_HTTP_AUTH_TOKEN        - if set, /mcp requires Bearer auth
+
+app = "arc-mcp-server"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  MCP_TRANSPORT = "http"
+  PORT = "8080"
+  HOST = "0.0.0.0"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
