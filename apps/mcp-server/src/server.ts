@@ -4,7 +4,7 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
-import { TrustApiClient } from './trust-api-client.js';
+import { TrustApiClient, type PayerConfig } from './trust-api-client.js';
 import {
   arcPassportGetTool,
   handleArcPassportGet,
@@ -16,6 +16,12 @@ export interface CreateServerOptions {
   trustApiUrl: string;
   trustApiTimeoutMs?: number;
   fetchImpl?: typeof fetch;
+  /**
+   * If set, the server will sign EIP-3009 X-PAYMENT envelopes and
+   * retry POST /v1/trust/read on 402. The private key is held in
+   * memory and never logged. Default: undefined (stub-quote mode).
+   */
+  payer?: PayerConfig;
 }
 
 const SERVICE = {
@@ -39,6 +45,7 @@ export function createServer(opts: CreateServerOptions): Server {
     baseUrl: opts.trustApiUrl,
     timeoutMs: opts.trustApiTimeoutMs,
     fetchImpl: opts.fetchImpl,
+    payer: opts.payer,
   });
 
   const server = new Server(SERVICE, {

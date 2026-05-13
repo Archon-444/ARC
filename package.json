@@ -19,6 +19,7 @@
     "test:trust-core": "npm --workspace @arc/trust-core test",
     "type-check:trust-core": "npm --workspace @arc/trust-core run type-check",
     "type-check:x402-client": "npm --workspace @arc/x402-client run type-check",
+    "build:x402-client": "npm --workspace @arc/x402-client run build",
     "dev:trust-api": "npm --workspace @arc/trust-api run dev",
     "build:trust-api": "npm --workspace @arc/trust-api run build",
     "type-check:trust-api": "npm --workspace @arc/trust-api run type-check",

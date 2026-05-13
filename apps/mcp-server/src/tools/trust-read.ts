@@ -6,7 +6,7 @@ export const arcTrustReadTool: Tool = {
   name: 'arc_trust_read',
   title: 'ARC Trust Read — $0.01 per call',
   description:
-    'Score an EVM address using ARC v1 trust heuristics (creator, contract, trading, liquidity). Paid tier ($0.01 USDC on Base mainnet via x402). When the MCP server is unfunded (W6 default), this tool returns the 402 quote so the caller can surface "payment required" to the agent.',
+    'Score an EVM address using ARC v1 trust heuristics (creator, contract, trading, liquidity). Paid tier ($0.01 USDC on Base mainnet via x402). If the MCP server is funded (ARC_MCP_PAYER_PRIVATE_KEY set), the call returns the actual assessment. If not (stub-quote mode), the tool returns the 402 quote so the caller can surface "payment required" to the agent.',
   inputSchema: {
     type: 'object',
     required: ['target'],
@@ -34,15 +34,22 @@ export async function handleArcTrustRead(
   try {
     const result = await client.trustRead(target);
     if (result.paid) {
+      const body = {
+        status: 'ok',
+        assessment: result.assessment,
+        ...(result.txHash ? { txHash: result.txHash } : {}),
+      };
       return {
-        content: [{ type: 'text', text: JSON.stringify(result.assessment, null, 2) }],
+        content: [{ type: 'text', text: JSON.stringify(body, null, 2) }],
       };
     }
     const accept = result.quote.accepts[0];
     const summary = {
       status: 'payment_required',
-      notice:
-        'ARC MCP server has no payer wallet configured. Surface this quote to the calling agent; once W6 hand-off is paid, retry trust-api directly with an X-PAYMENT envelope.',
+      notice: result.settleError
+        ? `Settlement failed: ${result.settleError}. The MCP server attempted to sign and pay but the facilitator rejected the authorization — likely a funding or nonce issue.`
+        : 'ARC MCP server has no payer wallet configured. Surface this quote to the calling agent; alternatively the operator can set ARC_MCP_PAYER_PRIVATE_KEY so the server signs $0.01 USDC payments transparently.',
+      ...(result.settleError ? { settleError: result.settleError } : {}),
       quote: {
         scheme: accept?.scheme,
         network: accept?.network,

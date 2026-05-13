@@ -13,11 +13,16 @@ import { startHttpTransport } from './transport-http.js';
  *             (default 8080) and serves /mcp + /health.
  *
  * Env:
- *   ARC_TRUST_API_URL       — base URL of @arc/trust-api. Required.
- *   MCP_TRANSPORT           — "stdio" (default) | "http"
- *   PORT                    — HTTP port (default 8080)
- *   HOST                    — HTTP bind (default 0.0.0.0)
- *   MCP_HTTP_AUTH_TOKEN     — if set, /mcp requires `Authorization: Bearer <token>`
+ *   ARC_TRUST_API_URL          — base URL of @arc/trust-api. Required.
+ *   MCP_TRANSPORT              — "stdio" (default) | "http"
+ *   PORT                       — HTTP port (default 8080)
+ *   HOST                       — HTTP bind (default 0.0.0.0)
+ *   MCP_HTTP_AUTH_TOKEN        — if set, /mcp requires `Authorization: Bearer <token>`
+ *   ARC_MCP_PAYER_PRIVATE_KEY  — optional. If set, server signs $0.01
+ *                                EIP-3009 USDC authorizations on Base
+ *                                mainnet so arc_trust_read returns the
+ *                                actual assessment instead of a quote.
+ *                                Otherwise: stub-quote mode (W6 default).
  *
  * The stdio transport sends JSON-RPC over stdin / stdout. ALL non-protocol
  * output MUST go to stderr to avoid corrupting the channel.
@@ -31,15 +36,19 @@ if (!trustApiUrl) {
   process.exit(1);
 }
 
+const payerKey = process.env.ARC_MCP_PAYER_PRIVATE_KEY;
+const payer = payerKey ? { privateKey: payerKey } : undefined;
+const payerNote = payer ? 'signing-payer mode' : 'stub-quote mode';
+
 const transportKind = (process.env.MCP_TRANSPORT ?? 'stdio').toLowerCase();
 
 if (transportKind === 'stdio') {
-  const server = createServer({ trustApiUrl });
+  const server = createServer({ trustApiUrl, payer });
   const transport = new StdioServerTransport();
   server.connect(transport).then(
     () => {
       process.stderr.write(
-        `[arc-mcp-server] connected stdio transport (trustApi=${trustApiUrl})\n`
+        `[arc-mcp-server] connected stdio transport (trustApi=${trustApiUrl}, ${payerNote})\n`
       );
     },
     (err: unknown) => {
@@ -55,7 +64,7 @@ if (transportKind === 'stdio') {
   const authToken = process.env.MCP_HTTP_AUTH_TOKEN;
 
   startHttpTransport({
-    createMcpServer: () => createServer({ trustApiUrl }),
+    createMcpServer: () => createServer({ trustApiUrl, payer }),
     port,
     host,
     authToken,
@@ -63,7 +72,7 @@ if (transportKind === 'stdio') {
     (handle) => {
       process.stderr.write(
         `[arc-mcp-server] http transport listening on http://${host}:${handle.port}/mcp ` +
-          `(trustApi=${trustApiUrl}${authToken ? ', auth=bearer' : ''})\n`
+          `(trustApi=${trustApiUrl}, ${payerNote}${authToken ? ', auth=bearer' : ''})\n`
       );
     },
     (err: unknown) => {
