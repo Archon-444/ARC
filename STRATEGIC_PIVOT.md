@@ -1,7 +1,7 @@
 # Strategic Pivot — ARC Trust Layer
 
 **Effective:** branch `claude/trust-layer-agents-sNcay`
-**Status:** W9 — Reputation adapter + AttestationRegistry in tree. `IERC8004Reputation.sol`, `ArcReputationAdapter.sol`, `AttestationRegistry.sol` (+ 44-spec Hardhat suite), `@arc/attestations` TS package shipping `counsel.kyb.v1` / `editorial.review.v1` / `treasury.policy.v1` schemas with EIP-712 sign + verify + tamper-detection round-trip. Compile-only gate green offline (passport 4015B+5091B, reputation 2865B, attestations 4016B); full Hardhat tests + Arc testnet deploy are user-fired.
+**Status:** W10 — MENA schemas + narrow Validation hook + editorial deep tier live. `token.suitability.v1` (DFSA-mapped) + `stablecoin.reserves.v1` (ADGM FRT-mapped) round-trip tested through `@arc/attestations`. `IERC8004Validation.sol` + `ArcValidationAdapter.sol` (3960B) added to the contracts/ tree. `POST /v1/trust/read/deep` now actually settles ($0.05) and returns Haiku 4.5 editorial commentary with prompt caching (5KB system prompt cached as ephemeral, in-memory per-target response cache, deterministic stub fallback when `ARC_ANTHROPIC_API_KEY` is unset).
 **Plan:** `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`
 
 ## Shipped to date
@@ -16,10 +16,11 @@
 | (consolidation) | `MILESTONE_W5_W7.md` + `MILESTONE/test-outputs/` capturing all eight in-env gates green; deferral row in `known-live-runs.md` | 8 captured logs with sentinels |
 | W8 | `contracts/passport/`: `IERC8004Identity.sol` (interface), `ArcIdentityAdapter.sol` (4015B, REGISTRAR_ROLE-gated storage), `ArcPassport.sol` (5091B, COUNSEL_ROLE-gated attestation hook, pluggable adapter via `setIdentityAdapter`). 44-spec Hardhat suite (18 adapter + 26 integration) covering mint/resolve/revoke, counsel attach, adapter swap routes to new code. `@arc/passport-sdk` TS client over viem (typed reads/writes, ARC_TESTNET chain export). Atomic deploy script (`deploy-passport.js`) + `ProfileRegistry` migration helper (dry-run default). `contracts/docs/PASSPORT.md` runbook. | `npm run check-passport-contracts` green (compile-only, offline); `npm run test:passport-sdk` 8/8 green |
 | W9 | `contracts/reputation/`: `IERC8004Reputation.sol` + `ArcReputationAdapter.sol` (2865B, FEEDBACK_ROLE-gated, append-only single-signer feedback with sentiment in [-100,100], deterministic id derivation, per-subject pagination). `contracts/attestations/`: `AttestationRegistry.sol` (4016B, ATTESTER_ROLE-gated, EIP-712 dataHash anchoring, revocable, deterministic id, isValid checks expiry+revocation). 44-spec Hardhat suite (20 reputation + 24 attestation). `@arc/attestations` TS package: `counsel.kyb.v1`, `editorial.review.v1`, `treasury.policy.v1` schemas with full sign + verify + tamper-detect + wrong-signer-detect round-trip via viem. Generalized `check-contracts.js` walks all three contract groups. | `npm run check-trust-contracts` green; `npm run test:attestations` 4/4 round-trip groups green |
+| W10 | `@arc/attestations`: `token.suitability.v1` (DFSA-mapped, nested `criteria` struct) + `stablecoin.reserves.v1` (ADGM FRT-mapped, reserves vs supply numerical fields) with round-trip tests including nested-struct tamper detection. `contracts/validation/`: `IERC8004Validation.sol` + `ArcValidationAdapter.sol` (3960B, VALIDATOR_ROLE-gated single-signer validations, deterministic id derivation, `isValid` independent of `outcome`, revocable). `apps/trust-api`: editorial deep tier live — `POST /v1/trust/read/deep` settles $0.05, returns Haiku 4.5 commentary with prompt caching (5KB system prompt cached as ephemeral) + structured JSON output + in-memory per-target response cache (default 1h TTL); deterministic stub commentary when `ARC_ANTHROPIC_API_KEY` is unset so CI + unfunded deployments exercise the full wire shape. `paid-mock` adds `deep-paid` + `deep-cache-hit` scenarios proving facilitator.verify+settle each fire on cache HIT (the cache is on editorial only, not the paywall). | `npm run check-trust-contracts` green across 4 groups; `npm run test:attestations` 5/5 round-trip groups (incl. 2 new MENA-mapped); `npm run smoke:trust-api:paid-mock` 7 assertions green incl. deep-paid + deep-cache-hit |
 
-Verification matrix: `type-check:{web,trust-core,trust-api,mcp-server,passport-sdk,attestations}`, `test:trust-core`, `smoke:trust-api` (and `:paid-mock`), `test:mcp-server` (3 specs), `test:passport-sdk` (8 specs), `test:attestations` (4 round-trip groups), `check-trust-contracts` (offline solc-js compile across passport / reputation / attestations). All green on the branch.
+Verification matrix: `type-check:{web,trust-core,trust-api,mcp-server,passport-sdk,attestations}`, `test:trust-core`, `smoke:trust-api` (and `:paid-mock`), `test:mcp-server` (3 specs), `test:passport-sdk` (8 specs), `test:attestations` (5 round-trip groups), `check-trust-contracts` (offline solc-js compile across passport / reputation / attestations / validation). All green on the branch.
 
-## Open follow-ups before W10
+## Open follow-ups before W11
 
 Carryovers from W5/W7 (still open):
 - **Live $0.01 tx hash** for trust-api settlement (paste into `apps/trust-api/docs/known-live-runs.md`).
@@ -27,15 +28,19 @@ Carryovers from W5/W7 (still open):
 - **`fly deploy`** + post-deploy `/health` smoke; fund signing-payer wallet if "click and run" Bazaar demo is desired.
 - **Bazaar submission** filed once hosted URLs exist.
 
-W8/W9 contract gates:
-- **`npm --workspace contracts run test:trust-contracts`** from a host with internet access (Hardhat needs to fetch solc 0.8.24). Runs all 88 specs across passport / reputation / attestations in one invocation.
+W8/W9/W10 contract gates:
+- **`npm --workspace contracts run test:trust-contracts`** from a host with internet access (Hardhat needs to fetch solc 0.8.24). Runs 109 specs across passport / reputation / attestations / validation in one invocation.
 - **`npm --workspace contracts run deploy:passport:arc-testnet`** from a funded Arc testnet wallet; paste the addresses into `contracts/docs/PASSPORT.md` "Known deployments" table.
-- **Deploy ArcReputationAdapter + AttestationRegistry** to Arc testnet (deploy scripts ship in W10 alongside the editorial commentary integration; for now, deploy ad-hoc from `npx hardhat console --network arcTestnet`).
-- **Reconfigure `apps/trust-api`** to consult the deployed Passport + AttestationRegistry via `@arc/passport-sdk` + `@arc/attestations` so `GET /v1/passport/:address` returns real data with attached attestation rows instead of the placeholder.
+- **Deploy ArcReputationAdapter + AttestationRegistry + ArcValidationAdapter** to Arc testnet (W11 trust-surface launch ships the unified deploy script; for now, deploy ad-hoc from `npx hardhat console --network arcTestnet`).
+- **Reconfigure `apps/trust-api`** to consult the deployed Passport + AttestationRegistry via `@arc/passport-sdk` + `@arc/attestations` so `GET /v1/passport/:address` returns real data with attached attestation rows.
+
+W10 editorial deep tier:
+- **Set `ARC_ANTHROPIC_API_KEY`** on the trust-api host to flip the deep tier from stub to live Haiku 4.5 commentary. Verify with `curl` + decode `X-Payment-Response`; expect `source: "editorial"` in the response body and `usage.cache_read_input_tokens > 0` on the second call against the same target (visible in the trust-api JSON logger).
+- **Validate prompt-cache hit rate** in production. Target is high (the system prompt is frozen and sized above Haiku 4.5's 4096-token minimum cacheable prefix); a low rate indicates a silent invalidator worth debugging against the `shared/prompt-caching.md` checklist.
 
 Counsel-side:
 - **Counsel review** of the W9 attestation schemas (`counsel.kyb.v1` field shape against actual DIFC/ADGM evidence requirements) before any production signing.
-- **Counsel review** of the MENA-mapped schemas drafted in `apps/trust-api/src/schemas/` (`token.suitability.v1`, `stablecoin.reserves.v1`) before W10 publishes them as production attestation schemas.
+- **Counsel review** of the W10 MENA-mapped schemas (`token.suitability.v1` against DFSA Crypto Token framework criteria; `stablecoin.reserves.v1` against ADGM FRT regime criteria). Both currently marked "COUNSEL-REVIEW DRAFT" in their source files; production signing waits on counsel sign-off.
 
 ## What is changing
 
@@ -69,7 +74,8 @@ Effective W1, the following are out of scope for new feature work until the trus
 | W7 | Streamable HTTP transport + signing-payer mode + `use-arc-trust` skill + Bazaar listing payload + Fly deploy artifacts ✅ |
 | W8 | `ArcPassport.sol` + `ArcIdentityAdapter.sol` + `IERC8004Identity.sol` on Arc testnet (Identity-first); `@arc/passport-sdk` TS client; atomic deploy + migration scripts ✅ (in tree; testnet deploy is user-fired) |
 | W9 | `ArcReputationAdapter.sol` (single-signer) + `AttestationRegistry.sol` + `@arc/attestations` schemas + sign/verify round-trip ✅ (in tree; testnet deploy is user-fired) |
-| W10 | MENA-mapped schemas (`token.suitability.v1` DFSA-mapped, `stablecoin.reserves.v1` ADGM FRT-mapped) + narrow Validation hook + editorial deep-tier prompt cache live |
+| W10 | MENA-mapped schemas (`token.suitability.v1` DFSA-mapped, `stablecoin.reserves.v1` ADGM FRT-mapped) + narrow Validation hook (`IERC8004Validation` + `ArcValidationAdapter` stub) + editorial deep tier ($0.05 Haiku 4.5 with prompt caching) ✅ (in tree; live source flips with `ARC_ANTHROPIC_API_KEY`) |
+| W11 | New trust surface in `apps/web` (`/passport/[address]`, `/trust/[target]`, `/agents`, `/docs`) + mass file move into `legacy-primitives/` + `apps/indexer` extraction + CI boundary rule activation |
 | W8 | `ArcPassport.sol` + identity adapter on Arc testnet (Identity-first) |
 | W9 | Reputation adapter + `AttestationRegistry` + initial schemas |
 | W10 | MENA-mapped schemas (`token.suitability.v1`, `stablecoin.reserves.v1`) + narrow Validation hook + editorial deep tier |

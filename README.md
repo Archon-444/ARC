@@ -95,7 +95,7 @@ See [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) for the full freeze scope. Short 
 
 ## Plan
 
-The 90-day execution plan lives at `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`. Weekly milestones, critical files, and verification gates are listed there. Slice status is tracked in [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md#shipped-to-date) — **W1–W9 are landed on this branch (contracts in tree; Arc testnet deploys are user-fired). W10 (MENA-mapped schemas + narrow Validation + editorial deep-tier prompt cache) is next.**
+The 90-day execution plan lives at `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`. Weekly milestones, critical files, and verification gates are listed there. Slice status is tracked in [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md#shipped-to-date) — **W1–W10 are landed on this branch (contracts + editorial deep tier in tree; Arc testnet deploys + `ARC_ANTHROPIC_API_KEY` are user-fired). W11 (new trust surface in `apps/web` + legacy quarantine via `legacy-primitives/`) is next.**
 
 ## Documentation
 
