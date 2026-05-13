@@ -1,8 +1,25 @@
 # Strategic Pivot — ARC Trust Layer
 
 **Effective:** branch `claude/trust-layer-agents-sNcay`
-**Status:** W1 — structural minimum + visible freeze of marketplace feature work
+**Status:** W6 — stdio MCP server live; W5 trust-api spine hardened; W3–W6 acceptance gates met locally. Live $0.01 settlement and on-chain Passport pending (W7 + W8).
 **Plan:** `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`
+
+## Shipped to date
+
+| Slice | What landed | Acceptance |
+|---|---|---|
+| W1 | Monorepo workspaces, `tsconfig.base.json`, freeze notice, marketplace nav stripped | Repo boots, README + pivot doc in tree |
+| W2 | `@arc/trust-core` extraction (scoring engine + cache helpers, 33-case test suite) | `npm --workspace @arc/trust-core test` green |
+| W3–W5 | `@arc/trust-api`: x402 paywall (read $0.01, deep $0.05), facilitator settlement, APIError + request-id + JSON logger, per-route rate limits, MENA evidence schema drafts, mock + live smoke scripts | `npm run smoke:trust-api`, `smoke:trust-api:paid-mock` green; `paid-live` ready (one live tx pending to publish) |
+| W6 | `@arc/mcp-server` (stdio): `arc_trust_read` (stub-quote until funded), `arc_passport_get` (free), `arc_search` (W11 placeholder); programmatic Inspector test (boots stub trust-api, spawns built server, asserts 5 invariants) | `npm run test:mcp-server` green |
+
+Verification matrix: `type-check:{web,trust-core,trust-api,mcp-server}`, `test:trust-core`, `smoke:trust-api` (and `:paid-mock`), `test:mcp-server`. All green on the branch.
+
+## Open follow-ups before W7
+
+- **Live tx hash** for $0.01 trust-api settlement (paste into `apps/trust-api/docs/known-live-runs.md`).
+- **MCP Inspector manual demo** against live trust-api — same loop as the programmatic test, but with a real 402 → X-PAYMENT → 200 round-trip from a funded host.
+- **Counsel review** of the MENA schema drafts in `apps/trust-api/src/schemas/` before any partner pitch.
 
 ## What is changing
 
@@ -31,8 +48,9 @@ Effective W1, the following are out of scope for new feature work until the trus
 |---|---|
 | W1 | Workspaces root, `tsconfig.base.json`, boundary rule reserved, README + homepage rewrite, marketplace nav stripped |
 | W2 | `packages/trust-core` extraction (this PR scope ends here) |
-| W3-5 | `apps/trust-api` skeleton + facilitator-backed x402 paywall on Base mainnet USDC |
-| W6-7 | `apps/mcp-server` (stdio first) + IDE plugin skill publication |
+| W3-5 | `apps/trust-api` skeleton + facilitator-backed x402 paywall on Base mainnet USDC ✅ |
+| W6 | `apps/mcp-server` stdio + programmatic Inspector test ✅ |
+| W7 | Streamable HTTP transport + `use-arc-trust` skill + MCP listing submission |
 | W8 | `ArcPassport.sol` + identity adapter on Arc testnet (Identity-first) |
 | W9 | Reputation adapter + `AttestationRegistry` + initial schemas |
 | W10 | MENA-mapped schemas (`token.suitability.v1`, `stablecoin.reserves.v1`) + narrow Validation hook + editorial deep tier |
