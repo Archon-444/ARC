@@ -1,20 +1,23 @@
 /**
  * Mock-facilitator end-to-end probe for the paid path.
  *
- * Proves the trust-api's wire protocol round-trip without keys or network:
+ * Proves the trust-api's wire protocol round-trip without keys or network.
  *
- *   1. Boot trust-api with a stub FacilitatorClient that always verifies
- *      and settles successfully.
- *   2. POST /v1/trust/read once with no X-PAYMENT → expect 402 with a
- *      well-formed quote.
- *   3. Build a deterministic X-PAYMENT envelope (fake signature; the
- *      stub facilitator does not check it) using the @arc/x402-client
- *      builders.
- *   4. POST /v1/trust/read again with X-PAYMENT → expect 200, scoreV1
- *      assessment in the body, and X-Payment-Response on the response.
+ * Three scenarios exercise the W5 synchronous-settle middleware:
  *
- * Real cryptographic verification against the live facilitator is exercised
- * by paid-smoke.ts (gated by RUN_LIVE=1 + ARC_TEST_PRIVATE_KEY).
+ *   (A) Success path — verify + settle return success, the response
+ *       carries the original 200 body AND X-Payment-Response on the
+ *       same flush.
+ *   (B) Settle-failure path — verify succeeds, settle rejects; the
+ *       middleware drops the handler body, returns 402 with
+ *       `error: "settlement failed: ..."` and an X-Payment-Response
+ *       carrying `{ success: false, errorReason }`.
+ *   (C) quoteOnly path (deep tier placeholder) — payment header
+ *       present, but the middleware skips verify and settle entirely
+ *       and lets the handler return 501. No facilitator calls recorded.
+ *
+ * Real cryptographic verification against the live facilitator is
+ * exercised by paid-smoke.ts (gated by RUN_LIVE=1 + ARC_TEST_PRIVATE_KEY).
  */
 
 import {
@@ -49,11 +52,14 @@ const PAYTO = '0x2222222222222222222222222222222222222222';
 const TARGET = '0x1234567890abcdef1234567890abcdef12345678';
 const RESOURCE = '/v1/trust/read';
 
+type SettleMode = 'ok' | 'reject';
+
 class StubFacilitator extends FacilitatorClient {
   public verifyCalls = 0;
   public settleCalls = 0;
   public lastVerify?: { payload: PaymentPayload; requirement: PaymentRequirement };
   public lastSettle?: { payload: PaymentPayload; requirement: PaymentRequirement };
+  public settleMode: SettleMode = 'ok';
 
   constructor() {
     super({ url: 'https://stub.invalid', fetchImpl: (async () => {
@@ -76,6 +82,9 @@ class StubFacilitator extends FacilitatorClient {
   ): Promise<SettleResponse> {
     this.settleCalls++;
     this.lastSettle = { payload, requirement };
+    if (this.settleMode === 'reject') {
+      throw new Error('stub: settle rejected (insufficient gas)');
+    }
     return {
       success: true,
       transaction: '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef',
@@ -99,9 +108,24 @@ function makeRequirement(): PaymentRequirement {
   };
 }
 
+function makeDeepRequirement(): PaymentRequirement {
+  return {
+    scheme: 'exact',
+    network: BASE_MAINNET.network,
+    maxAmountRequired: usdToBaseUnits(ARC_TRUST_TIERS.readDeep),
+    resource: '/v1/trust/read/deep',
+    description: `ARC trust read (deep) — $${ARC_TRUST_TIERS.readDeep.toFixed(2)} per call`,
+    payTo: PAYTO,
+    asset: BASE_MAINNET.usdcAddress,
+    maxTimeoutSeconds: 60,
+    extra: { name: BASE_MAINNET.usdcEip712.name, version: BASE_MAINNET.usdcEip712.version },
+  };
+}
+
 function makeStubApp(facilitator: StubFacilitator) {
   const cache = new TtlCache<TokenRiskAssessment>({ ttlMs: DEFAULT_TRUST_CACHE_TTL_MS });
   const requirement = makeRequirement();
+  const deepRequirement = makeDeepRequirement();
 
   const app = express();
   app.use(express.json({ limit: '64kb' }));
@@ -123,6 +147,18 @@ function makeStubApp(facilitator: StubFacilitator) {
     }
   );
 
+  app.post(
+    '/v1/trust/read/deep',
+    requirePayment({ accepts: deepRequirement, facilitator, quoteOnly: true }) as any,
+    (_req, res) => {
+      res.status(501).json({
+        error: 'editorial deep tier ships W10',
+        etaWeek: 10,
+        notice: 'no settlement attempted; resubmit your X-PAYMENT after W10.',
+      });
+    }
+  );
+
   return app;
 }
 
@@ -134,7 +170,7 @@ async function main(): Promise<void> {
   const base = `http://127.0.0.1:${port}`;
 
   try {
-    // 1) 402 quote
+    // (A) success path ---------------------------------------------------
     const quote = await fetchJson(`${base}/v1/trust/read`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -145,17 +181,10 @@ async function main(): Promise<void> {
     assertEq(facilitator.verifyCalls, 0, 'verify should not be called for the quote');
     log('quote', `402 maxAmountRequired=${quote.body.accepts[0].maxAmountRequired}`);
 
-    // 2) Build a payment envelope (fake signature; stub facilitator accepts it).
     const requirement = quote.body.accepts[0] as PaymentRequirement;
-    const typedData = buildEvmExactTypedData(requirement, PAYER, {
-      now: 1_700_000_000,
-      nonce: '0x' + 'ab'.repeat(32),
-    });
-    const fakeSignature = '0x' + '00'.repeat(65);
-    const header = buildXPaymentHeader(requirement.network, typedData.message, fakeSignature);
-    log('envelope', `header.length=${header.length} domain=${typedData.domain.name}@${typedData.domain.version}`);
+    const header = makePaymentHeader(requirement, '0x' + 'ab'.repeat(32));
+    log('envelope', `header.length=${header.length}`);
 
-    // 3) Paid call
     const paid = await fetchRaw(`${base}/v1/trust/read`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-payment': header },
@@ -167,23 +196,102 @@ async function main(): Promise<void> {
     assert(body.assessment?.scoringVersion?.startsWith('v1.0.0'), 'scoring version v1.0.0*');
     assert(typeof body.assessment?.overallScore === 'number', 'overallScore present');
     assertEq(facilitator.verifyCalls, 1, 'verify called exactly once');
-
-    // 4) Settlement is async (res.on('finish')); poll briefly.
-    await waitFor(() => facilitator.settleCalls === 1, 1500, 'settle never called');
+    assertEq(facilitator.settleCalls, 1, 'settle called synchronously inside the response');
     assert(facilitator.lastSettle?.requirement.network === requirement.network, 'settle network matches');
 
-    // 5) X-Payment-Response header should be attached on success.
     const xpr = paid.headers.get('x-payment-response');
-    assert(xpr != null, 'X-Payment-Response header missing');
+    assert(xpr != null, 'X-Payment-Response header missing on success response');
     const settled = JSON.parse(Buffer.from(xpr!, 'base64').toString('utf8'));
-    assert(settled.success === true, 'settled.success');
+    assertEq(settled.success, true, 'settled.success');
     assert(settled.transaction.startsWith('0xdeadbeef'), 'settled.transaction echoes stub');
-
     log('paid', `200 overallScore=${body.assessment.overallScore} settle.tx=${settled.transaction.slice(0, 14)}…`);
+
+    // (B) settle-failure path --------------------------------------------
+    facilitator.settleMode = 'reject';
+    const beforeFailVerify = facilitator.verifyCalls;
+    const beforeFailSettle = facilitator.settleCalls;
+    const failHeader = makePaymentHeader(requirement, '0x' + 'cd'.repeat(32));
+    const failed = await fetchRaw(`${base}/v1/trust/read`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-payment': failHeader },
+      body: JSON.stringify({ target: TARGET }),
+    });
+    assertEq(failed.status, 402, 'settle-failure converts response to 402');
+    const failedBody = JSON.parse(failed.text);
+    assert(failedBody.x402Version === 1, 'failure body x402Version=1');
+    assert(
+      typeof failedBody.error === 'string' && failedBody.error.startsWith('settlement failed:'),
+      `failure error string: ${failedBody.error}`
+    );
+    assert(
+      Array.isArray(failedBody.accepts) && failedBody.accepts.length === 1,
+      'failure body restates accepts'
+    );
+    assertEq(facilitator.verifyCalls - beforeFailVerify, 1, 'failure path: verify called once');
+    assertEq(facilitator.settleCalls - beforeFailSettle, 1, 'failure path: settle called once');
+    const failXpr = failed.headers.get('x-payment-response');
+    assert(failXpr != null, 'failure response still carries X-Payment-Response');
+    const failSettled = JSON.parse(Buffer.from(failXpr!, 'base64').toString('utf8'));
+    assertEq(failSettled.success, false, 'failure: settled.success=false');
+    assert(
+      typeof failSettled.errorReason === 'string' && failSettled.errorReason.length > 0,
+      'failure: settled.errorReason populated'
+    );
+    log('settle-fail', `402 error="${failedBody.error}"`);
+    facilitator.settleMode = 'ok';
+
+    // (C) quoteOnly placeholder path (deep tier) -------------------------
+    const deepQuoteResp = await fetchJson(`${base}/v1/trust/read/deep`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ target: TARGET }),
+    });
+    assertEq(deepQuoteResp.status, 402, 'deep quote returns 402');
+    assertEq(
+      deepQuoteResp.body.accepts?.[0]?.maxAmountRequired,
+      '50000',
+      'deep maxAmountRequired = $0.05 (50000 base units)'
+    );
+    log('deep-quote', `402 maxAmountRequired=${deepQuoteResp.body.accepts[0].maxAmountRequired}`);
+
+    const deepRequirement = deepQuoteResp.body.accepts[0] as PaymentRequirement;
+    const deepHeader = makePaymentHeader(deepRequirement, '0x' + 'ef'.repeat(32));
+    const beforeDeepVerify = facilitator.verifyCalls;
+    const beforeDeepSettle = facilitator.settleCalls;
+    const deepResp = await fetchRaw(`${base}/v1/trust/read/deep`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-payment': deepHeader },
+      body: JSON.stringify({ target: TARGET }),
+    });
+    assertEq(deepResp.status, 501, 'deep tier returns 501 when payment header present');
+    const deepBody = JSON.parse(deepResp.text);
+    assertEq(deepBody.etaWeek, 10, 'deep tier signals etaWeek=10');
+    assertEq(
+      facilitator.verifyCalls - beforeDeepVerify,
+      0,
+      'quoteOnly skips facilitator.verify entirely'
+    );
+    assertEq(
+      facilitator.settleCalls - beforeDeepSettle,
+      0,
+      'quoteOnly skips facilitator.settle entirely'
+    );
+    assert(
+      deepResp.headers.get('x-payment-response') == null,
+      'quoteOnly emits no X-Payment-Response (no settlement happened)'
+    );
+    log('deep-501', '501 no facilitator calls, no X-Payment-Response');
+
     console.log('paid-mock OK');
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
+}
+
+function makePaymentHeader(requirement: PaymentRequirement, nonce: string): string {
+  const typedData = buildEvmExactTypedData(requirement, PAYER, { now: 1_700_000_000, nonce });
+  const fakeSignature = '0x' + '00'.repeat(65);
+  return buildXPaymentHeader(requirement.network, typedData.message, fakeSignature);
 }
 
 interface RawResponse {
@@ -203,15 +311,6 @@ async function fetchJson(
 ): Promise<{ status: number; body: any }> {
   const r = await fetchRaw(url, init);
   return { status: r.status, body: r.text ? JSON.parse(r.text) : null };
-}
-
-async function waitFor(cond: () => boolean, timeoutMs: number, msg: string): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (cond()) return;
-    await new Promise((r) => setTimeout(r, 20));
-  }
-  throw new Error(`waitFor timeout: ${msg}`);
 }
 
 function assert(cond: unknown, msg: string): asserts cond {
