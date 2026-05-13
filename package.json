@@ -25,6 +25,10 @@
     "smoke:trust-api": "npm --workspace @arc/trust-api run smoke",
     "smoke:trust-api:paid-mock": "npm --workspace @arc/trust-api run smoke:paid-mock",
     "smoke:trust-api:paid-live": "npm --workspace @arc/trust-api run smoke:paid-live",
+    "dev:mcp-server": "npm --workspace @arc/mcp-server run dev",
+    "build:mcp-server": "npm --workspace @arc/mcp-server run build",
+    "type-check:mcp-server": "npm --workspace @arc/mcp-server run type-check",
+    "test:mcp-server": "npm --workspace @arc/mcp-server test",
     "test:packages": "npm --workspaces --if-present test"
   }
 }

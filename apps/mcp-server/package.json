@@ -1,0 +1,26 @@
+{
+  "name": "@arc/mcp-server",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "ARC MCP server. Exposes arc_trust_read, arc_passport_get, and arc_search to agents over stdio. All paid tool calls proxy through @arc/trust-api so the paywall stays at one boundary.",
+  "main": "dist/index.js",
+  "bin": {
+    "arc-mcp-server": "dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx --watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "type-check": "tsc --noEmit",
+    "test": "tsx test/inspector.spec.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  }
+}
