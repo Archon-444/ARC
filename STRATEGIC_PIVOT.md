@@ -1,7 +1,7 @@
 # Strategic Pivot — ARC Trust Layer
 
 **Effective:** branch `claude/trust-layer-agents-sNcay`
-**Status:** W8 — Passport-on-Arc-testnet contracts in tree. `IERC8004Identity.sol`, `ArcIdentityAdapter.sol`, `ArcPassport.sol` (+ 44-spec Hardhat suite), `@arc/passport-sdk` TS client, atomic deploy script, and `ProfileRegistry` migration helper. Compile-only gate green offline; full Hardhat tests + Arc testnet deploy are user-fired (network access required).
+**Status:** W9 — Reputation adapter + AttestationRegistry in tree. `IERC8004Reputation.sol`, `ArcReputationAdapter.sol`, `AttestationRegistry.sol` (+ 44-spec Hardhat suite), `@arc/attestations` TS package shipping `counsel.kyb.v1` / `editorial.review.v1` / `treasury.policy.v1` schemas with EIP-712 sign + verify + tamper-detection round-trip. Compile-only gate green offline (passport 4015B+5091B, reputation 2865B, attestations 4016B); full Hardhat tests + Arc testnet deploy are user-fired.
 **Plan:** `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`
 
 ## Shipped to date
@@ -15,23 +15,27 @@
 | W7 | `@arc/mcp-server` Streamable HTTP transport; signing-payer mode (`ARC_MCP_PAYER_PRIVATE_KEY` -> the server signs $0.01 USDC EIP-3009 authorizations on Base mainnet on the agent's behalf, no manual signing); `skills/use-arc-trust/` bundle; `Dockerfile` + `fly.toml` + `DEPLOY.md`; `docs/bazaar-listing.md` payload draft. `@arc/x402-client` rebuilt with a CJS dist so plain-node consumers (the compiled mcp-server) can load it. | `npm run test:mcp-server` runs three back-to-back specs (stdio, http, paid) — all green |
 | (consolidation) | `MILESTONE_W5_W7.md` + `MILESTONE/test-outputs/` capturing all eight in-env gates green; deferral row in `known-live-runs.md` | 8 captured logs with sentinels |
 | W8 | `contracts/passport/`: `IERC8004Identity.sol` (interface), `ArcIdentityAdapter.sol` (4015B, REGISTRAR_ROLE-gated storage), `ArcPassport.sol` (5091B, COUNSEL_ROLE-gated attestation hook, pluggable adapter via `setIdentityAdapter`). 44-spec Hardhat suite (18 adapter + 26 integration) covering mint/resolve/revoke, counsel attach, adapter swap routes to new code. `@arc/passport-sdk` TS client over viem (typed reads/writes, ARC_TESTNET chain export). Atomic deploy script (`deploy-passport.js`) + `ProfileRegistry` migration helper (dry-run default). `contracts/docs/PASSPORT.md` runbook. | `npm run check-passport-contracts` green (compile-only, offline); `npm run test:passport-sdk` 8/8 green |
+| W9 | `contracts/reputation/`: `IERC8004Reputation.sol` + `ArcReputationAdapter.sol` (2865B, FEEDBACK_ROLE-gated, append-only single-signer feedback with sentiment in [-100,100], deterministic id derivation, per-subject pagination). `contracts/attestations/`: `AttestationRegistry.sol` (4016B, ATTESTER_ROLE-gated, EIP-712 dataHash anchoring, revocable, deterministic id, isValid checks expiry+revocation). 44-spec Hardhat suite (20 reputation + 24 attestation). `@arc/attestations` TS package: `counsel.kyb.v1`, `editorial.review.v1`, `treasury.policy.v1` schemas with full sign + verify + tamper-detect + wrong-signer-detect round-trip via viem. Generalized `check-contracts.js` walks all three contract groups. | `npm run check-trust-contracts` green; `npm run test:attestations` 4/4 round-trip groups green |
 
-Verification matrix: `type-check:{web,trust-core,trust-api,mcp-server,passport-sdk}`, `test:trust-core`, `smoke:trust-api` (and `:paid-mock`), `test:mcp-server` (3 specs), `test:passport-sdk` (8 specs), `check-passport-contracts` (offline solc-js compile). All green on the branch.
+Verification matrix: `type-check:{web,trust-core,trust-api,mcp-server,passport-sdk,attestations}`, `test:trust-core`, `smoke:trust-api` (and `:paid-mock`), `test:mcp-server` (3 specs), `test:passport-sdk` (8 specs), `test:attestations` (4 round-trip groups), `check-trust-contracts` (offline solc-js compile across passport / reputation / attestations). All green on the branch.
 
-## Open follow-ups before W9
+## Open follow-ups before W10
 
 Carryovers from W5/W7 (still open):
 - **Live $0.01 tx hash** for trust-api settlement (paste into `apps/trust-api/docs/known-live-runs.md`).
 - **`docker build -f apps/mcp-server/Dockerfile .`** from a Docker-capable host.
 - **`fly deploy`** + post-deploy `/health` smoke; fund signing-payer wallet if "click and run" Bazaar demo is desired.
 - **Bazaar submission** filed once hosted URLs exist.
-- **Counsel review** of the MENA schema drafts in `apps/trust-api/src/schemas/` before any partner pitch.
 
-W8-specific:
-- **`npm --workspace contracts run test:passport`** from a host with internet access (Hardhat needs to fetch solc 0.8.24).
+W8/W9 contract gates:
+- **`npm --workspace contracts run test:trust-contracts`** from a host with internet access (Hardhat needs to fetch solc 0.8.24). Runs all 88 specs across passport / reputation / attestations in one invocation.
 - **`npm --workspace contracts run deploy:passport:arc-testnet`** from a funded Arc testnet wallet; paste the addresses into `contracts/docs/PASSPORT.md` "Known deployments" table.
-- **Reconfigure `apps/trust-api`** to consult the deployed Passport via `@arc/passport-sdk` so `GET /v1/passport/:address` returns real data instead of the placeholder.
-- **Optional: migrate `ProfileRegistry`** via `migrate-profile-registry.js` (dry-run first; the helper is idempotent).
+- **Deploy ArcReputationAdapter + AttestationRegistry** to Arc testnet (deploy scripts ship in W10 alongside the editorial commentary integration; for now, deploy ad-hoc from `npx hardhat console --network arcTestnet`).
+- **Reconfigure `apps/trust-api`** to consult the deployed Passport + AttestationRegistry via `@arc/passport-sdk` + `@arc/attestations` so `GET /v1/passport/:address` returns real data with attached attestation rows instead of the placeholder.
+
+Counsel-side:
+- **Counsel review** of the W9 attestation schemas (`counsel.kyb.v1` field shape against actual DIFC/ADGM evidence requirements) before any production signing.
+- **Counsel review** of the MENA-mapped schemas drafted in `apps/trust-api/src/schemas/` (`token.suitability.v1`, `stablecoin.reserves.v1`) before W10 publishes them as production attestation schemas.
 
 ## What is changing
 
@@ -64,7 +68,8 @@ Effective W1, the following are out of scope for new feature work until the trus
 | W6 | `apps/mcp-server` stdio + programmatic Inspector test ✅ |
 | W7 | Streamable HTTP transport + signing-payer mode + `use-arc-trust` skill + Bazaar listing payload + Fly deploy artifacts ✅ |
 | W8 | `ArcPassport.sol` + `ArcIdentityAdapter.sol` + `IERC8004Identity.sol` on Arc testnet (Identity-first); `@arc/passport-sdk` TS client; atomic deploy + migration scripts ✅ (in tree; testnet deploy is user-fired) |
-| W9 | `ArcReputationAdapter.sol` (single-signer) + `AttestationRegistry.sol` + first attestation schemas (`counsel.kyb.v1`, `editorial.review.v1`, `treasury.policy.v1`) |
+| W9 | `ArcReputationAdapter.sol` (single-signer) + `AttestationRegistry.sol` + `@arc/attestations` schemas + sign/verify round-trip ✅ (in tree; testnet deploy is user-fired) |
+| W10 | MENA-mapped schemas (`token.suitability.v1` DFSA-mapped, `stablecoin.reserves.v1` ADGM FRT-mapped) + narrow Validation hook + editorial deep-tier prompt cache live |
 | W8 | `ArcPassport.sol` + identity adapter on Arc testnet (Identity-first) |
 | W9 | Reputation adapter + `AttestationRegistry` + initial schemas |
 | W10 | MENA-mapped schemas (`token.suitability.v1`, `stablecoin.reserves.v1`) + narrow Validation hook + editorial deep tier |
