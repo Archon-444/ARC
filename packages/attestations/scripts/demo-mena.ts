@@ -49,9 +49,15 @@ import {
   makeAttestationDomain,
   signAttestation,
   verifyAttestation,
+  validateCounselKybBody,
+  validateEditorialReviewBody,
+  validateTreasuryPolicyBody,
+  validateTokenSuitabilityBody,
+  validateStablecoinReservesBody,
   type AttestationDomain,
   type AttestationSchema,
   type SignedAttestation,
+  type ValidationResult,
 } from '../src/index.js';
 
 // ────────────────────────────────────────────────────────────────────
@@ -219,10 +225,11 @@ async function compose<TBody>(
   domain: AttestationDomain,
   body: TBody,
   pk: `0x${string}`,
-  expectedSigner: Address
+  expectedSigner: Address,
+  validator: (b: TBody) => ValidationResult<TBody>
 ): Promise<ComposedAttestation> {
   const account = privateKeyToAccount(pk);
-  const signed = await signAttestation({ schema, domain, body, signer: account });
+  const signed = await signAttestation({ schema, domain, body, signer: account, validator });
   const verification = await verifyAttestation({
     schema,
     domain,
@@ -290,7 +297,14 @@ async function main(): Promise<void> {
   const attestations: ComposedAttestation[] = [];
 
   attestations.push(
-    await compose(counselKybV1, domain, counselKybBody(opts.subject, counsel), COUNSEL_PK, counsel)
+    await compose(
+      counselKybV1,
+      domain,
+      counselKybBody(opts.subject, counsel),
+      COUNSEL_PK,
+      counsel,
+      validateCounselKybBody
+    )
   );
   attestations.push(
     await compose(
@@ -298,7 +312,8 @@ async function main(): Promise<void> {
       domain,
       editorialReviewBody(opts.subject, editor),
       EDITOR_PK,
-      editor
+      editor,
+      validateEditorialReviewBody
     )
   );
   attestations.push(
@@ -307,7 +322,8 @@ async function main(): Promise<void> {
       domain,
       treasuryPolicyBody(opts.subject, treasury),
       TREASURY_PK,
-      treasury
+      treasury,
+      validateTreasuryPolicyBody
     )
   );
   attestations.push(
@@ -316,7 +332,8 @@ async function main(): Promise<void> {
       domain,
       tokenSuitabilityBody(opts.subject, opts.token, counsel),
       COUNSEL_PK,
-      counsel
+      counsel,
+      validateTokenSuitabilityBody
     )
   );
   if (opts.stablecoin) {
@@ -326,7 +343,8 @@ async function main(): Promise<void> {
         domain,
         stablecoinReservesBody(opts.stablecoin, auditor),
         AUDITOR_PK,
-        auditor
+        auditor,
+        validateStablecoinReservesBody
       )
     );
   }

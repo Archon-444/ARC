@@ -5,6 +5,10 @@ import {
   type LocalAccount,
 } from 'viem';
 import type { AttestationSchema, AttestationDomain } from './types.js';
+import {
+  AttestationValidationError,
+  type ValidationResult,
+} from './validate.js';
 
 /**
  * Inputs to sign an attestation off-chain.
@@ -17,12 +21,21 @@ import type { AttestationSchema, AttestationDomain } from './types.js';
  * around the LocalAccount path because that is what the trust-api
  * uses server-side. Browser flows that use a Wallet RPC go through
  * `computeTypedData` + their own signing call.
+ *
+ * `validator` is optional. When set, the body is validated before
+ * any cryptographic operation; on failure, `signAttestation` throws
+ * `AttestationValidationError` carrying the structured `issues[]`
+ * array so the caller can render a precise error. Production signing
+ * paths (trust-api, the demo-mena composer) MUST pass a validator —
+ * a missing range check turns the schemas' "verifiable signature"
+ * guarantee into "verifiable signature over nonsense."
  */
 export interface SignAttestationInput<TBody> {
   schema: AttestationSchema<TBody>;
   domain: AttestationDomain;
   body: TBody;
   signer: LocalAccount;
+  validator?: (body: TBody) => ValidationResult<TBody>;
 }
 
 /**
@@ -77,7 +90,14 @@ export function computeTypedData<TBody>(
 export async function signAttestation<TBody>(
   input: SignAttestationInput<TBody>
 ): Promise<SignedAttestation<TBody>> {
-  const { schema, domain, body, signer } = input;
+  const { schema, domain, body, signer, validator } = input;
+
+  if (validator) {
+    const result = validator(body);
+    if (!result.ok) {
+      throw new AttestationValidationError(schema.name, result.issues);
+    }
+  }
 
   const typedData = computeTypedData(schema, domain, body);
 

@@ -56,6 +56,7 @@
 export * from './types.js';
 export * from './sign.js';
 export * from './verify.js';
+export * from './validate.js';
 
 export { counselKybV1 } from './schemas/counsel-kyb-v1.js';
 export type { CounselKybBody } from './schemas/counsel-kyb-v1.js';

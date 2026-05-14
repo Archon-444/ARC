@@ -35,7 +35,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "type-check": "tsc --noEmit",
-    "test": "tsx test/index.test.ts",
+    "test": "tsx test/index.test.ts && tsx test/validate.test.ts",
     "demo:mena": "tsx scripts/demo-mena.ts"
   },
   "dependencies": {

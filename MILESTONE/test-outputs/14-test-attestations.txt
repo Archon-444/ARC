@@ -4,7 +4,7 @@
 
 
 > @arc/attestations@0.0.1 test
-> tsx test/index.test.ts
+> tsx test/index.test.ts && tsx test/validate.test.ts
 
   [domain] constants match the AttestationRegistry EIP-712 domain shape
   [counsel.kyb.v1] sign + verify + tamper-detect + wrong-signer-detect OK
@@ -13,3 +13,12 @@
   [token.suitability.v1] sign + verify + tamper-detect + wrong-signer-detect OK
   [stablecoin.reserves.v1] sign + verify + tamper-detect + wrong-signer-detect OK
 attestations OK
+  [counsel.kyb.v1] happy path OK
+  [counsel.kyb.v1] 4 failure paths OK
+  [editorial.review.v1] happy + 3 failure paths OK
+  [treasury.policy.v1] happy + 2 failure + 1 sentinel-zero OK
+  [token.suitability.v1] happy + 3 failure paths (including nested) OK
+  [stablecoin.reserves.v1] happy + 3 failure paths OK
+  [signAttestation no-validator] signs even when scoreBand=200
+  [signAttestation validator] throws AttestationValidationError with structured issues[]
+validate OK
