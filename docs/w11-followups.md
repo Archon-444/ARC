@@ -1,14 +1,16 @@
 # W11 follow-up — mass file move + indexer extraction
 
+> **Status: executed.** The codemod landed in W14 across three commits — `W14.1` (`frontend/` → `apps/web/`), `W14.2` (legacy contracts + tests + deploy scripts → `legacy-primitives/`), `W14.3` (`backend/` → `apps/indexer/`, route-pruned). The doc below is preserved as the executed plan of record; section anchors stay valid for blame archaeology. See `STRATEGIC_PIVOT.md` W14 row for what shipped.
+
 The W11 plan combined three slices:
 
 | Slice | Status | Shipped in |
 |---|---|---|
 | Trust surface in `apps/web` (`/trust`, `/passport`, `/agents`, `/docs`) | Live | W11.1 (in `frontend/`, not yet renamed) |
 | Legacy URLs return 410 / redirect to `/legacy`; boundary rule activated | Live | W11.2 (308 redirect via middleware) + W11.3 (eslint rule reserved) |
-| Mass file move (`frontend` → `apps/web` + `legacy-primitives/`), `apps/indexer` extracted from `backend/`, boundary rule activated in CI | **Deferred to this doc** | — |
+| Mass file move (`frontend` → `apps/web` + `legacy-primitives/`), `apps/indexer` extracted from `backend/`, boundary rule activated in CI | **Executed** | W14.1 + W14.2 + W14.3 |
 
-This is the deferral plan for the third slice. The trust surface is consumer-visible; the file move is plumbing. Splitting the slice keeps the trust surface shippable today and the codemod reviewable on its own merits.
+This is the deferral plan for the third slice. The trust surface is consumer-visible; the file move is plumbing. Splitting the slice kept the trust surface shippable on W11 and the codemod reviewable on its own merits.
 
 ---
 

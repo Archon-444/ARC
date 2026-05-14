@@ -22,15 +22,16 @@ ARC/
 ├── apps/                        # Trust layer + product surface
 │   ├── trust-api/               # Express + facilitator-backed x402 paywall
 │   ├── mcp-server/              # Model Context Protocol server (stdio + Streamable HTTP)
-│   └── web/                     # Next.js 16 app (was `frontend/`; trust surface + legacy redirect)
+│   ├── web/                     # Next.js 16 app (W14 — moved from `frontend/`; trust surface + legacy redirect)
+│   └── indexer/                 # Express + WebSocket skeleton (W14 — moved from `backend/`, route-pruned; future: Passport + AttestationRegistry event listeners)
 ├── packages/
 │   ├── trust-core/              # Scoring engine + cache helpers (extracted from apps/web)
 │   ├── x402-client/             # Facilitator-backed x402 client
 │   ├── passport-sdk/            # TS client for ArcPassport
 │   ├── attestation-reader/      # Read-only viem client for AttestationRegistry
 │   └── attestations/            # EIP-712 schemas + sign/verify/validate helpers
-├── contracts/                   # Solidity 0.8.24 (passport / reputation / attestations / validation; legacy under legacy-primitives/ once codemod completes)
-├── backend/                     # Express REST + WebSocket (W14 follow-up: → apps/indexer)
+├── contracts/                   # Solidity 0.8.24 (passport / reputation / attestations / validation; legacy `.sol` quarantined under legacy-primitives/)
+├── legacy-primitives/           # W14 — 11 frozen contracts + 5 tests + 2 deploy scripts (preserved, not active)
 ├── subgraph/                    # The Graph indexing
 ├── skills/                      # Claude Skill bundles (use-arc-trust)
 ├── tsconfig.base.json           # shared TS config
@@ -116,7 +117,7 @@ The 90-day execution plan lives at `/root/.claude/plans/arc-strategic-synthesis-
 - [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) — security audit findings (carryover from v0.4)
 - [DAPPS_ALIGNMENT_REVIEW.md](./DAPPS_ALIGNMENT_REVIEW.md) — code-vs-documentation audit
 - [subgraph/DEPLOY.md](./subgraph/DEPLOY.md) — subgraph deployment notes
-- [backend/TOKEN_ACTIVITY_BROADCAST.md](./backend/TOKEN_ACTIVITY_BROADCAST.md) — legacy token activity broadcast (frozen)
+- [legacy-primitives/README.md](./legacy-primitives/README.md) — frozen contracts + tests + deploy scripts (preserved as primitives; not active feature work)
 - [docs/archived/](./docs/archived/) — historical phase docs
 
 ## License
