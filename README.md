@@ -95,7 +95,7 @@ See [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) for the full freeze scope. Short 
 
 ## Plan
 
-The 90-day execution plan lives at `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`. Weekly milestones, critical files, and verification gates are listed there. Slice status is tracked in [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md#shipped-to-date) — **W1–W10 are landed on this branch (contracts + editorial deep tier in tree; Arc testnet deploys + `ARC_ANTHROPIC_API_KEY` are user-fired). W11 (new trust surface in `apps/web` + legacy quarantine via `legacy-primitives/`) is next.**
+The 90-day execution plan lives at `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`. Weekly milestones, critical files, and verification gates are listed there. Slice status is tracked in [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md#shipped-to-date) — **W1–W11 are landed on this branch (public trust surface live at `/trust`, `/passport`, `/agents`, `/docs`; legacy marketplace prefixes 308-redirect to `/legacy`). The W11 codemod (mass file move into `legacy-primitives/` + `apps/indexer` extraction) is intentionally deferred — see [`docs/w11-followups.md`](./docs/w11-followups.md). W12 (design-partner evidence object + load testing + the deferred codemod) is next.**
 
 ## Documentation
 
