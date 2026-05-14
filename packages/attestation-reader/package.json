@@ -1,0 +1,28 @@
+{
+  "name": "@arc/attestation-reader",
+  "version": "0.0.1",
+  "private": true,
+  "description": "TypeScript reader for ArcPassport's AttestationRegistry contract. Typed views (getAttestation, attestationCount, attestationAt, isValid) over viem with no write paths -- production attestation creation goes through @arc/attestations + the operator's signer wallet, not this package. Used by @arc/trust-api to assemble passport response objects without re-deriving the contract ABI in every consumer.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "type-check": "tsc --noEmit",
+    "test": "tsx test/index.test.ts"
+  },
+  "dependencies": {
+    "viem": "^2.48.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  }
+}
