@@ -1,0 +1,87 @@
+{
+  "capturedAt": "2026-05-14T05:12:48.673Z",
+  "durationSeconds": 10,
+  "targetRate": 10,
+  "routes": [
+    {
+      "label": "health",
+      "method": "GET",
+      "path": "/v1/health",
+      "expectStatus": 200,
+      "rps_observed": 10,
+      "requests_total": 100,
+      "latency_ms": {
+        "p50": 2,
+        "p95": 17,
+        "p99": 20,
+        "p999": 22,
+        "max": 22
+      },
+      "off_status_count": 0,
+      "errors": 0,
+      "status_breakdown": {
+        "2xx": 100,
+        "expected_status": 200
+      },
+      "slo": {
+        "p95Ms": 50,
+        "maxOffStatus": 0
+      },
+      "slo_ok": true
+    },
+    {
+      "label": "passport",
+      "method": "GET",
+      "path": "/v1/passport/0x1234567890abcdef1234567890abcdef12345678",
+      "expectStatus": 200,
+      "rps_observed": 10,
+      "requests_total": 100,
+      "latency_ms": {
+        "p50": 2,
+        "p95": 9,
+        "p99": 11,
+        "p999": 13,
+        "max": 13
+      },
+      "off_status_count": 0,
+      "errors": 0,
+      "status_breakdown": {
+        "2xx": 100,
+        "expected_status": 200
+      },
+      "slo": {
+        "p95Ms": 100,
+        "maxOffStatus": 0
+      },
+      "slo_ok": true
+    },
+    {
+      "label": "trust-read-quote",
+      "method": "POST",
+      "path": "/v1/trust/read",
+      "expectStatus": 402,
+      "rps_observed": 10.3,
+      "requests_total": 103,
+      "latency_ms": {
+        "p50": 2,
+        "p95": 29,
+        "p99": 31,
+        "p999": 34,
+        "max": 34
+      },
+      "off_status_count": 0,
+      "errors": 0,
+      "status_breakdown": {
+        "4xx": 103,
+        "non-2xx": 103,
+        "expected_status": 402
+      },
+      "slo": {
+        "p95Ms": 200,
+        "maxOffStatus": 0
+      },
+      "slo_ok": true
+    }
+  ],
+  "overall_slo_ok": true
+}
