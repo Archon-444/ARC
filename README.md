@@ -52,6 +52,7 @@ npm --workspace @arc/mcp-server run dev:http  # Streamable HTTP on :8080
 # Passport + Reputation + Attestations + Validation (W8/W9/W10 — landed in tree)
 npm run check-trust-contracts     # offline compile: 4 contract groups
 npm run test:passport-sdk         # 8 SDK unit tests (stubbed RPC)
+npm run test:attestation-reader   # 6 read-client unit tests (stubbed RPC)
 npm run test:attestations         # 5 schemas × sign + verify + tamper round-trip
 # Full Hardhat tests + Arc testnet deploy are user-fired:
 npm --workspace contracts run test:trust-contracts     # 109 specs, needs internet
@@ -99,7 +100,7 @@ See [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) for the full freeze scope. Short 
 
 ## Plan
 
-The 90-day execution plan lives at `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`. Weekly milestones, critical files, and verification gates are listed there. Slice status is tracked in [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md#shipped-to-date) — **W1–W12 are complete in tree.** The marquee W12 artifact is the MENA design-partner evidence object (`packages/attestations/scripts/demo-mena.ts` + [`docs/demo-mena.md`](./docs/demo-mena.md)) composing all five attestation schemas + a placeholder passport into a single verifiable JSON envelope. The trust-api is load-tested at 10rps with the [W12 baseline](./apps/trust-api/docs/load-tests/w12-baseline.json) captured. The x402 facilitator integration carries a 13-finding [self-review](./apps/trust-api/docs/security-review-w12.md) (0 OPEN). The one explicit deferral is the W11 codemod (mass file move + indexer extraction), scoped in [`docs/w11-followups.md`](./docs/w11-followups.md).
+The 90-day execution plan lives at `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`. Weekly milestones, critical files, and verification gates are listed there. Slice status is tracked in [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md#shipped-to-date) — **W1–W12 are complete in tree, plus a W8–W12 consolidation milestone (`MILESTONE_W8_W12.md` + 12 captured logs + four hardening items) and the W13 trust-api → real on-chain reads slice.** When `ARC_PASSPORT_ADDRESS` + `ARC_ATTESTATION_REGISTRY_ADDRESS` + `ARC_RPC_URL` are set, `GET /v1/passport/:address` and the new `GET /v1/attestations/:subject` consume the deployed contracts via `@arc/passport-sdk` + `@arc/attestation-reader`; otherwise they fall back to the W8 placeholder / 503-unconfigured. The marquee W12 artifact is the MENA design-partner evidence object (`packages/attestations/scripts/demo-mena.ts` + [`docs/demo-mena.md`](./docs/demo-mena.md)) composing all five attestation schemas into a single verifiable JSON envelope. The trust-api is load-tested at 10rps with the [W12 baseline](./apps/trust-api/docs/load-tests/w12-baseline.json) captured and carries a 13-finding [self-review](./apps/trust-api/docs/security-review-w12.md) (0 OPEN). The one explicit deferral is the W11 codemod (mass file move + indexer extraction), scoped in [`docs/w11-followups.md`](./docs/w11-followups.md).
 
 ## Documentation
 
