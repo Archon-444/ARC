@@ -1,13 +1,14 @@
 {
   "name": "@arc/indexer",
-  "version": "0.0.1",
-  "description": "ARC trust-layer indexer skeleton (Express + WS). Future: index ArcPassport + AttestationRegistry events from Arc testnet.",
+  "version": "0.0.2",
+  "description": "ARC trust-layer indexer (Express + WS). Watches ArcPassport + AttestationRegistry events from Arc testnet and broadcasts to passport:<id|addr> / attestation:<id> / attestation-subject:<addr> WebSocket rooms.",
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "type-check": "tsc --noEmit",
+    "test": "tsx test/passport-listener.test.ts && tsx test/attestation-listener.test.ts && tsx test/end-to-end.test.ts",
     "lint": "eslint src --ext .ts"
   },
   "keywords": ["arc", "indexer", "passport", "attestations"],
@@ -19,7 +20,8 @@
     "compression": "^1.7.4",
     "express-rate-limit": "^7.1.5",
     "dotenv": "^16.3.1",
-    "ws": "^8.16.0"
+    "ws": "^8.16.0",
+    "viem": "^2.21.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
@@ -30,6 +32,7 @@
     "typescript": "^5.3.3",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
+    "tsx": "^4.19.2",
     "@typescript-eslint/eslint-plugin": "^6.17.0",
     "@typescript-eslint/parser": "^6.17.0",
     "eslint": "^8.56.0"

@@ -8,6 +8,7 @@ import http from 'http';
 import dotenv from 'dotenv';
 
 import { setupWebSocket } from './websocket';
+import { startListeners, stopListeners } from './listeners';
 import { errorHandler } from './middleware/error.middleware';
 import { logger } from './middleware/logger.middleware';
 
@@ -19,6 +20,7 @@ const server = http.createServer(app);
 
 const wss = new WebSocketServer({ server, path: '/ws' });
 setupWebSocket(wss);
+const listeners = startListeners();
 
 app.use(helmet());
 app.use(
@@ -63,7 +65,13 @@ server.listen(PORT, () => {
   console.log(`@arc/indexer listening on :${PORT} (ws path /ws)`);
 });
 
-process.on('SIGTERM', () => server.close(() => process.exit(0)));
-process.on('SIGINT', () => server.close(() => process.exit(0)));
+process.on('SIGTERM', () => {
+  stopListeners(listeners);
+  server.close(() => process.exit(0));
+});
+process.on('SIGINT', () => {
+  stopListeners(listeners);
+  server.close(() => process.exit(0));
+});
 
 export default app;
