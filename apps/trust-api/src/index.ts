@@ -15,7 +15,7 @@ import { globalLimiter, paidLimiter } from './middleware/rate-limit';
 import { errorHandler } from './middleware/error';
 
 /**
- * trust-api app factory. Wiring order, adopted from backend/src/server.ts:
+ * trust-api app factory. Wiring order, adopted from apps/indexer/src/server.ts (originally backend/):
  *
  *   request-id → helmet → cors → global rate-limit → body → compression
  *   → logger → routes → 404 → error handler

@@ -4,7 +4,6 @@
   "private": true,
   "description": "ARC — trust, identity, and editorial-verification layer for Circle-native agent commerce.",
   "workspaces": [
-    "backend",
     "contracts",
     "packages/*",
     "apps/*"

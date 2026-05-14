@@ -12,7 +12,7 @@ import type { Request, Response, NextFunction } from 'express';
  * is enough for the W5 production spine. Sentry/DataDog/OTEL are deferred
  * to W12 hardening.
  *
- * Adapted from backend/src/middleware/logger.middleware.ts; trust-api
+ * Adapted from apps/indexer/src/middleware/logger.middleware.ts (originally backend/); trust-api
  * drops the ANSI-colored line in favour of JSON, but keeps the >1s
  * slow-request flag.
  */

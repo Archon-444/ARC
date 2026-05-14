@@ -1,5 +1,5 @@
 /**
- * APIError — ported verbatim from backend/src/middleware/error.middleware.ts
+ * APIError — ported verbatim from apps/indexer/src/middleware/error.middleware.ts (originally backend/)
  * so trust-api throws the same shape the broader ARC monorepo already
  * recognises. The error handler that interprets these lives in
  * middleware/error.ts.

@@ -219,15 +219,6 @@ export function broadcastToRoom(roomId: string, message: any) {
 }
 
 /**
- * Broadcast a token activity event to subscribers of `token:<address>` room.
- * Called by POST /v1/activity/token/broadcast when a trade/graduation occurs.
- */
-export function broadcastTokenActivity(tokenAddress: string, data: Record<string, unknown>) {
-  const roomId = `token:${tokenAddress.toLowerCase()}`;
-  broadcastToRoom(roomId, { type: 'token_activity', ...data });
-}
-
-/**
  * Broadcast to all connected clients
  */
 export function broadcast(message: any) {

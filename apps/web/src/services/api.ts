@@ -2,7 +2,7 @@
  * Complete API Service Layer
  * 
  * Connects frontend to backend REST API (Express server)
- * Backend location: backend/src/
+ * Backend location: apps/indexer/src/ (renamed from backend/ in W14)
  * 
  * Environment Variables:
  * - NEXT_PUBLIC_BACKEND_URL: Backend API base URL (default: http://localhost:3001)
