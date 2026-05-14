@@ -84,6 +84,20 @@ export interface RequirePaymentOptions {
    * Used for placeholder routes whose paid implementation is not yet live.
    */
   quoteOnly?: boolean;
+  /**
+   * Predicate deciding whether to settle based on the handler's final
+   * response status. Default: settle only when `statusCode < 400`, so a
+   * handler that returns 4xx/5xx (validation errors, operator misconfig,
+   * upstream failures the caller couldn't have avoided) does NOT consume
+   * the payer's authorization. The X-PAYMENT header remains unredeemed
+   * and the caller can retry until the authorization expires.
+   *
+   * When this predicate returns false:
+   *   - `facilitator.settle` is NOT called,
+   *   - no `X-Payment-Response` header is set,
+   *   - the handler's status + body pass through unchanged.
+   */
+  settleOnStatus?: (statusCode: number) => boolean;
 }
 
 const HDR_PAYMENT = 'x-payment';
@@ -94,6 +108,7 @@ export function requirePayment(opts: RequirePaymentOptions) {
   const facilitator = opts.facilitator ?? new FacilitatorClient();
   const settleTimeoutMs = opts.settleTimeoutMs ?? DEFAULT_SETTLE_TIMEOUT_MS;
   const quoteOnly = opts.quoteOnly === true;
+  const settleOnStatus = opts.settleOnStatus ?? defaultSettleOnStatus;
 
   return async function x402Middleware(
     req: MiddlewareRequest,
@@ -155,10 +170,19 @@ export function requirePayment(opts: RequirePaymentOptions) {
     res.json = function patchedJson(this: MiddlewareResponse, body: unknown) {
       if (intercepted) {
         // Handler called res.json a second time — pass through; the first
-        // call already drove settlement.
+        // call already drove settlement (or skipped it).
         return originalJson(body);
       }
       intercepted = true;
+
+      // Gate on the handler's intended status. Express defaults to 200
+      // unless the handler called `res.status(...)`. When the predicate
+      // says don't settle (4xx/5xx by default), we pass the body through
+      // unchanged and leave the payer's authorization unredeemed.
+      const statusCode = res.statusCode ?? 200;
+      if (!settleOnStatus(statusCode)) {
+        return originalJson(body);
+      }
 
       // Fire-and-block: settle, then emit the final response.
       void (async () => {
@@ -219,6 +243,10 @@ function resolveAccepts(
 ): PaymentRequirement[] {
   const raw = typeof source === 'function' ? source(req) : source;
   return Array.isArray(raw) ? raw : [raw];
+}
+
+function defaultSettleOnStatus(statusCode: number): boolean {
+  return statusCode < 400;
 }
 
 function respond402(res: MiddlewareResponse, accepts: PaymentRequirement[], error: string): void {

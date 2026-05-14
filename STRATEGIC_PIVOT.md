@@ -29,7 +29,7 @@ Verification matrix: `type-check:{web,trust-core,trust-api,mcp-server,passport-s
 
 ## Open follow-ups after the 90-day plan
 
-The 90-day plan is complete in tree. The remaining items are operator-side go-live tasks (none of which block contracts or app workspaces) plus one explicit deferral.
+**90-day implementation plan complete in tree; production activation remains gated by operator, counsel, deploy, and live-payment steps.** Every artifact the plan promised exists and type-checks/tests green on the branch (trust-api + mcp-server + 4 contract groups + 5 packages + W14 codemod + indexer event listeners + the W14.6 paid-route hardening). Production go-live is **not** complete: live Base mainnet settlement, Arc testnet deploys, hosted MCP, funded payer, counsel sign-off on MENA schemas, and a third-party audit all remain open. Avoid phrasing this as "complete" in investor/user-facing language without the qualifier.
 
 ### Operator go-live (user-fired)
 

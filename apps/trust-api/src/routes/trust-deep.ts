@@ -27,6 +27,15 @@ interface CachedDeepResult {
   source: 'editorial' | 'stub';
   generatedAt: string;
   model?: string;
+  /**
+   * Set when the editorial path was attempted and failed; the caller
+   * paid for editorial but got the stub. Surfaced in the response body
+   * so the caller can choose to retry / surface a warning to the user.
+   * Distinct from the unconfigured-key path (which is just `source: stub`
+   * with no `degraded` flag and no `degradedReason`).
+   */
+  degraded?: true;
+  degradedReason?: string;
 }
 
 function buildDeepRequirement(cfg: TrustApiConfig, resource: string): PaymentRequirement {
@@ -93,11 +102,15 @@ export function makeTrustDeepRoutes(cfg: TrustApiConfig): {
     handler: async (req: Request, res: Response) => {
       const target = String((req.body && req.body.target) || '').toLowerCase();
       if (!ADDRESS_RE.test(target)) {
+        // Status 400 → middleware skips settle by default (settleOnStatus
+        // predicate). Paid caller is not charged for malformed input.
         res.status(400).json({ error: 'Invalid target address' });
         return;
       }
       if (!cfg.payTo) {
-        res.status(500).json({ error: 'trust-api: ARC_PAYTO is not configured' });
+        // Status 503 → operator misconfiguration. Paid caller is not
+        // charged for a server we cannot settle through.
+        res.status(503).json({ error: 'trust-api: ARC_PAYTO is not configured' });
         return;
       }
 
@@ -123,6 +136,9 @@ export function makeTrustDeepRoutes(cfg: TrustApiConfig): {
           source: cached.source,
           cache: { hit: true, key: cacheKey, generatedAt: cached.generatedAt },
           model: cached.model,
+          ...(cached.degraded
+            ? { degraded: true, degradedReason: cached.degradedReason }
+            : {}),
         });
         return;
       }
@@ -147,14 +163,18 @@ export function makeTrustDeepRoutes(cfg: TrustApiConfig): {
           };
         }
       } catch (err) {
-        // Editorial failures must not consume a paid call without
-        // returning something usable to the agent. Fall back to the
-        // stub and flag the failure in the response so the operator
-        // can investigate without re-charging the caller.
+        // Editorial path attempted and failed (Anthropic outage, 5xx,
+        // schema-validation rejection, etc.). The caller paid for the
+        // deep tier and is owed transparency: we surface a degraded
+        // flag so they can choose to retry, alert, or accept the stub.
+        // The fallback stub is cached so a retry burst doesn't fan out
+        // to a still-flapping Anthropic.
         result = {
           commentary: stubCommentary(target, scoreV1),
           source: 'stub',
           generatedAt: new Date().toISOString(),
+          degraded: true,
+          degradedReason: 'editorial_generation_failed',
         };
         (req as any).x402 = {
           ...(req as any).x402,
@@ -172,6 +192,9 @@ export function makeTrustDeepRoutes(cfg: TrustApiConfig): {
         source: result.source,
         cache: { hit: false, key: cacheKey, generatedAt: result.generatedAt },
         ...(result.model ? { model: result.model } : {}),
+        ...(result.degraded
+          ? { degraded: true, degradedReason: result.degradedReason }
+          : {}),
       });
     },
   };

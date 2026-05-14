@@ -165,6 +165,13 @@ function makeStubApp(facilitator: StubFacilitator) {
     requirePayment({ accepts: deepRequirement, facilitator }) as any,
     (req, res) => {
       const target = String((req.body && req.body.target) || '').toLowerCase();
+      // Mirror the production route: malformed target → 400 → middleware
+      // skips settle by default. Lets the paid-mock E scenario assert
+      // the W14.6 settleOnStatus contract end-to-end.
+      if (!/^0x[a-fA-F0-9]{40}$/.test(target)) {
+        res.status(400).json({ error: 'Invalid target address' });
+        return;
+      }
       const assessment = v0HeuristicAssessment(target);
       const scoreV1 = {
         composite: assessment.overallScore,
@@ -373,6 +380,40 @@ async function main(): Promise<void> {
       'cache hit still settles: settle called once'
     );
     log('deep-cache-hit', `200 cache.hit=true generatedAt preserved`);
+
+    // (E) Deep tier no-settle-on-error -----------------------------------
+    //
+    // Caller sends a valid payment header but a malformed target. Handler
+    // returns 400. With the W14.6 settleOnStatus default (< 400), the
+    // middleware MUST skip facilitator.settle() — the caller is not
+    // charged for their own bad input. We also assert no
+    // X-Payment-Response header leaks.
+    const beforeErrorVerify = facilitator.verifyCalls;
+    const beforeErrorSettle = facilitator.settleCalls;
+
+    const errorRequirement: PaymentRequirement = makeDeepRequirement();
+    const errorHeader = makePaymentHeader(errorRequirement, '0x' + '0e'.repeat(32));
+    const errorResp = await fetchRaw(`${base}/v1/trust/read/deep`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-payment': errorHeader },
+      body: JSON.stringify({ target: 'not-an-address' }),
+    });
+    assertEq(errorResp.status, 400, 'malformed target returns 400');
+    assert(
+      !errorResp.headers.get('x-payment-response'),
+      'no X-Payment-Response on error: middleware must skip settle',
+    );
+    assertEq(
+      facilitator.verifyCalls - beforeErrorVerify,
+      1,
+      'verify still runs (paywall ran before handler) — the gate is on settle',
+    );
+    assertEq(
+      facilitator.settleCalls - beforeErrorSettle,
+      0,
+      'settle skipped on 4xx — caller not charged for bad input',
+    );
+    log('deep-no-settle-on-400', `400 + no X-Payment-Response + 0 settle calls`);
 
     console.log('paid-mock OK');
   } finally {
