@@ -1,0 +1,17 @@
+
+> arc-monorepo@0.0.0 test:passport-sdk
+> npm --workspace @arc/passport-sdk test
+
+
+> @arc/passport-sdk@0.0.1 test
+> tsx test/index.test.ts
+
+  [abi] all required functions + events present
+  [chain] arc testnet id=5042002 native=USDC
+  [getPassportBySubject existing] passportId=42 subject=ok
+  [getPassportBySubject missing] short-circuits after resolve=0
+  [getPassport unknown] returns null when subject=0x0
+  [getIdentityAdapter] passes through
+  [mintSelf] writes mintSelf(uri) to passport address
+  [no-wallet] mintSelf rejects with clear message
+passport-sdk OK

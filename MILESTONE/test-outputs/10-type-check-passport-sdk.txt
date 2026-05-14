@@ -1,0 +1,16 @@
+
+> arc-monorepo@0.0.0 type-check:passport-sdk
+> npm --workspace @arc/passport-sdk run type-check
+
+
+> @arc/passport-sdk@0.0.1 type-check
+> tsc --noEmit
+
+
+> arc-monorepo@0.0.0 build:passport-sdk
+> npm --workspace @arc/passport-sdk run build
+
+
+> @arc/passport-sdk@0.0.1 build
+> tsc -p tsconfig.build.json
+

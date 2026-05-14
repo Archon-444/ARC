@@ -1,0 +1,13 @@
+
+> arc-monorepo@0.0.0 check-passport-contracts
+> npm --workspace contracts run check-passport
+
+
+> contracts@1.0.0 check-passport
+> node scripts/check-passport.js
+
+compiler: solc 0.8.26+commit.8a97fa7a.Emscripten.clang
+contracts:
+  passport/ArcIdentityAdapter.sol:ArcIdentityAdapter bytecode=4015B
+  passport/ArcPassport.sol:ArcPassport bytecode=5091B
+check-passport OK

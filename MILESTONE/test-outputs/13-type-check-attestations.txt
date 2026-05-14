@@ -1,0 +1,16 @@
+
+> arc-monorepo@0.0.0 type-check:attestations
+> npm --workspace @arc/attestations run type-check
+
+
+> @arc/attestations@0.0.1 type-check
+> tsc --noEmit
+
+
+> arc-monorepo@0.0.0 build:attestations
+> npm --workspace @arc/attestations run build
+
+
+> @arc/attestations@0.0.1 build
+> tsc -p tsconfig.build.json
+

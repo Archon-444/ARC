@@ -1,0 +1,195 @@
+{
+  "kind": "arc.evidence.mena.v1",
+  "composedAt": "2026-05-14T08:02:54.333Z",
+  "domain": {
+    "name": "ARC AttestationRegistry",
+    "version": "1",
+    "chainId": 5042002,
+    "verifyingContract": "0x0000000000000000000000000000000000000001"
+  },
+  "subject": "0x1234567890abcdef1234567890abcdef12345678",
+  "token": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  "stablecoin": "0x4444444444444444444444444444444444444444",
+  "passport": {
+    "subject": "0x1234567890abcdef1234567890abcdef12345678",
+    "passportId": null,
+    "metadataURI": null,
+    "revoked": false,
+    "counselAttestation": null,
+    "source": "placeholder",
+    "notice": "ArcPassport is in tree at contracts/contracts/passport/ but not yet deployed to Arc testnet. Once deployed, this field carries the typed result from @arc/passport-sdk.getPassportBySubject()."
+  },
+  "attestations": [
+    {
+      "schemaName": "counsel.kyb.v1",
+      "schemaId": "0x8e7bc77b2d2f07e8bbf8136e9c8ea1b7c11ab6b625e84735af1f59c1a0a87955",
+      "signed": {
+        "schemaId": "0x8e7bc77b2d2f07e8bbf8136e9c8ea1b7c11ab6b625e84735af1f59c1a0a87955",
+        "primaryType": "counsel.kyb.v1",
+        "body": {
+          "subject": "0x1234567890abcdef1234567890abcdef12345678",
+          "reviewedAt": "2026-05-14",
+          "expiresAt": "2027-05-14",
+          "outcome": "counsel-led-kyb",
+          "jurisdiction": "DIFC",
+          "counsel": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+          "reportCid": "bafybeicid-counsel-report-demo",
+          "reportHash": "0x1a7cae4e92e44ae367caa6379b8d343da33d01d996fe204076a2db1dacec622c",
+          "notes": "Subject is a DFSA-licensed VASP; treasury-only scope."
+        },
+        "dataHash": "0x4d8b14e94d4a1cfdddbf41d73258debcb212c3a11f9b8b22b51a713b2cd471e0",
+        "signature": "0x9006460c66d539fef02b69e7e08bf840dbf28f8ea29d67abe3cf80cd20fe50e26c99ed76f71abcd772980787494fe93dd9154d3118c4966c2437e3392ffc9e891c",
+        "signer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+      },
+      "verification": {
+        "ok": true,
+        "recoveredSigner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        "expectedSigner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+      }
+    },
+    {
+      "schemaName": "editorial.review.v1",
+      "schemaId": "0x8dd1e987e6626051420913727a04bf9d332fb8019606437329c2ed4df8a433df",
+      "signed": {
+        "schemaId": "0x8dd1e987e6626051420913727a04bf9d332fb8019606437329c2ed4df8a433df",
+        "primaryType": "editorial.review.v1",
+        "body": {
+          "subject": "0x1234567890abcdef1234567890abcdef12345678",
+          "reviewedAt": "2026-05-14",
+          "verdict": "low-risk",
+          "summary": "Editorial review: subject address is a known institutional treasury wallet; deep-tier verdict low-risk.",
+          "scoreBand": 82,
+          "scoreV1Reference": 78,
+          "editor": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "commentaryCid": "bafybeicid-editorial-demo",
+          "commentaryHash": "0x45e2e5537102fc39649fb4928394377c22fcb80f1d48804376015c86382779f0",
+          "notes": "Reviewed against W10 deep-tier criteria."
+        },
+        "dataHash": "0x36f8b14afc6d1b696d404528fec485599c15708607d2d3c285ea4020846fae7c",
+        "signature": "0x4ba1a1d783034f3ae84fc0315b44a8039caa02cef6b2d416b1f3f43ef13f762b44fd00b4dbc48e8cc8042b856ec90fb9713109922794925f451f56ec53f582c11c",
+        "signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "verification": {
+        "ok": true,
+        "recoveredSigner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "expectedSigner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    {
+      "schemaName": "treasury.policy.v1",
+      "schemaId": "0x8aa241adaeb4e1db934887cf125c54b415e4ae93914add9454d03d6357429192",
+      "signed": {
+        "schemaId": "0x8aa241adaeb4e1db934887cf125c54b415e4ae93914add9454d03d6357429192",
+        "primaryType": "treasury.policy.v1",
+        "body": {
+          "subject": "0x1234567890abcdef1234567890abcdef12345678",
+          "effectiveFrom": "2026-05-14",
+          "effectiveUntil": "2027-05-14",
+          "perTxCeiling": "10000000000",
+          "perDayCeiling": "100000000000",
+          "jurisdiction": "ADGM",
+          "principal": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+          "policyCid": "bafybeicid-policy-demo",
+          "policyHash": "0x38fe7c14fee2988645232d00b2920e0edf3911124114b617118642b0b78e6380",
+          "notes": "Approved at the most recent treasury committee."
+        },
+        "dataHash": "0xdbb4bd2d1da20cf9523cc75afbecf720f97b8a3787af61b616c3a310a476766b",
+        "signature": "0xf3f90f0462d0328d84f03f0a08fcee0c5df7979e456230ac25b5d63e922eea395d100c9cd9e86f0e2b0fee38116faa41479386ca7347b1293efa8afc3038ab8a1b",
+        "signer": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+      },
+      "verification": {
+        "ok": true,
+        "recoveredSigner": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+        "expectedSigner": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+      }
+    },
+    {
+      "schemaName": "token.suitability.v1",
+      "schemaId": "0x29bba0df7dc08a232be6321d9dd80b43ec6e584958c3727cf2ec458ca51c7d93",
+      "signed": {
+        "schemaId": "0x29bba0df7dc08a232be6321d9dd80b43ec6e584958c3727cf2ec458ca51c7d93",
+        "primaryType": "token.suitability.v1",
+        "body": {
+          "subject": "0x1234567890abcdef1234567890abcdef12345678",
+          "token": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "reviewedAt": "2026-05-14",
+          "expiresAt": "2027-05-14",
+          "outcome": "suitable-with-conditions",
+          "jurisdiction": "DIFC",
+          "scoreBand": 72,
+          "criteria": {
+            "characteristics": 80,
+            "regulatoryStatus": 65,
+            "marketProfile": 78,
+            "technology": 85,
+            "amlSanctions": 60,
+            "legislationImpact": 70
+          },
+          "counsel": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+          "reportCid": "bafybeicid-token-suitability-demo",
+          "reportHash": "0x65370e23f5646b1a5593c10831d75743da9da3204aea900ab77728d44c5f3f5f",
+          "notes": "Suitable for institutional treasury custody; retail distribution out of scope."
+        },
+        "dataHash": "0x052efe380bfcd360da1e1610a1fb4ecd0ec4134256f3427fb3049cd585d927d9",
+        "signature": "0x9d43472dc5a28d4e8f8c19d236b37cf82d14ec4f6aae3b2b20810ecca750f61e272e9fffae2974ba40d812c8dd12a280fe7de2a6700b6ed536657b4231a170cd1b",
+        "signer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+      },
+      "verification": {
+        "ok": true,
+        "recoveredSigner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        "expectedSigner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+      }
+    },
+    {
+      "schemaName": "stablecoin.reserves.v1",
+      "schemaId": "0xfcb27ab92ffa2e0344df77837b27ea8518b24f308adad2f2aa7bd0f8455180ef",
+      "signed": {
+        "schemaId": "0xfcb27ab92ffa2e0344df77837b27ea8518b24f308adad2f2aa7bd0f8455180ef",
+        "primaryType": "stablecoin.reserves.v1",
+        "body": {
+          "subject": "0x4444444444444444444444444444444444444444",
+          "ticker": "USDU",
+          "asOf": "2026-05-14",
+          "expiresAt": "2027-05-14",
+          "outcome": "in-compliance",
+          "jurisdiction": "ADGM",
+          "criteria": {
+            "reserveQuality": 95,
+            "audit": 90,
+            "governance": 85,
+            "disclosure": 88,
+            "prudential": 92,
+            "redemption": 80
+          },
+          "reservesUsd": "1050000000000",
+          "circulatingSupply": "1000000000000",
+          "circulatingSupplyDecimals": 6,
+          "auditor": "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
+          "reportCid": "bafybeicid-reserves-demo",
+          "reportHash": "0x711410509b7e28d2d20397920ad041318fad34622a8de00ead47c1b524c6d6a9",
+          "notes": "Q1 audit; reserves exceed circulating supply ($1.05B vs $1.00B)."
+        },
+        "dataHash": "0xb12730ea16617aa0f0c5a8cc945e98f72fb635b60422be22f7233730e08a83f5",
+        "signature": "0xccc6cee358e9004605913f723cc9b7760f69f2fd302006032c07bc5336592c4543c7ddaf3d519bbfc91b396b5f255136663f47654b2e1ca351c2ca5c3abc0cee1c",
+        "signer": "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+      },
+      "verification": {
+        "ok": true,
+        "recoveredSigner": "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
+        "expectedSigner": "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+      }
+    }
+  ],
+  "summary": {
+    "attestationCount": 5,
+    "allVerified": true,
+    "schemasIncluded": [
+      "counsel.kyb.v1",
+      "editorial.review.v1",
+      "treasury.policy.v1",
+      "token.suitability.v1",
+      "stablecoin.reserves.v1"
+    ],
+    "passportOnChain": false
+  }
+}

@@ -1,0 +1,25 @@
+
+> arc-monorepo@0.0.0 check-trust-contracts
+> npm --workspace contracts run check-contracts
+
+
+> contracts@1.0.0 check-contracts
+> node scripts/check-contracts.js
+
+compiler: solc 0.8.26+commit.8a97fa7a.Emscripten.clang
+groups:   passport, reputation, attestations, validation
+
+[passport] contracts:
+  passport/ArcIdentityAdapter.sol:ArcIdentityAdapter bytecode=4015B
+  passport/ArcPassport.sol:ArcPassport bytecode=5091B
+
+[reputation] contracts:
+  reputation/ArcReputationAdapter.sol:ArcReputationAdapter bytecode=2865B
+
+[attestations] contracts:
+  attestations/AttestationRegistry.sol:AttestationRegistry bytecode=4016B
+
+[validation] contracts:
+  validation/ArcValidationAdapter.sol:ArcValidationAdapter bytecode=3960B
+
+check-contracts OK

@@ -1,0 +1,15 @@
+
+> arc-monorepo@0.0.0 test:attestations
+> npm --workspace @arc/attestations test
+
+
+> @arc/attestations@0.0.1 test
+> tsx test/index.test.ts
+
+  [domain] constants match the AttestationRegistry EIP-712 domain shape
+  [counsel.kyb.v1] sign + verify + tamper-detect + wrong-signer-detect OK
+  [editorial.review.v1] sign + verify + tamper-detect + wrong-signer-detect OK
+  [treasury.policy.v1] sign + verify + tamper-detect + wrong-signer-detect OK
+  [token.suitability.v1] sign + verify + tamper-detect + wrong-signer-detect OK
+  [stablecoin.reserves.v1] sign + verify + tamper-detect + wrong-signer-detect OK
+attestations OK

@@ -1,0 +1,83 @@
+
+> arc-monorepo@0.0.0 type-check:web
+> npm --workspace frontend run type-check
+
+
+> arcmarket-frontend@0.2.1 type-check
+> tsc --noEmit
+
+src/app/api/cron/sync-search/route.ts(51,31): error TS2503: Cannot find namespace 'Typesense'.
+src/app/api/cron/sync-search/route.ts(98,41): error TS2503: Cannot find namespace 'Typesense'.
+src/app/launch/page.tsx(847,90): error TS2367: This comparison appears to be unintentional because the types '"error" | "form" | "approving"' and '"success"' have no overlap.
+src/app/launch/page.tsx(848,66): error TS2367: This comparison appears to be unintentional because the types '"error" | "form" | "creating" | "approving"' and '"success"' have no overlap.
+src/app/launch/page.tsx(849,35): error TS2367: This comparison appears to be unintentional because the types '"error" | "form" | "creating" | "approving"' and '"success"' have no overlap.
+src/app/launch/page.tsx(849,65): error TS2367: This comparison appears to be unintentional because the types '"error" | "form" | "creating" | "approving"' and '"success"' have no overlap.
+src/app/profile/[address]/page.tsx(436,114): error TS2503: Cannot find namespace 'JSX'.
+src/app/profile/[address]/page.tsx(453,70): error TS2503: Cannot find namespace 'JSX'.
+src/app/settings/page.tsx(494,9): error TS2503: Cannot find namespace 'JSX'.
+src/app/studio/page.tsx(746,59): error TS2503: Cannot find namespace 'JSX'.
+src/app/studio/page.tsx(768,59): error TS2503: Cannot find namespace 'JSX'.
+src/app/studio/page.tsx(791,113): error TS2503: Cannot find namespace 'JSX'.
+src/app/studio/page.tsx(806,124): error TS2503: Cannot find namespace 'JSX'.
+src/components/Navbar.tsx(507,42): error TS2339: Property 'tier' does not exist on type 'never'.
+src/components/Navbar.tsx(510,81): error TS2339: Property 'xp' does not exist on type 'never'.
+src/components/Navbar.tsx(515,58): error TS2339: Property 'progress' does not exist on type 'never'.
+src/components/Navbar.tsx(518,81): error TS2339: Property 'progress' does not exist on type 'never'.
+src/components/activity/ActivityTable.tsx(121,3): error TS2339: Property '_showCollection' does not exist on type 'ActivityTableProps'.
+src/components/circle/WalletManagementModal.tsx(67,21): error TS2322: Type 'CircleWallet' is not assignable to type 'import("/home/user/ARC/frontend/src/lib/circle").CircleWallet'.
+  Types of property 'state' are incompatible.
+    Type 'string' is not assignable to type '"LIVE" | "FROZEN"'.
+src/components/gamification/XPDisplay.tsx(15,30): error TS2307: Cannot find module 'react-use' or its corresponding type declarations.
+src/components/nft/PriceHistoryChart.tsx(44,25): error TS2345: Argument of type 'string' is not assignable to parameter of type 'bigint'.
+src/components/nft/PriceHistoryChart.tsx(49,64): error TS2345: Argument of type 'string' is not assignable to parameter of type 'bigint'.
+src/components/nft/SimilarItemsCarousel.tsx(37,27): error TS2345: Argument of type 'string' is not assignable to parameter of type '`0x${string}`'.
+src/components/notifications/NotificationBell.tsx(17,30): error TS2307: Cannot find module 'react-use' or its corresponding type declarations.
+src/components/ui/Button.tsx(58,9): error TS2698: Spread types may only be created from object types.
+src/components/ui/Button.tsx(59,32): error TS18046: 'children.props' is of type 'unknown'.
+src/hooks/useActivityFeed.ts(39,5): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(options: DefinedInitialDataInfiniteOptions<ActivityResponse, Error, InfiniteData<ActivityResponse, unknown>, (string | ActivityEventType[] | undefined)[], string | undefined>, queryClient?: QueryClient | undefined): DefinedUseInfiniteQueryResult<...>', gave the following error.
+    Type '({ pageParam }: { client: QueryClient; queryKey: (string | ActivityEventType[] | undefined)[]; signal: AbortSignal; pageParam: undefined; direction: FetchDirection; meta: Record<...> | undefined; }) => Promise<...>' is not assignable to type 'unique symbol | QueryFunction<ActivityResponse, (string | ActivityEventType[] | undefined)[], string | undefined> | undefined'.
+      Type '({ pageParam }: { client: QueryClient; queryKey: (string | ActivityEventType[] | undefined)[]; signal: AbortSignal; pageParam: undefined; direction: FetchDirection; meta: Record<...> | undefined; }) => Promise<...>' is not assignable to type 'QueryFunction<ActivityResponse, (string | ActivityEventType[] | undefined)[], string | undefined>'.
+        Types of parameters '__0' and 'context' are incompatible.
+          Type '{ client: QueryClient; queryKey: (string | ActivityEventType[] | undefined)[]; signal: AbortSignal; pageParam: string | undefined; direction: FetchDirection; meta: Record<...> | undefined; }' is not assignable to type '{ client: QueryClient; queryKey: (string | ActivityEventType[] | undefined)[]; signal: AbortSignal; pageParam: undefined; direction: FetchDirection; meta: Record<...> | undefined; }'.
+            Types of property 'pageParam' are incompatible.
+              Type 'string | undefined' is not assignable to type 'undefined'.
+                Type 'string' is not assignable to type 'undefined'.
+  Overload 2 of 3, '(options: UndefinedInitialDataInfiniteOptions<ActivityResponse, Error, InfiniteData<ActivityResponse, unknown>, (string | ActivityEventType[] | undefined)[], string | undefined>, queryClient?: QueryClient | undefined): UseInfiniteQueryResult<...>', gave the following error.
+    Type '({ pageParam }: { client: QueryClient; queryKey: (string | ActivityEventType[] | undefined)[]; signal: AbortSignal; pageParam: undefined; direction: FetchDirection; meta: Record<...> | undefined; }) => Promise<...>' is not assignable to type 'unique symbol | QueryFunction<ActivityResponse, (string | ActivityEventType[] | undefined)[], string | undefined> | undefined'.
+      Type '({ pageParam }: { client: QueryClient; queryKey: (string | ActivityEventType[] | undefined)[]; signal: AbortSignal; pageParam: undefined; direction: FetchDirection; meta: Record<...> | undefined; }) => Promise<...>' is not assignable to type 'QueryFunction<ActivityResponse, (string | ActivityEventType[] | undefined)[], string | undefined>'.
+        Types of parameters '__0' and 'context' are incompatible.
+          Type '{ client: QueryClient; queryKey: (string | ActivityEventType[] | undefined)[]; signal: AbortSignal; pageParam: string | undefined; direction: FetchDirection; meta: Record<...> | undefined; }' is not assignable to type '{ client: QueryClient; queryKey: (string | ActivityEventType[] | undefined)[]; signal: AbortSignal; pageParam: undefined; direction: FetchDirection; meta: Record<...> | undefined; }'.
+            Types of property 'pageParam' are incompatible.
+              Type 'string | undefined' is not assignable to type 'undefined'.
+                Type 'string' is not assignable to type 'undefined'.
+  Overload 3 of 3, '(options: UseInfiniteQueryOptions<ActivityResponse, Error, InfiniteData<ActivityResponse, unknown>, (string | ActivityEventType[] | undefined)[], string | undefined>, queryClient?: QueryClient | undefined): UseInfiniteQueryResult<...>', gave the following error.
+    Type '({ pageParam }: { client: QueryClient; queryKey: (string | ActivityEventType[] | undefined)[]; signal: AbortSignal; pageParam: undefined; direction: FetchDirection; meta: Record<...> | undefined; }) => Promise<...>' is not assignable to type 'unique symbol | QueryFunction<ActivityResponse, (string | ActivityEventType[] | undefined)[], string | undefined> | undefined'.
+      Type '({ pageParam }: { client: QueryClient; queryKey: (string | ActivityEventType[] | undefined)[]; signal: AbortSignal; pageParam: undefined; direction: FetchDirection; meta: Record<...> | undefined; }) => Promise<...>' is not assignable to type 'QueryFunction<ActivityResponse, (string | ActivityEventType[] | undefined)[], string | undefined>'.
+        Types of parameters '__0' and 'context' are incompatible.
+          Type '{ client: QueryClient; queryKey: (string | ActivityEventType[] | undefined)[]; signal: AbortSignal; pageParam: string | undefined; direction: FetchDirection; meta: Record<...> | undefined; }' is not assignable to type '{ client: QueryClient; queryKey: (string | ActivityEventType[] | undefined)[]; signal: AbortSignal; pageParam: undefined; direction: FetchDirection; meta: Record<...> | undefined; }'.
+            Types of property 'pageParam' are incompatible.
+              Type 'string | undefined' is not assignable to type 'undefined'.
+                Type 'string' is not assignable to type 'undefined'.
+src/hooks/useActivityFeed.ts(46,9): error TS2698: Spread types may only be created from object types.
+src/hooks/useActivityFeed.ts(109,39): error TS18046: 'page' is of type 'unknown'.
+src/hooks/useRealTimeActivity.ts(7,8): error TS1192: Module '"/home/user/ARC/frontend/src/services/websocket"' has no default export.
+src/hooks/useRealTimeActivity.ts(7,28): error TS2305: Module '"../services/websocket"' has no exported member 'Activity'.
+src/hooks/useRealTimeActivity.ts(17,53): error TS7006: Parameter 'activity' implicitly has an 'any' type.
+src/hooks/useTokenFactory.ts(89,48): error TS2339: Property 'tokenAddress' does not exist on type 'readonly unknown[]'.
+src/hooks/useTokenFactory.ts(90,46): error TS2339: Property 'ammAddress' does not exist on type 'readonly unknown[]'.
+src/lib/auth-middleware.ts(77,43): error TS2345: Argument of type '{ message: string; signature: `0x${string}`; }' is not assignable to parameter of type 'VerifyMessageParameters'.
+  Property 'address' is missing in type '{ message: string; signature: `0x${string}`; }' but required in type 'VerifyMessageParameters'.
+src/lib/auth-middleware.ts(81,19): error TS2339: Property 'toLowerCase' does not exist on type 'boolean'.
+src/lib/performance.ts(345,22): error TS2554: Expected 1 arguments, but got 0.
+src/lib/rarity/calculator.ts(77,7): error TS2322: Type '"common" | "uncommon" | "rare" | "epic" | "legendary"' is not assignable to type '"common"'.
+  Type '"uncommon"' is not assignable to type '"common"'.
+src/lib/wallet-signature.ts(22,52): error TS2345: Argument of type '{ message: string; }' is not assignable to parameter of type 'SignMessageParameters<Account | undefined>'.
+  Property 'account' is missing in type '{ message: string; }' but required in type 'ExactRequired<{ account?: `0x${string}` | Account | undefined; }>'.
+npm error Lifecycle script `type-check` failed with error:
+npm error code 2
+npm error path /home/user/ARC/frontend
+npm error workspace arcmarket-frontend@0.2.1
+npm error location /home/user/ARC/frontend
+npm error command failed
+npm error command sh -c tsc --noEmit
