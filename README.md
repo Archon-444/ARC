@@ -49,13 +49,17 @@ npm run test:mcp-server           # 3 inspector specs back-to-back:
                                   #   stdio + http + signing-payer
 npm --workspace @arc/mcp-server run dev:http  # Streamable HTTP on :8080
 
-# Passport + Reputation + Attestations (W8/W9 — landed in tree)
-npm run check-trust-contracts     # offline compile: passport + reputation + attestations
+# Passport + Reputation + Attestations + Validation (W8/W9/W10 — landed in tree)
+npm run check-trust-contracts     # offline compile: 4 contract groups
 npm run test:passport-sdk         # 8 SDK unit tests (stubbed RPC)
-npm run test:attestations         # 3 schemas × sign + verify + tamper round-trip
+npm run test:attestations         # 5 schemas × sign + verify + tamper round-trip
 # Full Hardhat tests + Arc testnet deploy are user-fired:
-npm --workspace contracts run test:trust-contracts     # 88 specs, needs internet
+npm --workspace contracts run test:trust-contracts     # 109 specs, needs internet
 npm --workspace contracts run deploy:passport:arc-testnet
+
+# W12 marquee artifacts
+npm --workspace @arc/attestations run demo:mena        # compose + verify MENA evidence envelope
+npm --workspace @arc/trust-api run smoke:load          # autocannon at 10rps, SLO-gated
 ```
 
 Frontend specifics still apply per [CLAUDE.md](./CLAUDE.md): path alias `@/*` → `frontend/src/*`, design tokens via `primary-*` / `accent-*` / `error-*`, mobile-first breakpoints, wagmi + viem + RainbowKit, Circle App Kit for wallet integration.
@@ -95,7 +99,7 @@ See [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) for the full freeze scope. Short 
 
 ## Plan
 
-The 90-day execution plan lives at `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`. Weekly milestones, critical files, and verification gates are listed there. Slice status is tracked in [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md#shipped-to-date) — **W1–W11 are landed on this branch (public trust surface live at `/trust`, `/passport`, `/agents`, `/docs`; legacy marketplace prefixes 308-redirect to `/legacy`). The W11 codemod (mass file move into `legacy-primitives/` + `apps/indexer` extraction) is intentionally deferred — see [`docs/w11-followups.md`](./docs/w11-followups.md). W12 (design-partner evidence object + load testing + the deferred codemod) is next.**
+The 90-day execution plan lives at `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`. Weekly milestones, critical files, and verification gates are listed there. Slice status is tracked in [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md#shipped-to-date) — **W1–W12 are complete in tree.** The marquee W12 artifact is the MENA design-partner evidence object (`packages/attestations/scripts/demo-mena.ts` + [`docs/demo-mena.md`](./docs/demo-mena.md)) composing all five attestation schemas + a placeholder passport into a single verifiable JSON envelope. The trust-api is load-tested at 10rps with the [W12 baseline](./apps/trust-api/docs/load-tests/w12-baseline.json) captured. The x402 facilitator integration carries a 13-finding [self-review](./apps/trust-api/docs/security-review-w12.md) (0 OPEN). The one explicit deferral is the W11 codemod (mass file move + indexer extraction), scoped in [`docs/w11-followups.md`](./docs/w11-followups.md).
 
 ## Documentation
 
