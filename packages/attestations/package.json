@@ -2,7 +2,7 @@
   "name": "@arc/attestations",
   "version": "0.0.1",
   "private": true,
-  "description": "EIP-712 attestation schemas + sign/verify helpers for ARC's AttestationRegistry. Ships counsel.kyb.v1, editorial.review.v1, treasury.policy.v1 in W9; MENA-mapped token.suitability.v1 + stablecoin.reserves.v1 land in W10. Off-chain workflow: build a body matching the schema, sign typed-data with viem, get the EIP-712 digest as `dataHash`, anchor on-chain via AttestationRegistry.attest(...).",
+  "description": "EIP-712 attestation schemas + sign/verify/validate helpers for ARC's AttestationRegistry. Five schemas: counsel.kyb.v1, editorial.review.v1, treasury.policy.v1 (production), token.suitability.v1, stablecoin.reserves.v1 (counsel-review draft -- DFSA Crypto Token framework + ADGM FRT regime; production signing waits on counsel sign-off). Off-chain workflow: build a body matching the schema, validate via the schema's validator helper, sign typed-data with viem, get the EIP-712 digest as dataHash, anchor on-chain via AttestationRegistry.attest(...). The validator hook in signAttestation throws AttestationValidationError on bad bodies before any cryptographic operation.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
