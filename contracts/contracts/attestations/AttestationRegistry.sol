@@ -40,6 +40,22 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
  *         counsel review lapsed, or a fraud was discovered. Revoke
  *         flips a flag; it does not delete the record so historic
  *         consumers can render "revoked at block N."
+ *
+ *         SCHEMA-ID POSTURE (W8-W12 hardening note):
+ *         This contract is intentionally PERMISSIVE -- any
+ *         `bytes32 schemaId` is accepted. The contract does NOT
+ *         maintain an on-chain allowlist of canonical schema ids,
+ *         and there are no plans to add one. Flexibility for
+ *         operator-issued schemas without contract upgrade is the
+ *         design intent; the on-chain dataHash integrity story works
+ *         for any schema. Consumers (trust-api, mcp-server, browser
+ *         surface) MUST maintain their own allowlist of canonical
+ *         schema ids and refuse to render rows whose schemaId is
+ *         not in their allowlist -- otherwise an ATTESTER_ROLE
+ *         holder could anchor `keccak256("counsel.kyb.v1.fake")`
+ *         and downstream tools would render it as if it were the
+ *         real schema. See `apps/trust-api/docs/attestation-schemas.md`
+ *         for the canonical allowlist and the rationale.
  */
 contract AttestationRegistry is AccessControl {
     bytes32 public constant ATTESTER_ROLE = keccak256("ATTESTER_ROLE");
