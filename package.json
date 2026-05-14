@@ -4,18 +4,17 @@
   "private": true,
   "description": "ARC — trust, identity, and editorial-verification layer for Circle-native agent commerce.",
   "workspaces": [
-    "frontend",
     "backend",
     "contracts",
     "packages/*",
     "apps/*"
   ],
   "scripts": {
-    "dev:web": "npm --workspace frontend run dev",
-    "build:web": "npm --workspace frontend run build",
-    "test:web": "npm --workspace frontend test",
-    "type-check:web": "npm --workspace frontend run type-check",
-    "lint:web": "npm --workspace frontend run lint",
+    "dev:web": "npm --workspace arcmarket-frontend run dev",
+    "build:web": "npm --workspace arcmarket-frontend run build",
+    "test:web": "npm --workspace arcmarket-frontend test",
+    "type-check:web": "npm --workspace arcmarket-frontend run type-check",
+    "lint:web": "npm --workspace arcmarket-frontend run lint",
     "test:trust-core": "npm --workspace @arc/trust-core test",
     "type-check:trust-core": "npm --workspace @arc/trust-core run type-check",
     "type-check:x402-client": "npm --workspace @arc/x402-client run type-check",

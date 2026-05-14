@@ -66,8 +66,8 @@ Thank you for your interest in contributing to ARC Marketplace! This document pr
    cd contracts
    npm install
 
-   # Install frontend dependencies
-   cd ../frontend
+   # Install apps/web dependencies
+   cd ../apps/web
    npm install
    ```
 
@@ -77,7 +77,7 @@ Thank you for your interest in contributing to ARC Marketplace! This document pr
    cp .env.example .env
    # Edit .env with your private key
 
-   # In frontend/
+   # In apps/web/
    cp .env.example .env.local
    # Edit .env.local with contract addresses
    ```
@@ -88,8 +88,8 @@ Thank you for your interest in contributing to ARC Marketplace! This document pr
    cd contracts
    npx hardhat node
 
-   # Terminal 2: Start frontend
-   cd frontend
+   # Terminal 2: Start apps/web (Next.js dev server)
+   cd apps/web
    npm run dev
    ```
 
@@ -127,7 +127,7 @@ git checkout -b feature/your-feature-name
 
 ```bash
 # Format code
-cd frontend
+cd apps/web
 npm run format
 
 # Check types
@@ -235,7 +235,7 @@ See [TESTING.md](./TESTING.md) for comprehensive testing guidelines.
 
 ```bash
 # Frontend tests
-cd frontend
+cd apps/web
 npm test                  # Run tests once
 npm run test:watch        # Run tests in watch mode
 npm run test:coverage     # Run tests with coverage
@@ -403,7 +403,7 @@ ARC/
 │   ├── test/
 │   └── scripts/
 │
-├── frontend/               # Next.js (App Router)
+├── apps/web/               # Next.js (App Router)
 │   ├── src/
 │   │   ├── app/           # Pages: launch, token/[address], explore, ...
 │   │   ├── components/    # ui/, nft/, token/ (TokenCard, LauncherTokenCard), explore/, home/

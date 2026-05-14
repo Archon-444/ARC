@@ -19,13 +19,20 @@ A full-stack NFT marketplace + token launchpad. The smart contracts (`ArcMarketp
 
 ```
 ARC/
-├── frontend/                    # Next.js 16 app (trust-layer routes incoming; marketplace links removed from nav)
-├── backend/                     # Express REST + WebSocket (narrowing to passport/attestation indexing)
-├── contracts/                   # Solidity 0.8.24 (Passport + AttestationRegistry incoming)
-├── subgraph/                    # The Graph indexing
+├── apps/                        # Trust layer + product surface
+│   ├── trust-api/               # Express + facilitator-backed x402 paywall
+│   ├── mcp-server/              # Model Context Protocol server (stdio + Streamable HTTP)
+│   └── web/                     # Next.js 16 app (was `frontend/`; trust surface + legacy redirect)
 ├── packages/
-│   └── trust-core/              # Scoring engine + cache helpers (extracted from frontend)
-├── apps/                        # NEW — trust-api, mcp-server, indexer (added W3+)
+│   ├── trust-core/              # Scoring engine + cache helpers (extracted from apps/web)
+│   ├── x402-client/             # Facilitator-backed x402 client
+│   ├── passport-sdk/            # TS client for ArcPassport
+│   ├── attestation-reader/      # Read-only viem client for AttestationRegistry
+│   └── attestations/            # EIP-712 schemas + sign/verify/validate helpers
+├── contracts/                   # Solidity 0.8.24 (passport / reputation / attestations / validation; legacy under legacy-primitives/ once codemod completes)
+├── backend/                     # Express REST + WebSocket (W14 follow-up: → apps/indexer)
+├── subgraph/                    # The Graph indexing
+├── skills/                      # Claude Skill bundles (use-arc-trust)
 ├── tsconfig.base.json           # shared TS config
 ├── package.json                 # npm workspaces root
 ├── STRATEGIC_PIVOT.md           # pivot rationale + freeze notice
@@ -36,7 +43,7 @@ ARC/
 
 ```bash
 npm install                       # workspace install at repo root
-npm --workspace frontend run dev  # web app
+npm run dev:web                   # apps/web (Next.js public surface)
 npm --workspace @arc/trust-core test
 
 # Trust layer (W3–W7 — landed)
@@ -63,7 +70,7 @@ npm --workspace @arc/attestations run demo:mena        # compose + verify MENA e
 npm --workspace @arc/trust-api run smoke:load          # autocannon at 10rps, SLO-gated
 ```
 
-Frontend specifics still apply per [CLAUDE.md](./CLAUDE.md): path alias `@/*` → `frontend/src/*`, design tokens via `primary-*` / `accent-*` / `error-*`, mobile-first breakpoints, wagmi + viem + RainbowKit, Circle App Kit for wallet integration.
+Frontend specifics still apply per [CLAUDE.md](./CLAUDE.md): path alias `@/*` → `apps/web/src/*`, design tokens via `primary-*` / `accent-*` / `error-*`, mobile-first breakpoints, wagmi + viem + RainbowKit, Circle App Kit for wallet integration.
 
 ## Deploy posture
 
