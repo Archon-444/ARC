@@ -1,0 +1,53 @@
+# fly.toml — @arc/trust-api
+#
+# Single Fly machine, /health probe. Stateless (no in-memory session
+# state that survives restart) so auto-stop is fine, but min_running=1
+# keeps the cold-start latency out of paid-call paths.
+#
+# Deploy from the repo root:
+#   fly deploy --config apps/trust-api/fly.toml --dockerfile apps/trust-api/Dockerfile
+#
+# Required secrets (set with `fly secrets set NAME=...`):
+#   ARC_PAYTO                          - Base mainnet recipient address
+#
+# Optional secrets:
+#   ARC_RPC_URL                        - Arc testnet RPC (defaults in code)
+#   ARC_PASSPORT_ADDRESS               - flips passport reads to on-chain
+#   ARC_ATTESTATION_REGISTRY_ADDRESS   - flips attestation reads to on-chain
+#   ARC_ANTHROPIC_API_KEY              - flips deep tier to live Haiku 4.5
+#   ARC_FACILITATOR_URL                - override facilitator URL
+#   ARC_FACILITATOR_API_KEY            - if your facilitator requires auth
+#   RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX  - tune limiter for your traffic
+#
+# After deploy, capture a real $0.01 tx in
+# apps/trust-api/docs/known-live-runs.md.
+
+app = "arc-trust-api"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "3030"
+  HOST = "0.0.0.0"
+  NODE_ENV = "production"
+
+[http_service]
+  internal_port = 3030
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/v1/health"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512

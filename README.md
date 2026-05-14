@@ -112,6 +112,7 @@ The 90-day execution plan lives at `/root/.claude/plans/arc-strategic-synthesis-
 
 ## Documentation
 
+- [docs/PHASE_A_RUNBOOK.md](./docs/PHASE_A_RUNBOOK.md) — operator go-live runbook (7 steps, no coding required)
 - [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) — pivot rationale and freeze notice
 - [CLAUDE.md](./CLAUDE.md) — project conventions
 - [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) — security audit findings (carryover from v0.4)

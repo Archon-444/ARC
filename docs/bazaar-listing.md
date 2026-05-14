@@ -91,13 +91,39 @@ endpoints:
     price_usd: 0.05
     network: base-mainnet
     asset: USDC
-    status: not_yet_billable
+    status: live
     description: |
-      Editorial commentary tier. Quote-only in W7 (returns the 402
-      quote so clients see the price), no settlement until the
-      commentary route is real (later week). The quote shape is
-      stable; the live billing flips on once the editorial path
-      ships, with no client changes required.
+      Editorial commentary tier. Live since W10: settles $0.05 and
+      returns Haiku 4.5 commentary (5KB prompt cache + structured
+      JSON output) plus the v1 scoreV1 + free passport context. Falls
+      back to deterministic stub commentary when ARC_ANTHROPIC_API_KEY
+      is unset; in that case the response carries `source: "stub"`
+      with no `degraded` marker. When the editorial path is attempted
+      and fails (Anthropic outage, schema reject), the response
+      surfaces `degraded: true` + `degradedReason: "editorial_generation_failed"`
+      and the W14.6 middleware skips settlement on 4xx/5xx so a
+      malformed request is never billed.
+
+  # Free read endpoints (not paid; complement the paid routes by
+  # giving the agent the on-chain context for the address it just
+  # scored).
+  - method: GET
+    path: /v1/passport/:address
+    price_usd: 0
+    description: |
+      ArcPassport record for an address. Returns real on-chain state
+      when ARC_PASSPORT_ADDRESS + ARC_RPC_URL are set on the host;
+      placeholder body otherwise. Free; no payment header required.
+
+  - method: GET
+    path: /v1/attestations/:subject?schema=<canonical-name>
+    price_usd: 0
+    description: |
+      Attestation rows anchored against AttestationRegistry, optionally
+      filtered by canonical schema name (counsel.kyb.v1, editorial.review.v1,
+      treasury.policy.v1, token.suitability.v1, stablecoin.reserves.v1).
+      503 if the host is unconfigured; 400 on unknown schema names.
+      Free; no payment header required.
 ```
 
 ### MCP integration (recommended)

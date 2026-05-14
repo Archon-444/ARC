@@ -16,6 +16,7 @@
     "check-contracts": "node scripts/check-contracts.js",
     "clean": "hardhat clean",
     "deploy:passport:arc-testnet": "hardhat run scripts/deploy-passport.js --network arcTestnet",
+    "deploy:trust-suite:arc-testnet": "hardhat run scripts/deploy-trust-suite.js --network arcTestnet",
     "deploy:legacy:local": "hardhat run ../legacy-primitives/scripts/deploy.js --network hardhat",
     "deploy:legacy:arc-testnet": "hardhat run ../legacy-primitives/scripts/deploy-arc.js --network arcTestnet",
     "deploy:legacy:arc-mainnet": "hardhat run ../legacy-primitives/scripts/deploy-arc.js --network arcMainnet",
