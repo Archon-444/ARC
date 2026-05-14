@@ -69,7 +69,7 @@ Distribution is through an **MCP server** and a pay-per-call **x402 trust-read A
 
 - Smart contracts (`ArcMarketplace`, `ArcTokenFactory`, `ArcBondingCurveAMM`, `ArcToken`, `FeeVault`, `ProfileRegistry`, `StakingRewards`, `SimpleGovernance`, diamond facets, `MockUSDC`) remain deployed and **frozen**. They are not the product; they are primitives.
 - Circle wallet integration, Arc testnet wiring, RainbowKit, and the existing UI primitive library remain core, not legacy.
-- The risk-scoring heuristic in `frontend/src/lib/risk-scoring.ts` (and its 33-case test suite) is being **extracted, not deleted** — it becomes the v0 scoring engine inside `@arc/trust-core`.
+- The risk-scoring heuristic — extracted from the pre-pivot `frontend/src/lib/risk-scoring.ts` (path now `apps/web/src/lib/risk-scoring.ts` after the W14 codemod) along with its 33-case test suite — was **extracted, not deleted** and lives at `packages/trust-core/src/scoring/v1-heuristic.ts` as the v0 scoring engine.
 
 ## What is frozen
 
@@ -92,9 +92,9 @@ Effective W1, the following are out of scope for new feature work until the trus
 | W8 | `ArcPassport.sol` + `ArcIdentityAdapter.sol` + `IERC8004Identity.sol` on Arc testnet (Identity-first); `@arc/passport-sdk` TS client; atomic deploy + migration scripts ✅ (in tree; testnet deploy is user-fired) |
 | W9 | `ArcReputationAdapter.sol` (single-signer) + `AttestationRegistry.sol` + `@arc/attestations` schemas + sign/verify round-trip ✅ (in tree; testnet deploy is user-fired) |
 | W10 | MENA-mapped schemas (`token.suitability.v1` DFSA-mapped, `stablecoin.reserves.v1` ADGM FRT-mapped) + narrow Validation hook (`IERC8004Validation` + `ArcValidationAdapter` stub) + editorial deep tier ($0.05 Haiku 4.5 with prompt caching) ✅ (in tree; live source flips with `ARC_ANTHROPIC_API_KEY`) |
-| W11 | Public trust surface (`/trust`, `/passport`, `/agents`, `/docs`) live in `frontend/`; legacy 308 redirect + `/legacy` explainer; footer rewritten; eslint boundary rule armed ✅ (mass file move + indexer extraction deferred per `docs/w11-followups.md`) |
+| W11 | Public trust surface (`/trust`, `/passport`, `/agents`, `/docs`) live in `apps/web/` (path-renamed from `frontend/` in W14); legacy 308 redirect + `/legacy` explainer; footer rewritten; eslint boundary rule armed ✅ |
 | W12 | MENA design-partner evidence object (composer + verifier + runbook) + trust-api 10rps load test (baseline captured, SLO-gated) + x402 facilitator security review (13 findings; 0 OPEN) ✅ |
-| Deferred | Mass file move (`frontend` → `apps/web`, `backend` → `apps/indexer`, legacy contracts + marketplace pages → `legacy-primitives/`); scoped in `docs/w11-followups.md` with 8-item acceptance gate. Lands when risk tolerance allows; revenue path does not depend on it. |
+| W14 | W11-deferred codemod executed in three commits: `frontend/` → `apps/web/` (W14.1), 11 legacy `.sol` + 5 tests + 2 deploy scripts → `legacy-primitives/` (W14.2), `backend/` → `apps/indexer/` route-pruned (W14.3, -28 files, -2.5k LOC). Eslint `no-restricted-imports` rule now active by virtue of `legacy-primitives/` existing. ✅ |
 | W8 | `ArcPassport.sol` + identity adapter on Arc testnet (Identity-first) |
 | W9 | Reputation adapter + `AttestationRegistry` + initial schemas |
 | W10 | MENA-mapped schemas (`token.suitability.v1`, `stablecoin.reserves.v1`) + narrow Validation hook + editorial deep tier |

@@ -393,35 +393,43 @@ Brief description of changes
 
 ```
 ARC/
-├── contracts/               # Smart contracts (Solidity, Hardhat)
-│   ├── contracts/
-│   │   ├── ArcMarketplace.sol
-│   │   ├── FeeVault.sol
-│   │   ├── ArcTokenFactory.sol
-│   │   ├── ArcBondingCurveAMM.sol
-│   │   └── ...
+├── contracts/                  # Hardhat workspace (Solidity 0.8.24)
+│   ├── contracts/              # 4 trust-layer subdirs only
+│   │   ├── passport/           # ArcPassport, ArcIdentityAdapter, IERC8004Identity
+│   │   ├── reputation/         # ArcReputationAdapter, IERC8004Reputation
+│   │   ├── attestations/       # AttestationRegistry
+│   │   └── validation/         # ArcValidationAdapter, IERC8004Validation
 │   ├── test/
-│   └── scripts/
+│   └── scripts/                # deploy-passport.js, migrate-profile-registry.js, ...
 │
-├── apps/web/               # Next.js (App Router)
-│   ├── src/
-│   │   ├── app/           # Pages: launch, token/[address], explore, ...
-│   │   ├── components/    # ui/, nft/, token/ (TokenCard, LauncherTokenCard), explore/, home/
-│   │   ├── hooks/         # useTokenFactory, useTokenAMM, useTokenActivity, useSubgraphQueries, ...
-│   │   ├── lib/           # graphql-client, contracts, utils
-│   │   └── services/      # api, websocket (subscribeToToken)
-│   └── e2e/
+├── legacy-primitives/          # W14: quarantined pre-pivot surface
+│   ├── contracts/              # 11 frozen .sol (ArcMarketplace, ArcTokenFactory, ...)
+│   ├── test/                   # 5 legacy Hardhat tests
+│   └── scripts/                # deploy.js, deploy-arc.js (frozen)
 │
-├── backend/                # Express REST + WebSocket
-│   ├── src/               # routes (activity, including token), websocket (token + NFT rooms)
-│   └── TOKEN_ACTIVITY_BROADCAST.md
+├── apps/
+│   ├── web/                    # Next.js 16 (App Router) — trust surface + legacy redirect
+│   │   ├── src/                # app/, components/, hooks/, lib/, services/
+│   │   └── e2e/
+│   ├── trust-api/              # Express + x402 paywall on Base mainnet
+│   ├── mcp-server/             # MCP server (stdio + Streamable HTTP)
+│   └── indexer/                # Express + WS skeleton (W14: moved from backend/, route-pruned)
 │
-├── subgraph/              # The Graph (marketplace + token launcher)
-│   ├── schema.graphql     # LaunchedToken, TokenTrade, TokenGraduation, ...
-│   ├── DEPLOY.md          # Set ArcTokenFactory address before deploy
-│   └── src/               # arc-token-factory.ts, arc-bonding-curve-amm.ts, ...
+├── packages/
+│   ├── trust-core/             # scoring engine + cache (extracted from apps/web)
+│   ├── x402-client/            # facilitator-backed x402 client
+│   ├── passport-sdk/           # TS client for ArcPassport over viem
+│   ├── attestation-reader/     # read-only viem client for AttestationRegistry
+│   └── attestations/           # EIP-712 schemas + sign/verify/validate
 │
-└── *.md                   # README, CLAUDE, SECURITY_AUDIT, DAPPS_ALIGNMENT_REVIEW, etc.
+├── subgraph/                   # The Graph (legacy: marketplace + token launcher, frozen)
+│   ├── schema.graphql
+│   ├── DEPLOY.md
+│   └── src/
+│
+├── skills/use-arc-trust/       # Claude Skill bundle for the trust-read gate
+│
+└── *.md                        # README, CLAUDE, STRATEGIC_PIVOT, SECURITY_AUDIT, ...
 ```
 
 ### Key Directories

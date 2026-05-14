@@ -240,7 +240,7 @@ APPLE_CLIENT_SECRET=your_generated_jwt_token_here
 ### 1. Start the Development Server
 
 ```bash
-cd frontend
+cd apps/web
 npm run dev
 ```
 
@@ -370,7 +370,7 @@ After successful OAuth, the app automatically:
 3. **Stores Session**: Saves user email and wallet address
 4. **Enables Transactions**: User can now buy/sell NFTs
 
-See `frontend/src/components/wallet/SocialLogin.tsx` for implementation details.
+See `apps/web/src/components/wallet/SocialLogin.tsx` for implementation details.
 
 ---
 

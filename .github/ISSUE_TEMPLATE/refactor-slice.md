@@ -26,9 +26,9 @@ Examples: profile, marketplace, collection, nft detail, navigation, launch.
 
 Use the profile refactor as the reference implementation:
 
-- `frontend/src/components/profile/`
-- `frontend/src/hooks/useProfileGateway.ts`
-- `frontend/src/lib/profile.ts`
+- `apps/web/src/components/profile/`
+- `apps/web/src/hooks/useProfileGateway.ts`
+- `apps/web/src/lib/profile.ts`
 - Commit `05461e2`
 
 ## Verification Steps

@@ -124,7 +124,7 @@ jobs:
         if: failure()
         with:
           name: playwright-report
-          path: frontend/playwright-report/
+          path: apps/web/playwright-report/
 ```
 
 ### Visual Regression (`visual-regression.spec.ts`)

@@ -19,7 +19,7 @@ This document defines the single source of truth for the ARC frontend design sys
 
 ## Shared primitives
 
-- **Button**: `frontend/src/components/ui/Button.tsx` – uses `.btn`, `.btn-primary`, `.btn-secondary`, `.btn-outline`, `.btn-ghost`, `.btn-sm`, `.btn-lg` from globals.css. All variants and sizes are defined so the component does not rely on undefined classes.
+- **Button**: `apps/web/src/components/ui/Button.tsx` – uses `.btn`, `.btn-primary`, `.btn-secondary`, `.btn-outline`, `.btn-ghost`, `.btn-sm`, `.btn-lg` from globals.css. All variants and sizes are defined so the component does not rely on undefined classes.
 - **Card**: Uses `.card`, `.card-hover` from globals.css; padding via component prop.
 - **Input**: Uses `.input` from globals.css; error/disabled states use Tailwind semantic colors.
 - **Badge**: Uses Tailwind palette only (primary-, success-, warning-, error-, neutral-, accent-). No globals.css dependency.

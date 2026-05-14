@@ -20,18 +20,18 @@ jobs:
 
       - name: Pull Vercel Environment
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: ./frontend
+        working-directory: ./apps/web
 
       - name: Build
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: ./frontend
+        working-directory: ./apps/web
         env:
           NEXT_PUBLIC_SITE_URL: https://arc.market
           NEXT_PUBLIC_API_URL: ${{ secrets.PRODUCTION_API_URL }}
 
       - name: Deploy
         run: vercel deploy --prod --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: ./frontend
+        working-directory: ./apps/web
 
       - name: Create Release
         uses: softprops/action-gh-release@v1

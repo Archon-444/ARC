@@ -1,5 +1,15 @@
 # MASTER_REFACTOR_PLAN
 
+> **Pre-pivot planning document — superseded.** This plan was written
+> before the strategic pivot to the trust layer (`STRATEGIC_PIVOT.md`,
+> branch `claude/trust-layer-agents-sNcay`). The marketplace-product
+> direction it describes is no longer the active roadmap. All
+> `frontend/` paths it references are now `apps/web/` and all
+> `backend/` paths are `apps/indexer/` (route-pruned per W14). The
+> document is preserved as a historical record of the pre-pivot
+> intent; current planning lives in `STRATEGIC_PIVOT.md` and
+> `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`.
+
 ## North Star
 
 ARC should become a category-leading web3 product platform, not a collection of individually impressive screens. The long-run goal is a system that is visually distinctive, architecturally consistent, operationally reliable, deeply observable, easy to extend, and measurably better than incumbent marketplaces and launch products across speed, clarity, mobile ergonomics, trust, and creator conversion.

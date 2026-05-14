@@ -1,9 +1,19 @@
 # ArcMarket dApps Alignment Review: Code vs Documentation
 
+> **Pre-pivot snapshot — pre-W14 paths.** This audit predates the
+> strategic pivot to the trust layer (`STRATEGIC_PIVOT.md`) and the W14
+> codemod. Every `frontend/` path in this document is now `apps/web/`,
+> every `backend/` path is `apps/indexer/` (with the marketplace
+> routes / Prisma schema / Typesense schema / offer controller / auth
+> middleware pruned), and the 11 legacy `.sol` files now live under
+> `legacy-primitives/contracts/`. The audit is preserved as a
+> historical record of the pre-pivot codebase; do not use it as a
+> source of current paths.
+
 **Date:** February 23, 2026
 **Last sync:** April 16, 2026 — remediation commit `411cb5d` on `claude/assess-pre-launch-status-vilK3`
 **Reviewer:** Claude Code
-**Scope:** Full-stack review of smart contracts, frontend, backend, subgraph, docs
+**Scope:** Full-stack review of smart contracts, frontend, backend, subgraph, docs (all pre-pivot)
 **Overall Alignment Score: ~90%** after `411cb5d` (was ~82% at original review)
 
 ---

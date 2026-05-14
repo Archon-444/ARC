@@ -202,7 +202,7 @@ on the next attempt.
       (`IERC8004Identity`), so no schema migration is required.
 - [ ] `@arc/passport-sdk` consumers: transparently see the new state
       via the Passport contract's ABI. No code change required.
-- [ ] Browser surface (`frontend/src/app/passport/[address]`): no
+- [ ] Browser surface (`apps/web/src/app/passport/[address]`): no
       change.
 
 ## Test recipe

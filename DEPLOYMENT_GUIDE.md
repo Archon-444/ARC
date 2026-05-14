@@ -126,7 +126,7 @@ This will deploy:
 
 The script automatically:
 - ✅ Saves deployment info to `contracts/deployments/`
-- ✅ Updates `frontend/.env.local` with contract addresses
+- ✅ Updates `apps/web/.env.local` with contract addresses
 - ✅ Outputs deployment summary
 
 Check deployment success:
@@ -178,7 +178,7 @@ See `SUBGRAPH_DEPLOYMENT.md` for detailed instructions.
 ### Step 7: Test Frontend
 
 ```bash
-cd frontend
+cd apps/web
 npm run dev
 ```
 
@@ -285,7 +285,7 @@ cat contracts/deployments/arc-testnet-latest.json | grep gasUsed
 ```bash
 # Copy to safe location
 cp contracts/deployments/arc-testnet-latest.json ~/arc-deployment-backup.json
-cp frontend/.env.local ~/arc-frontend-env-backup.txt
+cp apps/web/.env.local ~/arc-frontend-env-backup.txt
 ```
 
 ---

@@ -163,7 +163,7 @@ After successful deployment, update your frontend GraphQL endpoint:
 
 3. **Update Frontend Config**:
    ```typescript
-   // frontend/src/lib/graphql-client.ts
+   // apps/web/src/lib/graphql-client.ts
    const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT ||
      'http://localhost:8000/subgraphs/name/arcmarket/arcmarket';
    ```

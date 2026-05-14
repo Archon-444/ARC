@@ -1,5 +1,15 @@
 # Security Audit Report: ARC NFT Marketplace
 
+> **Pre-pivot snapshot — pre-W14 paths.** This audit predates the
+> strategic pivot to the trust layer (`STRATEGIC_PIVOT.md`) and the W14
+> codemod. Every `frontend/` path resolves to `apps/web/` today; every
+> `backend/` path either resolves to `apps/indexer/` (skeleton only —
+> marketplace routes / Prisma schema / Typesense schema / offer
+> controller / auth middleware have been deleted) or no longer exists
+> in tree. The findings are preserved as the v0.4 record. Trust-layer
+> security is tracked separately in
+> `apps/trust-api/docs/security-review-w12.md`.
+
 **Date:** November 25, 2025
 **Auditor:** Claude Code
 **Version:** 0.4
