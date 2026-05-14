@@ -1,5 +1,17 @@
 {
   "root": true,
-  "$comment": "Boundary rule reserved for W11 when legacy-primitives/ exists. Activates the no-restricted-imports rule banning legacy-primitives/* imports from apps/* and packages/*. Until then this file is a placeholder so workspace-level lint config has a single source of truth.",
-  "rules": {}
+  "$comment": "Workspace-level lint config. The no-restricted-imports rule below activates when legacy-primitives/ exists (W11 mass file move; until then no paths match the patterns so the rule is a no-op). Once the codemod lands, any import of `legacy-primitives/*` from `apps/*` or `packages/*` fails CI.",
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["**/legacy-primitives/**", "legacy-primitives/**"],
+            "message": "Files in legacy-primitives/ are quarantined frozen surfaces. Do not import them from apps/* or packages/* — the trust-layer code is decoupled by design (see STRATEGIC_PIVOT.md). If you need a primitive from a frozen contract, expose it through @arc/passport-sdk or a similar adapter in packages/* and import the adapter instead."
+          }
+        ]
+      }
+    ]
+  }
 }
