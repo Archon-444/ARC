@@ -23,6 +23,26 @@ export interface TrustApiConfig {
   anthropicApiKey?: string;
   /** Deep-tier response cache TTL in ms. Default: 1 hour. */
   deepCacheTtlMs: number;
+
+  /**
+   * On-chain integration (W13). All four are optional; when unset,
+   * GET /v1/passport/:address and GET /v1/attestations/:subject
+   * fall back to placeholder responses so unfunded deployments and
+   * CI keep working.
+   *
+   * When `passportAddress` + `attestationRegistryAddress` + `rpcUrl`
+   * are all set, the passport route consults the deployed
+   * ArcPassport via @arc/passport-sdk and walks the
+   * AttestationRegistry per canonical schema via
+   * @arc/attestation-reader. `ipfsGateway` is consulted only when
+   * a downstream consumer asks the trust-api to dereference an
+   * attestation body for verification; the placeholder route does
+   * not fetch IPFS itself.
+   */
+  passportAddress?: string;
+  attestationRegistryAddress?: string;
+  rpcUrl?: string;
+  ipfsGateway: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): TrustApiConfig {
@@ -46,5 +66,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): TrustApiConfig
     asset: env.ARC_X402_ASSET ?? BASE_MAINNET.usdcAddress,
     anthropicApiKey: env.ARC_ANTHROPIC_API_KEY,
     deepCacheTtlMs,
+    passportAddress: env.ARC_PASSPORT_ADDRESS || undefined,
+    attestationRegistryAddress: env.ARC_ATTESTATION_REGISTRY_ADDRESS || undefined,
+    rpcUrl: env.ARC_RPC_URL || undefined,
+    ipfsGateway: env.ARC_IPFS_GATEWAY ?? 'https://ipfs.io',
   };
 }
