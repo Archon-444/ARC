@@ -6,6 +6,7 @@ import compression from 'compression';
 import { loadConfig, TrustApiConfig } from './config';
 import { healthHandler } from './routes/health';
 import { makePassportHandler } from './routes/passport';
+import { makeAttestationsHandler } from './routes/attestations';
 import { makeTrustRoutes } from './routes/trust';
 import { makeTrustDeepRoutes } from './routes/trust-deep';
 import { requestId } from './middleware/request-id';
@@ -41,6 +42,7 @@ export function createApp(cfg: TrustApiConfig = loadConfig()) {
 
   app.get('/v1/health', healthHandler);
   app.get('/v1/passport/:address', makePassportHandler(cfg));
+  app.get('/v1/attestations/:subject', makeAttestationsHandler(cfg));
 
   const trust = makeTrustRoutes(cfg);
   app.post('/v1/trust/read', paidLimiter(), trust.readPaywall as any, trust.readHandler);

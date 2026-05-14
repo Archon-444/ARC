@@ -79,6 +79,52 @@ async function main(): Promise<void> {
       }
     );
 
+    // W13: /v1/attestations/:subject unconfigured-path smoke. With
+    // ARC_ATTESTATION_REGISTRY_ADDRESS + ARC_RPC_URL unset (default
+    // CI posture), the route returns 503 with a structured body
+    // naming the env vars an operator needs to set.
+    await check(
+      'GET /v1/attestations/:subject (W13 unconfigured)',
+      `${base}/v1/attestations/0x1234567890abcdef1234567890abcdef12345678`,
+      { method: 'GET' },
+      (status, body) => {
+        assert(status === 503, `attestations status ${status}`);
+        assert(body.status === 'unconfigured', 'unconfigured marker');
+        assert(
+          typeof body.reason === 'string' && body.reason.includes('ARC_ATTESTATION_REGISTRY_ADDRESS'),
+          'reason names the env var'
+        );
+      }
+    );
+
+    // W13: invalid subject still 400s ahead of the configuration
+    // check so callers see "bad input" before "service down."
+    await check(
+      'GET /v1/attestations/:subject 400 on bad subject',
+      `${base}/v1/attestations/0xZZ`,
+      { method: 'GET' },
+      (status, body) => {
+        assert(status === 400, `bad-subject status ${status}`);
+        assert(body.error === 'Invalid subject address', 'error field');
+      }
+    );
+
+    // W13: unknown schema name fails fast (still ahead of the
+    // configuration check, because schema validation is cheap).
+    await check(
+      'GET /v1/attestations/:subject?schema=unknown 400',
+      `${base}/v1/attestations/0x1234567890abcdef1234567890abcdef12345678?schema=counsel.unknown.v1`,
+      { method: 'GET' },
+      (status, body) => {
+        assert(status === 400, `unknown-schema status ${status}`);
+        assert(
+          typeof body.error === 'string' && body.error.startsWith('Unknown schema name'),
+          'error names the unknown schema'
+        );
+        assert(Array.isArray(body.known) && body.known.length === 5, 'known list (5 canonical)');
+      }
+    );
+
     console.log('smoke OK');
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
