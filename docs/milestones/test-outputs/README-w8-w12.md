@@ -1,4 +1,4 @@
-# `MILESTONE/test-outputs/` — W5–W7 + W8–W12 evidence
+# `docs/milestones/test-outputs/` — W5–W7 + W8–W12 evidence
 
 Captured stdout/stderr from every consolidation milestone gate. Files
 01–08 belong to the W5–W7 milestone (commit `1eae565`); files 09–20
@@ -37,26 +37,26 @@ From a clean tree:
 ```bash
 git checkout claude/trust-layer-agents-sNcay
 npm install
-mkdir -p MILESTONE/test-outputs
+mkdir -p docs/milestones/test-outputs
 
-npm run check-passport-contracts                          > MILESTONE/test-outputs/09-check-passport-contracts.txt  2>&1
-npm run type-check:passport-sdk                           > MILESTONE/test-outputs/10-type-check-passport-sdk.txt   2>&1
-npm run build:passport-sdk                               >> MILESTONE/test-outputs/10-type-check-passport-sdk.txt   2>&1
-npm run test:passport-sdk                                 > MILESTONE/test-outputs/11-test-passport-sdk.txt         2>&1
+npm run check-passport-contracts                          > docs/milestones/test-outputs/09-check-passport-contracts.txt  2>&1
+npm run type-check:passport-sdk                           > docs/milestones/test-outputs/10-type-check-passport-sdk.txt   2>&1
+npm run build:passport-sdk                               >> docs/milestones/test-outputs/10-type-check-passport-sdk.txt   2>&1
+npm run test:passport-sdk                                 > docs/milestones/test-outputs/11-test-passport-sdk.txt         2>&1
 
-npm run check-trust-contracts                             > MILESTONE/test-outputs/12-check-trust-contracts.txt     2>&1
-npm run type-check:attestations                           > MILESTONE/test-outputs/13-type-check-attestations.txt   2>&1
-npm run build:attestations                               >> MILESTONE/test-outputs/13-type-check-attestations.txt   2>&1
-npm run test:attestations                                 > MILESTONE/test-outputs/14-test-attestations.txt         2>&1
+npm run check-trust-contracts                             > docs/milestones/test-outputs/12-check-trust-contracts.txt     2>&1
+npm run type-check:attestations                           > docs/milestones/test-outputs/13-type-check-attestations.txt   2>&1
+npm run build:attestations                               >> docs/milestones/test-outputs/13-type-check-attestations.txt   2>&1
+npm run test:attestations                                 > docs/milestones/test-outputs/14-test-attestations.txt         2>&1
 
-npm run smoke:trust-api:paid-mock                         > MILESTONE/test-outputs/15-smoke-trust-api-paid-mock.txt 2>&1
-npm run type-check:web                                    > MILESTONE/test-outputs/16-type-check-web.txt            2>&1
+npm run smoke:trust-api:paid-mock                         > docs/milestones/test-outputs/15-smoke-trust-api-paid-mock.txt 2>&1
+npm run type-check:web                                    > docs/milestones/test-outputs/16-type-check-web.txt            2>&1
 
-npm --workspace @arc/attestations run demo:mena -- --out  /home/user/ARC/MILESTONE/test-outputs/17-demo-mena-envelope.json
-node -e 'const e=require("/home/user/ARC/MILESTONE/test-outputs/17-demo-mena-envelope.json"); if(!e.summary.allVerified) throw new Error("envelope verification failed"); console.log("demo-mena OK schemas=" + e.summary.schemasIncluded.join(","))' \
-                                                          > MILESTONE/test-outputs/18-demo-mena-summary.txt         2>&1
-ARC_LOAD_DURATION=10 ARC_LOAD_OUT=/home/user/ARC/MILESTONE/test-outputs/19-smoke-load.json \
-  npm --workspace @arc/trust-api run smoke:load           > MILESTONE/test-outputs/20-smoke-load-stdout.txt         2>&1
+npm --workspace @arc/attestations run demo:mena -- --out  /home/user/ARC/docs/milestones/test-outputs/17-demo-mena-envelope.json
+node -e 'const e=require("/home/user/ARC/docs/milestones/test-outputs/17-demo-mena-envelope.json"); if(!e.summary.allVerified) throw new Error("envelope verification failed"); console.log("demo-mena OK schemas=" + e.summary.schemasIncluded.join(","))' \
+                                                          > docs/milestones/test-outputs/18-demo-mena-summary.txt         2>&1
+ARC_LOAD_DURATION=10 ARC_LOAD_OUT=/home/user/ARC/docs/milestones/test-outputs/19-smoke-load.json \
+  npm --workspace @arc/trust-api run smoke:load           > docs/milestones/test-outputs/20-smoke-load-stdout.txt         2>&1
 ```
 
 All 12 gates must exit 0 (or, for 16, must show no W11-file errors —

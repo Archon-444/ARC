@@ -1,6 +1,6 @@
 # ARC — Trust Layer for Circle-Native Agent Commerce
 
-> **Strategic pivot in progress.** ARC is being repositioned from "NFT marketplace + token launchpad" into the trust, identity, and editorial-verification layer for agent commerce on Circle's Arc blockchain. See [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) for the why and the 90-day plan.
+> **Strategic pivot complete in tree; production activation pending.** ARC was repositioned from "NFT marketplace + token launchpad" into the trust, identity, and editorial-verification layer for agent commerce on Circle's Arc blockchain. The 90-day implementation plan is shipped; remaining steps are operator-fired and listed in [docs/PHASE_A_RUNBOOK.md](./docs/PHASE_A_RUNBOOK.md). See [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) for the why.
 
 ## What ARC is becoming
 
@@ -13,7 +13,7 @@ The independent trust layer Circle Agent Stack and Coinbase x402 Bazaar do not p
 
 ## What ARC was
 
-A full-stack NFT marketplace + token launchpad. The smart contracts (`ArcMarketplace`, `ArcTokenFactory`, `ArcBondingCurveAMM`, `FeeVault`, `ProfileRegistry`, `StakingRewards`, `SimpleGovernance`, diamond facets) remain deployed on Arc testnet and are **preserved as primitives**. They are not the product; they are not the focus of new feature work. See [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) for the freeze scope.
+A full-stack NFT marketplace + token launchpad. The 11 legacy contracts (`ArcMarketplace`, `ArcTokenFactory`, `ArcBondingCurveAMM`, `FeeVault`, `ProfileRegistry`, `StakingRewards`, `SimpleGovernance`, `ArcGovernance`, `ArcToken`, `ArcMarketNFT`, `MockUSDC`) are **preserved as primitives** under [`legacy-primitives/`](./legacy-primitives/). They are not the product, not in active feature work, and the trust-layer Hardhat workspace doesn't compile them. See [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) for the freeze scope.
 
 ## Monorepo layout
 
@@ -43,32 +43,32 @@ ARC/
 ## Quick start
 
 ```bash
-npm install                       # workspace install at repo root
-npm run dev:web                   # apps/web (Next.js public surface)
-npm --workspace @arc/trust-core test
+npm install                                   # workspaces install at repo root
+npm run dev:web                               # apps/web Next.js on :3000
+npm run dev:trust-api                         # @arc/trust-api on :3030 (x402 paywall)
+npm --workspace @arc/mcp-server run dev:http  # @arc/mcp-server Streamable HTTP on :8080
+```
 
-# Trust layer (W3–W7 — landed)
-npm run dev:trust-api             # @arc/trust-api on :3030 (x402 paywall)
-npm run smoke:trust-api           # health + 402 quote shape
-npm run smoke:trust-api:paid-mock # paid round-trip vs mock facilitator
-npm run build:x402-client         # required before mcp-server (CJS dist)
-npm run build:mcp-server          # @arc/mcp-server (stdio + http MCP)
-npm run test:mcp-server           # 3 inspector specs back-to-back:
-                                  #   stdio + http + signing-payer
-npm --workspace @arc/mcp-server run dev:http  # Streamable HTTP on :8080
+```bash
+# Verification
+npm run test:trust-core                              # 33-case scoring suite
+npm run smoke:trust-api                              # health + 402 quote shape
+npm run smoke:trust-api:paid-mock                    # 6-scenario paid round-trip vs mock facilitator
+npm run build:x402-client && npm run test:mcp-server # 3 inspector specs (stdio + http + signing-payer)
+npm run test:passport-sdk                            # 8 SDK unit tests (stubbed RPC)
+npm run test:attestation-reader                      # 6 read-client unit tests (stubbed RPC)
+npm run test:attestations                            # 5 schemas × sign + verify + tamper round-trip
+npm run check-trust-contracts                        # offline compile: 4 contract groups
+npm --workspace @arc/indexer test                    # 3 listener specs (passport / attestation / e2e)
 
-# Passport + Reputation + Attestations + Validation (W8/W9/W10 — landed in tree)
-npm run check-trust-contracts     # offline compile: 4 contract groups
-npm run test:passport-sdk         # 8 SDK unit tests (stubbed RPC)
-npm run test:attestation-reader   # 6 read-client unit tests (stubbed RPC)
-npm run test:attestations         # 5 schemas × sign + verify + tamper round-trip
-# Full Hardhat tests + Arc testnet deploy are user-fired:
-npm --workspace contracts run test:trust-contracts     # 109 specs, needs internet
+# Marquee artifacts
+npm --workspace @arc/attestations run demo:mena      # compose + verify MENA evidence envelope
+npm --workspace @arc/trust-api run smoke:load        # autocannon at 10rps, SLO-gated
+
+# Operator-fired (needs internet / a funded wallet / a deploy target)
+npm --workspace contracts run test:trust-contracts        # 109 Hardhat specs, needs solc download
 npm --workspace contracts run deploy:passport:arc-testnet
-
-# W12 marquee artifacts
-npm --workspace @arc/attestations run demo:mena        # compose + verify MENA evidence envelope
-npm --workspace @arc/trust-api run smoke:load          # autocannon at 10rps, SLO-gated
+npm --workspace contracts run deploy:trust-suite:arc-testnet
 ```
 
 Frontend specifics still apply per [CLAUDE.md](./CLAUDE.md): path alias `@/*` → `apps/web/src/*`, design tokens via `primary-*` / `accent-*` / `error-*`, mobile-first breakpoints, wagmi + viem + RainbowKit, Circle App Kit for wallet integration.
@@ -101,22 +101,34 @@ See [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) for the full freeze scope. Short 
 
 ## Standards posture
 
-- **ERC-8004**: DRAFT. We are aligned via adapter (`packages/erc8004-adapter`, coming W8), staged Identity → Reputation → narrow Validation. We publish a public compatibility matrix. We do not market as "compliant."
+- **ERC-8004**: DRAFT. Aligned via the adapter pattern in `contracts/contracts/passport/` (`IERC8004Identity` + `ArcIdentityAdapter`), `contracts/contracts/reputation/` (`IERC8004Reputation` + `ArcReputationAdapter`), and `contracts/contracts/validation/` (`IERC8004Validation` + `ArcValidationAdapter` stub). Staged Identity → Reputation → narrow Validation. Not marketed as "compliant."
 - **x402**: rely on the public facilitator for V0 settlement on Base mainnet USDC. No custom EIP-3009 path until economics demand it.
 - **MCP**: stdio transport first per the spec recommendation; Streamable HTTP added later.
 - **EIP-712 attestations**: bodies in IPFS/S3, hashes on-chain via `AttestationRegistry`.
 
-## Plan
+## Status
 
-The 90-day execution plan lives at `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`. Weekly milestones, critical files, and verification gates are listed there. Slice status is tracked in [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md#shipped-to-date) — **the 90-day implementation plan is complete in tree (W1–W14 + the W8–W12 consolidation milestone + W13 real-reads slice + the indexer event listeners + the W14.6 paid-route hardening).** Production activation is a separate gate: live Base settlement, Arc testnet contract deploys, hosted MCP, funded signing-payer wallet, Bazaar submission, counsel sign-off on the MENA schemas, and a third-party audit are all still open and user-fired. When `ARC_PASSPORT_ADDRESS` + `ARC_ATTESTATION_REGISTRY_ADDRESS` + `ARC_RPC_URL` are set, `GET /v1/passport/:address` and the new `GET /v1/attestations/:subject` consume the deployed contracts via `@arc/passport-sdk` + `@arc/attestation-reader`; otherwise they fall back to the W8 placeholder / 503-unconfigured. The marquee W12 artifact is the MENA design-partner evidence object (`packages/attestations/scripts/demo-mena.ts` + [`docs/demo-mena.md`](./docs/demo-mena.md)) composing all five attestation schemas into a single verifiable JSON envelope. The trust-api is load-tested at 10rps with the [W12 baseline](./apps/trust-api/docs/load-tests/w12-baseline.json) captured and carries a 13-finding [self-review](./apps/trust-api/docs/security-review-w12.md) (0 OPEN). The one explicit deferral is the W11 codemod (mass file move + indexer extraction), scoped in [`docs/w11-followups.md`](./docs/w11-followups.md).
+**The 90-day implementation plan is complete in tree.** Slice-by-slice detail in [STRATEGIC_PIVOT.md § Shipped to date](./STRATEGIC_PIVOT.md#shipped-to-date); milestone evidence in [docs/milestones/](./docs/milestones/).
+
+What's live in code:
+
+- W1–W14 shipped: trust-api, mcp-server, indexer, contracts (passport / reputation / attestations / validation), five `@arc/*` packages, public trust surface, legacy quarantine.
+- W13 real reads: `GET /v1/passport/:address` and `GET /v1/attestations/:subject` consume real on-chain state via `@arc/passport-sdk` + `@arc/attestation-reader` when `ARC_PASSPORT_ADDRESS` + `ARC_ATTESTATION_REGISTRY_ADDRESS` + `ARC_RPC_URL` are set; otherwise they return the W8 placeholder / 503-unconfigured.
+- W14.6 hardening: paid-route middleware skips settlement on 4xx/5xx (callers not billed for their own bad input or our misconfig); deep-tier surfaces `degraded: true` when editorial generation falls back to the stub.
+- W14.7 operator readiness: trust-api + mcp-server Dockerfiles + fly.toml + DEPLOY.md, AttestationRegistry/Reputation/Validation deploy script, single Phase A runbook.
+
+The marquee evidence artifact is the MENA design-partner JSON envelope (`packages/attestations/scripts/demo-mena.ts` + [`docs/demo-mena.md`](./docs/demo-mena.md)) composing all five attestation schemas. Trust-api is load-tested at 10rps ([W12 baseline](./apps/trust-api/docs/load-tests/w12-baseline.json)) and carries a 13-finding [self-review](./apps/trust-api/docs/security-review-w12.md), 0 OPEN.
+
+**Production activation is a separate gate**, listed step-by-step in [docs/PHASE_A_RUNBOOK.md](./docs/PHASE_A_RUNBOOK.md): live Base settlement, Arc testnet deploys, hosted MCP, funded signing-payer wallet, Bazaar submission, counsel sign-off on the MENA schemas, and an eventual third-party audit. All user-fired.
 
 ## Documentation
 
 - [docs/PHASE_A_RUNBOOK.md](./docs/PHASE_A_RUNBOOK.md) — operator go-live runbook (7 steps, no coding required)
 - [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) — pivot rationale and freeze notice
 - [CLAUDE.md](./CLAUDE.md) — project conventions
-- [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) — security audit findings (carryover from v0.4)
-- [DAPPS_ALIGNMENT_REVIEW.md](./DAPPS_ALIGNMENT_REVIEW.md) — code-vs-documentation audit
+- [apps/trust-api/docs/security-review-w12.md](./apps/trust-api/docs/security-review-w12.md) — 13-finding trust-layer self-review (0 OPEN)
+- [docs/milestones/](./docs/milestones/) — W5–W7 + W8–W12 milestone records (commit ranges, captured test outputs, deferral notices)
+- [docs/archived/pre-pivot/](./docs/archived/pre-pivot/) — pre-pivot marketplace docs (ACCESSIBILITY, TESTING, DEPLOYMENT_GUIDE, OAUTH_SETUP, DAPPS_ALIGNMENT_REVIEW, SECURITY_AUDIT v0.4, MASTER_REFACTOR_PLAN) — preserved as historical record, not active
 - [subgraph/DEPLOY.md](./subgraph/DEPLOY.md) — subgraph deployment notes
 - [legacy-primitives/README.md](./legacy-primitives/README.md) — frozen contracts + tests + deploy scripts (preserved as primitives; not active feature work)
 - [docs/archived/](./docs/archived/) — historical phase docs

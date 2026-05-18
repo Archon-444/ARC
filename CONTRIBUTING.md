@@ -229,7 +229,21 @@ export function Component({ name, optional = false }: ComponentProps) {
 
 ## Testing Guidelines
 
-See [TESTING.md](./TESTING.md) for comprehensive testing guidelines.
+Testing is per-workspace. See each app/package's `package.json` for its `test` script:
+
+```bash
+npm --workspace @arc/trust-core test        # 33-case scoring suite
+npm --workspace @arc/mcp-server test        # 3 inspector specs
+npm --workspace @arc/passport-sdk test      # 8 stubbed-RPC unit tests
+npm --workspace @arc/attestation-reader test
+npm --workspace @arc/attestations test      # 5 schemas × sign/verify/validate
+npm --workspace @arc/indexer test           # 3 listener specs
+npm --workspace @arc/trust-api run smoke    # health + 402 quote shape
+npm --workspace @arc/trust-api run smoke:paid-mock  # 6-scenario paid round-trip
+npm --workspace contracts run test:trust-contracts  # Hardhat, 109 specs
+```
+
+The pre-pivot TESTING.md is archived at [`docs/archived/pre-pivot/TESTING.md`](./docs/archived/pre-pivot/TESTING.md).
 
 ### Quick Reference
 

@@ -1,30 +1,30 @@
-# `MILESTONE/test-outputs/`
+# `docs/milestones/test-outputs/`
 
 Captured stdout+stderr for the W5–W7 consolidation gate. Generated on
 2026-05-13 against branch `claude/trust-layer-agents-sNcay` at HEAD =
 `64f3dfe` (the docs-refresh commit that closes W7 in tree).
 
-The log files are the durable evidence behind [`../../MILESTONE_W5_W7.md`](../../MILESTONE_W5_W7.md);
+The log files are the durable evidence behind [`../W5_W7.md`](../W5_W7.md);
 do not edit them by hand. To regenerate, run the block below from the
 repo root. The session-start hook has already done `npm install`; the
 block assumes a clean working tree.
 
 ```bash
-mkdir -p MILESTONE/test-outputs
+mkdir -p docs/milestones/test-outputs
 
-npm run type-check:trust-core   > MILESTONE/test-outputs/01-type-check-trust-core.txt   2>&1
-npm run type-check:x402-client  > MILESTONE/test-outputs/02-type-check-x402-client.txt  2>&1
-npm run type-check:trust-api    > MILESTONE/test-outputs/03-type-check-trust-api.txt    2>&1
-npm run type-check:mcp-server   > MILESTONE/test-outputs/04-type-check-mcp-server.txt   2>&1
+npm run type-check:trust-core   > docs/milestones/test-outputs/01-type-check-trust-core.txt   2>&1
+npm run type-check:x402-client  > docs/milestones/test-outputs/02-type-check-x402-client.txt  2>&1
+npm run type-check:trust-api    > docs/milestones/test-outputs/03-type-check-trust-api.txt    2>&1
+npm run type-check:mcp-server   > docs/milestones/test-outputs/04-type-check-mcp-server.txt   2>&1
 
-npm --workspace @arc/trust-core test  > MILESTONE/test-outputs/05-test-trust-core.txt           2>&1
-npm run smoke:trust-api               > MILESTONE/test-outputs/06-smoke-trust-api.txt           2>&1
-npm run smoke:trust-api:paid-mock     > MILESTONE/test-outputs/07-smoke-trust-api-paid-mock.txt 2>&1
+npm --workspace @arc/trust-core test  > docs/milestones/test-outputs/05-test-trust-core.txt           2>&1
+npm run smoke:trust-api               > docs/milestones/test-outputs/06-smoke-trust-api.txt           2>&1
+npm run smoke:trust-api:paid-mock     > docs/milestones/test-outputs/07-smoke-trust-api-paid-mock.txt 2>&1
 
 # x402-client dist must exist before mcp-server's compiled dist can load it.
-npm run build:x402-client                 >> MILESTONE/test-outputs/02-type-check-x402-client.txt  2>&1
-npm --workspace @arc/mcp-server run build >> MILESTONE/test-outputs/04-type-check-mcp-server.txt   2>&1
-npm run test:mcp-server                   >  MILESTONE/test-outputs/08-test-mcp-server.txt        2>&1
+npm run build:x402-client                 >> docs/milestones/test-outputs/02-type-check-x402-client.txt  2>&1
+npm --workspace @arc/mcp-server run build >> docs/milestones/test-outputs/04-type-check-mcp-server.txt   2>&1
+npm run test:mcp-server                   >  docs/milestones/test-outputs/08-test-mcp-server.txt        2>&1
 ```
 
 ## Sentinels
