@@ -426,9 +426,12 @@ describe("ArcMarket v0.2 - SimpleGovernance", function () {
 
       await governance.executeProposal(proposalId);
 
+      // After successful execution proposal.status transitions Passed → Executed,
+      // so the first guard in executeProposal trips first. The `Already executed`
+      // require is kept as defense-in-depth in case the status invariant ever loosens.
       await expect(
         governance.executeProposal(proposalId)
-      ).to.be.revertedWith("Already executed");
+      ).to.be.revertedWith("Proposal not passed");
     });
 
     it("Should revert execution from non-owner", async function () {
@@ -699,8 +702,8 @@ describe("ArcMarket v0.2 - SimpleGovernance", function () {
       await governance.connect(user1).createProposal(
         0, // FeaturedCollection
         "Test quorum",
-        nftAddress,
-        0
+        "Description",
+        "0x"
       );
       await governance.connect(user1).vote(0, true);
 
@@ -725,8 +728,8 @@ describe("ArcMarket v0.2 - SimpleGovernance", function () {
       await governance.connect(user1).createProposal(
         0,
         "Quorum met test",
-        nftAddress,
-        0
+        "Description",
+        "0x"
       );
       await governance.connect(user1).vote(0, true);
       await governance.connect(user2).vote(0, true);
@@ -749,8 +752,8 @@ describe("ArcMarket v0.2 - SimpleGovernance", function () {
       await governance.connect(user1).createProposal(
         0,
         "Will be rejected",
-        nftAddress,
-        0
+        "Description",
+        "0x"
       );
       await governance.connect(user1).vote(0, true);
       await governance.connect(user2).vote(0, false);
