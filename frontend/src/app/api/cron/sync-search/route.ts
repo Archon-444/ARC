@@ -204,8 +204,9 @@ export async function GET(request: NextRequest) {
       errors: stats.errors.length > 0 ? stats.errors : undefined,
     });
   } catch (error: any) {
+    console.error('Cron sync-search failed:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
-      { error: 'Sync failed', details: error.message },
+      { error: 'Sync failed', code: 'SYNC_FAILED' },
       { status: 500 },
     );
   }
