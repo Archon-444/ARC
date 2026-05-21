@@ -244,9 +244,8 @@ npm run test:integration
 
 **Remaining:**
 - Redis-backed rate-limit store (env-driven config already shipped)
-- `bigint-buffer` transitive HIGH via `@circle-fin/bridge-kit` — no fix available upstream
+- Residual moderate npm advisories (`undici` via `@firebase/auth`)
 - Structured logging + redaction (SEC-06)
-- SimpleGovernance quorum enforcement (SC-1 in DAPPS_ALIGNMENT_REVIEW.md)
 - WAF/DDoS protection (Production)
 
 ---

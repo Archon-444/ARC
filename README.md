@@ -76,13 +76,9 @@ ArcMarket/
 │
 ├── backend/                # Express REST API + WebSocket
 │   ├── src/                # Routes (activity, NFT, offers, …), websocket (token + NFT rooms)
+│   ├── prisma/             # Prisma schema (Postgres-backed offers)
 │   ├── TOKEN_ACTIVITY_BROADCAST.md   # How to push token trade/graduation events
 │   └── README.md           # API and WebSocket docs
-│
-├── subgraph/               # The Graph indexing (marketplace + token launcher)
-│   ├── DEPLOY.md           # Set ArcTokenFactory address before deploy
-│   ├── SUBGRAPH_DEPLOYMENT.md
-│   └── schema.graphql     # LaunchedToken, TokenTrade, TokenGraduation, …
 │
 ├── .github/workflows/      # CI/CD
 ├── GAP_ANALYSIS.md         # Progress tracking

@@ -265,9 +265,9 @@ undici 6.0.0-6.21.1: Insufficient random values, DoS via bad certificates
 ## Remediation Priority
 
 ### Immediate (Before Production)
-1. **SEC-01**: Fix IDOR in token refresh endpoint — PARTIAL; verify `requireSessionUser` on every `/api/circle/*` route
-2. **SEC-03**: Add ownership verification to wallet endpoints — PARTIAL; full audit pass still needed
-3. **SEC-04**: Remove detailed error exposure — PARTIAL; server-side logging routed through `lib/error-reporting.ts` shim
+1. ~~**SEC-01**: Fix IDOR in token refresh endpoint~~ — FIXED (all `circle/*` routes guarded by `requireSessionUser(expectedUserId)`)
+2. ~~**SEC-03**: Add ownership verification to wallet endpoints~~ — FIXED
+3. ~~**SEC-04**: Remove detailed error exposure~~ — FIXED across `circle/*` and `cron/sync-search`
 
 ### Short-term (Within 2 weeks)
 4. **SEC-05**: Move rate limit store to Redis (env-driven limits already landed in `411cb5d`)
@@ -278,8 +278,10 @@ undici 6.0.0-6.21.1: Insufficient random values, DoS via bad certificates
 7. Add Content-Security-Policy header
 8. Consider smart contract pause mechanism
 
-### Already done (`411cb5d`)
-- **SEC-09**: NFT accept-offer owner spoofing — fixed by on-chain owner verification in `offer.service.ts`
+### Already done
+- **SEC-01 / SEC-03 / SEC-04**: see Immediate section above
+- **SEC-09**: NFT accept-offer owner spoofing — fixed by on-chain owner verification in `offer.service.ts` (`411cb5d`)
+- **SC-1**: SimpleGovernance quorum enforcement — fixed in `ee3510f` with 3 dedicated tests
 
 ---
 

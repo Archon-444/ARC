@@ -42,9 +42,9 @@ ArcMarket has advanced from a "Hollow Shell" to a **Fully Integrated MVP Codebas
 ## 📊 Implementation Status by Component
 
 ### 1. Smart Contracts ✅ **READY**
-- **Contracts:** NFTMarketplace, FeeVault, ProfileRegistry, MockUSDC.
+- **Contracts:** `ArcMarketplace.sol`, `FeeVault.sol`, `ProfileRegistry.sol`, `StakingRewards.sol`, `SimpleGovernance.sol` (quorum enforced — see `contracts/test/SimpleGovernance.test.js` Quorum Enforcement block), `ArcTokenFactory.sol`, `ArcBondingCurveAMM.sol`, `MockUSDC.sol`.
 - **Deployment:** Scripts verified. Local deployment successful.
-- **Fixes:** Patched `ArcMarketNFT.sol` to be compatible with OpenZeppelin 5.x.
+- **Fixes:** Patched `ArcMarketNFT.sol` to be compatible with OpenZeppelin 5.x; `SimpleGovernance.finalizeProposal` now enforces 10% quorum via low-level `totalStaked()` lookup against the staking contract.
 
 ### 2. Frontend Data Layer ✅ **INTEGRATED**
 - **GraphQL:** Client configured. Subgraph manifest updated.
