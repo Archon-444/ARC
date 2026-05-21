@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { asyncHandler, APIError } from '../middleware/error.middleware';
 import { Request, Response } from 'express';
 import * as offerController from '../controllers/offer.controller';
-import * as offerController from '../controllers/offer.controller';
 
 const router = Router();
 
