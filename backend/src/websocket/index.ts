@@ -16,6 +16,14 @@ interface Client {
   id: string;
 }
 
+type ClientMessage = {
+  type?: string;
+  room?: unknown;
+  data?: {
+    room?: unknown;
+  };
+};
+
 const clients: Map<string, Client> = new Map();
 const rooms: Map<string, Set<string>> = new Map(); // roomId -> clientIds
 
@@ -35,22 +43,22 @@ export function setupWebSocket(wss: WebSocketServer) {
     };
 
     clients.set(clientId, client);
+    (ws as any).isAlive = true;
+
+    ws.on('pong', () => {
+      (ws as any).isAlive = true;
+    });
 
     // Parse room from URL path
     // Examples:
     // - /ws/activity/nft/abc123
     // - /ws/activity/collection/xyz789
     // - /ws/offers/nft/abc123
-    const pathParts = path.split('/').filter(Boolean);
+    // - /ws/token/0xabc123
+    const pathRoom = roomFromPathParts(path.split('/').filter(Boolean));
 
-    if (pathParts.length >= 3) {
-      const roomType = pathParts[1]; // 'activity' or 'offers'
-      const entityType = pathParts[2]; // 'nft' or 'collection'
-      const entityId = pathParts[3]; // actual ID
-
-      const roomId = `${entityType}:${entityId}`;
-      joinRoom(clientId, roomId);
-
+    if (pathRoom) {
+      const roomId = joinRoom(clientId, pathRoom);
       console.log(`Client ${clientId} joined room: ${roomId}`);
     }
 
@@ -105,32 +113,34 @@ export function setupWebSocket(wss: WebSocketServer) {
 /**
  * Handle messages from clients
  */
-function handleClientMessage(clientId: string, message: any) {
+function handleClientMessage(clientId: string, message: ClientMessage) {
   const client = clients.get(clientId);
   if (!client) return;
 
   switch (message.type) {
-    case 'subscribe':
-      // Subscribe to a room
-      if (message.room) {
-        joinRoom(clientId, message.room);
+    case 'subscribe': {
+      const room = extractRoom(message);
+      if (room) {
+        const normalizedRoom = joinRoom(clientId, room);
         send(client.ws, {
           type: 'subscribed',
-          room: message.room,
+          room: normalizedRoom,
         });
       }
       break;
+    }
 
-    case 'unsubscribe':
-      // Unsubscribe from a room
-      if (message.room) {
-        leaveRoom(clientId, message.room);
+    case 'unsubscribe': {
+      const room = extractRoom(message);
+      if (room) {
+        const normalizedRoom = leaveRoom(clientId, room);
         send(client.ws, {
           type: 'unsubscribed',
-          room: message.room,
+          room: normalizedRoom,
         });
       }
       break;
+    }
 
     case 'ping':
       // Respond to ping
@@ -140,6 +150,61 @@ function handleClientMessage(clientId: string, message: any) {
     default:
       console.warn(`Unknown message type: ${message.type}`);
   }
+}
+
+function roomFromPathParts(pathParts: string[]): string | null {
+  if (pathParts.length < 2) return null;
+
+  const [, first, second, third] = pathParts;
+
+  if (first === 'token' && second) {
+    return `token:${second}`;
+  }
+
+  if ((first === 'activity' || first === 'offers') && second && third) {
+    return `${second}:${third}`;
+  }
+
+  if ((first === 'user' || first === 'collection' || first === 'nft') && second) {
+    return `${first}:${second}`;
+  }
+
+  return null;
+}
+
+function extractRoom(message: ClientMessage): string | null {
+  const rawRoom = message.room ?? message.data?.room;
+  return typeof rawRoom === 'string' ? rawRoom : null;
+}
+
+function normalizeRoomId(roomId: string): string {
+  const normalizedPathRoom = normalizePathRoom(roomId);
+  return normalizedPathRoom.toLowerCase();
+}
+
+function normalizePathRoom(roomId: string): string {
+  const parts = roomId.split('/').filter(Boolean);
+  if (parts.length === 0) {
+    return roomId;
+  }
+
+  if (parts[0] === 'activity' || parts[0] === 'offers') {
+    const entityType = parts[1];
+    const entityId = parts[2];
+    if (entityType && entityId) {
+      return `${entityType}:${entityId}`;
+    }
+  }
+
+  if (parts[0] === 'token' && parts[1]) {
+    return `token:${parts[1]}`;
+  }
+
+  if ((parts[0] === 'user' || parts[0] === 'collection' || parts[0] === 'nft') && parts[1]) {
+    return `${parts[0]}:${parts[1]}`;
+  }
+
+  return roomId;
 }
 
 /**
@@ -161,57 +226,63 @@ function handleClientDisconnect(clientId: string) {
 /**
  * Join a room
  */
-function joinRoom(clientId: string, roomId: string) {
+function joinRoom(clientId: string, roomId: string): string {
   const client = clients.get(clientId);
-  if (!client) return;
+  const normalizedRoomId = normalizeRoomId(roomId);
+  if (!client) return normalizedRoomId;
 
-  client.rooms.add(roomId);
+  client.rooms.add(normalizedRoomId);
 
-  if (!rooms.has(roomId)) {
-    rooms.set(roomId, new Set());
+  if (!rooms.has(normalizedRoomId)) {
+    rooms.set(normalizedRoomId, new Set());
   }
 
-  rooms.get(roomId)!.add(clientId);
+  rooms.get(normalizedRoomId)!.add(clientId);
+  return normalizedRoomId;
 }
 
 /**
  * Leave a room
  */
-function leaveRoom(clientId: string, roomId: string) {
+function leaveRoom(clientId: string, roomId: string): string {
   const client = clients.get(clientId);
-  if (!client) return;
+  const normalizedRoomId = normalizeRoomId(roomId);
+  if (!client) return normalizedRoomId;
 
-  client.rooms.delete(roomId);
+  client.rooms.delete(normalizedRoomId);
 
-  const room = rooms.get(roomId);
+  const room = rooms.get(normalizedRoomId);
   if (room) {
     room.delete(clientId);
 
     // Clean up empty rooms
     if (room.size === 0) {
-      rooms.delete(roomId);
+      rooms.delete(normalizedRoomId);
     }
   }
+
+  return normalizedRoomId;
 }
 
 /**
  * Broadcast message to all clients in a room
  */
 export function broadcastToRoom(roomId: string, message: any) {
-  const room = rooms.get(roomId);
+  const normalizedRoomId = normalizeRoomId(roomId);
+  const room = rooms.get(normalizedRoomId);
   if (!room) {
-    console.log(`No clients in room: ${roomId}`);
+    console.log(`No clients in room: ${normalizedRoomId}`);
     return;
   }
 
-  console.log(`Broadcasting to room ${roomId} (${room.size} clients)`);
+  console.log(`Broadcasting to room ${normalizedRoomId} (${room.size} clients)`);
 
   room.forEach((clientId) => {
     const client = clients.get(clientId);
     if (client && client.ws.readyState === WebSocket.OPEN) {
       send(client.ws, {
         ...message,
-        room: roomId,
+        room: normalizedRoomId,
         timestamp: Date.now(),
       });
     }
@@ -223,7 +294,7 @@ export function broadcastToRoom(roomId: string, message: any) {
  * Called by POST /v1/activity/token/broadcast when a trade/graduation occurs.
  */
 export function broadcastTokenActivity(tokenAddress: string, data: Record<string, unknown>) {
-  const roomId = `token:${tokenAddress.toLowerCase()}`;
+  const roomId = `token:${tokenAddress}`;
   broadcastToRoom(roomId, { type: 'token_activity', ...data });
 }
 

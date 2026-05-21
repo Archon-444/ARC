@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { use, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { formatUnits, parseEther } from 'viem';
@@ -118,8 +118,14 @@ function normalizeUrl(value?: string) {
   return `https://${value}`;
 }
 
-export default function TokenDetailPage({ params }: { params: { address: string } }) {
-  const routeAddress = params?.address;
+interface PageProps {
+  params: Promise<{
+    address: string;
+  }>;
+}
+
+export default function TokenDetailPage({ params }: PageProps) {
+  const { address: routeAddress } = use(params);
   const [selectedAmount, setSelectedAmount] = useState<number>(250);
   const [tradeIntent, setTradeIntent] = useState<'buy' | 'sell'>('buy');
   const [tradeStatus, setTradeStatus] = useState<string | null>(null);

@@ -6,7 +6,7 @@ import { BigInt, log } from "@graphprotocol/graph-ts";
 import { TokenCreated } from "../generated/ArcTokenFactory/ArcTokenFactory";
 import { ArcBondingCurveAMM } from "../generated/templates";
 import { LaunchedToken, TokenLauncherStats, AmmTokenLookup } from "../generated/schema";
-import { ZERO_BI, ONE_BI } from "./helpers", ZERO_ADDRESS } from "./helpers";
+import { ZERO_BI, ONE_BI, ZERO_ADDRESS } from "./helpers";
 
 /**
  * Get or create TokenLauncherStats singleton

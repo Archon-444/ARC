@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { asyncHandler, APIError } from '../middleware/error.middleware';
 import { Request, Response } from 'express';
+import * as offerController from '../controllers/offer.controller';
+import * as offerController from '../controllers/offer.controller';
 
 const router = Router();
 
@@ -26,6 +28,12 @@ const mockNFT = {
   price: '100',
   listingId: 'listing-1',
 };
+
+/**
+ * GET /v1/nft/:id/offers
+ * Get all offers for an NFT
+ */
+router.get('/:id/offers', asyncHandler(offerController.getOffersByNFT));
 
 /**
  * GET /v1/nft/:id
