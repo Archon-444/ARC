@@ -43,6 +43,14 @@ jobs:
         working-directory: ./apps/web
         run: npm run lint
 
+      - name: Boundary rule (legacy-primitives quarantine) — must fail-lint on fixture
+        # Runs from repo root; cd's into apps/web and asserts the
+        # synthetic-violation fixture fails the lint. If this step
+        # passes when it should fail, the eslint no-restricted-imports
+        # rule has drifted and the trust-layer / legacy-primitives
+        # quarantine is unenforced. See docs/ci-boundary-rule.md.
+        run: npm run lint:boundary-fixture
+
       - name: Type Check
         working-directory: ./apps/web
         run: npm run type-check

@@ -39,6 +39,7 @@
     "test:attestation-reader": "npm --workspace @arc/attestation-reader test",
     "check-passport-contracts": "npm --workspace contracts run check-passport",
     "check-trust-contracts": "npm --workspace contracts run check-contracts",
-    "test:packages": "npm --workspaces --if-present test"
+    "test:packages": "npm --workspaces --if-present test",
+    "lint:boundary-fixture": "cd apps/web && ! npx eslint __lint_fixture__/should-fail.ts"
   }
 }

@@ -27,6 +27,19 @@ export default [
       'react-hooks/exhaustive-deps': 'warn',
       'react-hooks/rules-of-hooks': 'error',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
+      // W11.3 / W16.3 boundary rule: legacy-primitives/ is the
+      // quarantined pre-pivot surface. Trust-layer code in apps/* and
+      // packages/* must not import from it. Verified by the
+      // `lint:boundary-fixture` root script, which runs eslint
+      // against apps/web/__lint_fixture__/should-fail.ts and asserts
+      // a non-zero exit. CI runs the same assertion in the lint job.
+      // See docs/ci-boundary-rule.md.
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['**/legacy-primitives/**', 'legacy-primitives/**'],
+          message: 'legacy-primitives/ is quarantined frozen surface. Do not import from apps/* or packages/*. If you need a primitive, expose it through an @arc/* adapter and import the adapter. See STRATEGIC_PIVOT.md and legacy-primitives/README.md.',
+        }],
+      }],
     },
     settings: {
       react: {
