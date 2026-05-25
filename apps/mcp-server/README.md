@@ -123,3 +123,16 @@ the same image runs on Render, Railway, Fargate, Cloud Run, etc.
   Arc testnet.
 - **Later:** `arc_trust_read_deep` ($0.05) once editorial commentary
   ships. Multi-chain payer once Arc mainnet revenue is real.
+
+## Known deployments
+
+| Environment | URL | First deploy | Operator notes |
+|---|---|---|---|
+| _pending W16_ | `https://arc-mcp-server.fly.dev/mcp` (placeholder) | _pending_ | First Fly deploy. After `fly deploy --config apps/mcp-server/fly.toml`, overwrite the `_pending_` cells with the actual URL the Fly app received and the UTC date of the first deploy. Capture `curl <url>/health` returning 200 in the operator notes column. |
+
+How to add a row:
+
+1. Run the Fly deploy per [`DEPLOY.md`](./DEPLOY.md).
+2. Smoke: `curl https://<host>/health` → 200; `npx @modelcontextprotocol/inspector https://<host>/mcp` → lists `arc_trust_read`, `arc_search`, `arc_passport_get`.
+3. Overwrite the row above with the live URL + UTC date + any notable operator notes (signing-payer mode on/off, region, auth posture).
+4. Cross-reference: pin the URL in the root [`README.md`](../../README.md) "Status" section.

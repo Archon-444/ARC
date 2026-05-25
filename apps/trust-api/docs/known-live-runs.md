@@ -38,7 +38,7 @@ different facilitator, would settle again.
 | Date (UTC) | Network | Payer | Pay-to | Amount | Tx hash | trust-api commit | Notes |
 |---|---|---|---|---|---|---|---|
 | 2026-05-13 | base-mainnet | _deferred_ | _deferred_ | `$0.01` | _deferred_ | `64f3dfe` (W7 docs tip) | **Deferred for the W5–W7 milestone gate.** No funded Base mainnet wallet wired into the dev environment for this milestone. `smoke:paid-mock` (W5) + structural paid inspector test (W7.2) stand in as the verification surface; live `smoke:paid-live` will be fired before W8 closes. See [`docs/milestones/W5_W7.md`](../../../docs/milestones/W5_W7.md). |
-| _pending_ | base-mainnet | `0x…` | `0x…` | `$0.01` | `0x…` | `14a2018` (W5 spine) | First post-W5 live run; capture latency p50/p95. Will replace the deferral row above. |
+| _pending_ | base-mainnet | `0x…` | `0x…` | `$0.01` | `0x…` | `32b8de0` (W16.1 strategic positioning) | **W16 acceptance item 1** — first real Base mainnet settlement against the hosted trust-api. Run from a funded host: `RUN_LIVE=1 ARC_TEST_PRIVATE_KEY=… ARC_PAYTO=… ARC_TRUST_API_URL=<hosted-fly-url> npm --workspace @arc/trust-api run smoke:paid-live`. Overwrite the `0x…` cells with the actual payer, pay-to, and tx hash returned in the decoded `X-Payment-Response`. |
 
 ## Status
 

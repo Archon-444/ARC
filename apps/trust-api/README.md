@@ -117,3 +117,16 @@ The W4 acceptance gate ("real USDC settles on Base mainnet via the live facilita
 - `src/routes/{health,passport,trust,trust-deep}.ts` — route handlers. `trust-deep` is the W5 `quoteOnly: true` placeholder; see [`docs/known-live-runs.md`](docs/known-live-runs.md) for live-settlement evidence on the $0.01 tier.
 - `src/sources/heuristic.ts` — V0 stub data source. Replace at W8 with `@arc/passport-sdk` reads and `@arc/attestations` lookups.
 - Paywall: `@arc/x402-client/requirePayment` — synchronous settle (verify → wrap `res.json` → handler → settle → respond) with a configurable `settleTimeoutMs` (default 30s) and a `quoteOnly` placeholder mode. JSON responses only; streaming/SSE/file downloads are out of scope for W5.
+
+## Known deployments
+
+| Environment | URL | First deploy | Operator notes |
+|---|---|---|---|
+| _pending W16_ | `https://arc-trust-api.fly.dev` (placeholder) | _pending_ | First Fly deploy. After `fly deploy --config apps/trust-api/fly.toml`, overwrite the `_pending_` cells with the actual URL and UTC date. Capture `curl <url>/v1/health` returning 200 + the 402 quote shape against `/v1/trust/read` in the operator notes column. |
+
+How to add a row:
+
+1. Run the Fly deploy per [`DEPLOY.md`](./DEPLOY.md).
+2. Smoke: `curl https://<host>/v1/health` → 200; `curl -i -X POST https://<host>/v1/trust/read -H 'content-type: application/json' -d '{"target":"0x0000000000000000000000000000000000000001"}'` → 402 with the expected `accepts[]` quote.
+3. Overwrite the row above with the live URL + UTC date + any operator notes (Arc-RPC configured? Anthropic key? load-test p99?).
+4. Cross-reference: pin the URL in the root [`README.md`](../../README.md) "Status" section + capture the first live $0.01 settlement in [`docs/known-live-runs.md`](./docs/known-live-runs.md).

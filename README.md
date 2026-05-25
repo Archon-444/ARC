@@ -114,6 +114,10 @@ See [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) for the full freeze scope. Short 
 
 ## Status
 
+**Hosted MCP**: _pending W16 deploy — operator-fired_ (will land at `https://arc-mcp-server.fly.dev/mcp`; recipe in [`apps/mcp-server/DEPLOY.md`](./apps/mcp-server/DEPLOY.md)). See [`apps/mcp-server/README.md` § Known deployments](./apps/mcp-server/README.md#known-deployments) for the post-deploy URL pin.
+
+**Hosted trust-api**: _pending W16 deploy — operator-fired_ (will land at `https://arc-trust-api.fly.dev`; recipe in [`apps/trust-api/DEPLOY.md`](./apps/trust-api/DEPLOY.md)). See [`apps/trust-api/README.md` § Known deployments](./apps/trust-api/README.md#known-deployments) for the post-deploy URL pin.
+
 **The 90-day implementation plan is complete in tree.** Slice-by-slice detail in [STRATEGIC_PIVOT.md § Shipped to date](./STRATEGIC_PIVOT.md#shipped-to-date); milestone evidence in [docs/milestones/](./docs/milestones/).
 
 What's live in code:
