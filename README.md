@@ -1,10 +1,16 @@
 # ARC — Trust Layer for Circle-Native Agent Commerce
 
-> **Strategic pivot complete in tree; production activation pending.** ARC was repositioned from "NFT marketplace + token launchpad" into the trust, identity, and editorial-verification layer for agent commerce on Circle's Arc blockchain. The 90-day implementation plan is shipped; remaining steps are operator-fired and listed in [docs/PHASE_A_RUNBOOK.md](./docs/PHASE_A_RUNBOOK.md). See [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) for the why.
+> ARC's trust, identity, and editorial-verification layer ships as rail-agnostic infrastructure for agent commerce — because in a world where no human is at the keyboard at decision time, the rail wars are not where value accrues; the editorial layer is.
+
+> **Strategic pivot complete in tree; production activation pending.** ARC was repositioned from "NFT marketplace + token launchpad" into the trust, identity, and editorial-verification layer for agent commerce. The 90-day implementation plan is shipped; remaining steps are operator-fired and listed in [docs/PHASE_A_RUNBOOK.md](./docs/PHASE_A_RUNBOOK.md). See [STRATEGIC_PIVOT.md](./STRATEGIC_PIVOT.md) for the why and [docs/strategic-environment.md](./docs/strategic-environment.md) for the rail-competition / acquirer-landscape framing.
 
 ## What ARC is becoming
 
-The independent trust layer Circle Agent Stack and Coinbase x402 Bazaar do not provide:
+> "No human decision point exists between resource request and payment execution." — Forrester
+
+That sentence is the trust-attestation thesis in one line. Somebody has to do the KYC, scoring, and editorial verification a human would have done — in advance, by infrastructure. That somebody is the editorial trust layer. ARC ships it as rail-agnostic infrastructure: paid trust reads settle in USDC on Base mainnet via x402 today; Mastercard Payment Protocol is staged as a recognised first-class rail in the same `accepts[]` quote; new rails are a config flag, not a redesign.
+
+The independent trust layer Circle Agent Stack, Coinbase x402 Bazaar, and the rail providers do not provide:
 
 - **`@arc/mcp-server`** — an MCP server that exposes `arc_trust_read`, `arc_search`, and `arc_passport_get` so any Claude / Codex / Cursor / Bazaar-aware agent can look up agent and counterparty trust before transacting.
 - **`@arc/trust-api`** — a pay-per-call x402 trust-read API priced at $0.01 / $0.05 per call, settled in USDC on Base mainnet via the public x402 facilitator. Decouples revenue from Arc mainnet timing.

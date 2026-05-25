@@ -1,5 +1,22 @@
 # Strategic Pivot — ARC Trust Layer
 
+> ARC's trust, identity, and editorial-verification layer ships as rail-agnostic infrastructure for agent commerce — because in a world where no human is at the keyboard at decision time, the rail wars are not where value accrues; the editorial layer is.
+
+## Strategic environment
+
+> "No human decision point exists between resource request and payment execution." — Forrester
+
+That sentence is the trust-attestation thesis in one line. Agent commerce moves money before any human reviews the counterparty, so the work a human would have done — KYC the counterparty, score the contract, verify the operator — has to be done somewhere else, in advance, by infrastructure. That somewhere is the editorial trust layer. ARC ships that layer.
+
+**Rail competition (ARC stays neutral).** Two agent-payment rails are now in active competition: Coinbase / Circle's x402 (settled on Base mainnet USDC) and Mastercard's MPP (announced after the $1.8B BVNK acquisition). ARC is rail-agnostic by design — the rail is not where value accrues for the editorial layer; the editorial layer is the asset. The trust-api ships paid settlement on x402 today and stages MPP as a recognised first-class rail in the same `accepts[]` quote ([W17.1](#w17--forward-pointing-scope-sliding-from-previous-w15--new-punch-list-items) follow-up).
+
+**Acquirer landscape.** Three buckets are buying agent-commerce infrastructure in 2025–26:
+- *Stablecoin-native*: Circle (Arc + USDC + agent stack), Coinbase (x402 + Bazaar).
+- *Card-native*: Mastercard (post BVNK), Visa, PayPal.
+- *Agent-native*: Anthropic (MCP host), Stripe (post Privy + Bridge — payments + wallets + protocol; one announcement from a discovery layer).
+
+The hosted offering, the editorial layer, and the schema layer all need to read as institutional acquirable infrastructure — not as a one-person app. The codebase is structured accordingly: open-source contracts + `@arc/*` schema packages; closed hosted offering; portable evidence envelopes ([data portability commitment is W17.3](#w17--forward-pointing-scope-sliding-from-previous-w15--new-punch-list-items)).
+
 **Effective:** branch `claude/trust-layer-agents-sNcay`
 **Status:** W14 — the W11-deferred codemod has landed in three commits. (W14.1) `git mv frontend apps/web`, root workspaces cleaned up, CLAUDE.md + CONTRIBUTING.md + README.md repathed. (W14.2) Eleven legacy `.sol` contracts + five Hardhat tests + two deploy scripts moved to `legacy-primitives/contracts/`, `legacy-primitives/test/`, `legacy-primitives/scripts/`; `contracts/contracts/` now holds exactly four trust-layer subdirs (passport / reputation / attestations / validation); `contracts/package.json` deploy scripts renamed to `deploy:legacy:*`; `legacy-primitives/README.md` documents the quarantine. (W14.3) `git mv backend apps/indexer`, pruned the seven marketplace routes + both services + offer controller + Prisma marketplace schema + Typesense schema + auth middleware + `broadcastTokenActivity()` — kept the express + helmet + cors + rate-limit + ws skeleton + APIError + JSON logger + Sentry shim; `package.json` is now `@arc/indexer` with marketplace deps dropped (no @prisma/client, redis, ioredis, ethers, joi, jwt, bcryptjs, uuid, ts-jest). Net: -2.5k LOC of legacy surface. The eslint `no-restricted-imports` rule armed in W11.3 is now active by virtue of `legacy-primitives/` existing on disk. Pre-W14 status preserved: W13 trust-api → real on-chain reads, W8-W12 consolidation + four hardening items, W12 marquee artifacts.
 **Plan:** `/root/.claude/plans/arc-strategic-synthesis-shimmying-cook.md`
