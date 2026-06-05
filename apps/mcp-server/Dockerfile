@@ -20,7 +20,11 @@ COPY packages/x402-client/package.json packages/x402-client/
 COPY packages/trust-core/package.json packages/trust-core/
 COPY apps/mcp-server/package.json apps/mcp-server/
 
-RUN npm ci --workspaces --include-workspace-root
+# --ignore-scripts skips the root `postinstall` (which runs
+# `build:packages` for the dev workflow) — workspace sources are not
+# yet COPY'd into the image at this point, so postinstall would fail.
+# The explicit RUN block below does the equivalent builds.
+RUN npm ci --workspaces --include-workspace-root --ignore-scripts
 
 # Now bring in source and build the two workspaces we need.
 COPY packages/x402-client packages/x402-client

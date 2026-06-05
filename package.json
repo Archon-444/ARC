@@ -40,6 +40,8 @@
     "check-passport-contracts": "npm --workspace contracts run check-passport",
     "check-trust-contracts": "npm --workspace contracts run check-contracts",
     "test:packages": "npm --workspaces --if-present test",
-    "lint:boundary-fixture": "cd apps/web && ! npx eslint __lint_fixture__/should-fail.ts"
+    "lint:boundary-fixture": "cd apps/web && ! npx eslint __lint_fixture__/should-fail.ts",
+    "build:packages": "npm --workspace @arc/trust-core run build && npm --workspace @arc/x402-client run build && npm --workspace @arc/passport-sdk run build && npm --workspace @arc/attestation-reader run build",
+    "postinstall": "npm run build:packages --if-present"
   }
 }

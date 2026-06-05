@@ -3,23 +3,25 @@
   "version": "0.0.1",
   "private": true,
   "description": "ARC trust scoring engine and cache helpers. Pure functions consumable by the frontend, the trust-api, and the MCP server.",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./scoring/v1-heuristic": {
-      "types": "./src/scoring/v1-heuristic.ts",
-      "default": "./src/scoring/v1-heuristic.ts"
+      "types": "./dist/scoring/v1-heuristic.d.ts",
+      "default": "./dist/scoring/v1-heuristic.js"
     },
     "./cache": {
-      "types": "./src/cache.ts",
-      "default": "./src/cache.ts"
+      "types": "./dist/cache.d.ts",
+      "default": "./dist/cache.js"
     }
   },
+  "files": ["dist"],
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "test": "jest",
     "type-check": "tsc --noEmit"
   },

@@ -32,12 +32,14 @@ Monorepo, npm workspaces. Top-level layout (post-W14):
 
 ```bash
 # Repo root
-npm install                       # workspaces install
+npm install                       # workspaces install (postinstall runs build:packages)
 npm run dev:web                   # apps/web (Next.js)
 npm run dev:trust-api             # apps/trust-api on :3030
 npm run dev:mcp-server            # apps/mcp-server (stdio)
 npm --workspace @arc/mcp-server run dev:http  # Streamable HTTP on :8080
 ```
+
+`npm install`'s `postinstall` hook builds the four runtime `@arc/*` packages (`trust-core`, `x402-client`, `passport-sdk`, `attestation-reader`) so Next.js and the trust-api can resolve them. To rebuild after editing a package, run `npm run build:packages` from the root, or the per-package `build:<name>` script. Docker builds skip postinstall via `--ignore-scripts` and rebuild explicitly in the build stage.
 
 ## Frontend Commands (apps/web)
 

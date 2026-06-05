@@ -19,7 +19,12 @@ COPY packages/passport-sdk/package.json packages/passport-sdk/
 COPY packages/attestation-reader/package.json packages/attestation-reader/
 COPY apps/trust-api/package.json apps/trust-api/
 
-RUN npm ci --workspaces --include-workspace-root
+# --ignore-scripts skips the root `postinstall` (which runs
+# `build:packages` for the dev workflow) — workspace sources are not
+# yet COPY'd into the image at this point, so postinstall would fail.
+# The explicit RUN block below does the equivalent builds in
+# dep-safe order with sources present.
+RUN npm ci --workspaces --include-workspace-root --ignore-scripts
 
 # Source — only the workspaces trust-api needs.
 COPY packages/trust-core packages/trust-core
@@ -28,8 +33,13 @@ COPY packages/passport-sdk packages/passport-sdk
 COPY packages/attestation-reader packages/attestation-reader
 COPY apps/trust-api apps/trust-api
 
-# x402-client must build first — trust-api consumes its CJS dist.
-RUN npm --workspace @arc/x402-client run build \
+# Workspace dep builds must precede trust-api — Node resolves @arc/*
+# package mains at runtime, so each needs its CJS dist on disk. Order
+# does not strictly matter within the four packages (none of them
+# depend on each other), but trust-core first matches dep-graph
+# convention and keeps the failure point obvious if a build breaks.
+RUN npm --workspace @arc/trust-core run build \
+ && npm --workspace @arc/x402-client run build \
  && npm --workspace @arc/passport-sdk run build \
  && npm --workspace @arc/attestation-reader run build \
  && npm --workspace @arc/trust-api run build
