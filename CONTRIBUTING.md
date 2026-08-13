@@ -421,7 +421,7 @@ ARC/
 │   ├── DEPLOY.md          # Set ArcTokenFactory address before deploy
 │   └── src/               # arc-token-factory.ts, arc-bonding-curve-amm.ts, ...
 │
-└── *.md                   # README, CLAUDE, GAP_ANALYSIS, SECURITY_AUDIT, etc.
+└── PRODUCT.md             # Canonical product direction (wins over UI copy)
 ```
 
 ### Key Directories

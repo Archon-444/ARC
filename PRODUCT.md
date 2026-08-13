@@ -42,7 +42,14 @@ Home and Explore are a **board of coins**. Stats, rewards, studio, and “shell 
 1. **Creator paycheck (this change)** — split the existing 2.5% fee; withdraw on the token page. Shipped.
 2. **Leftover 20% supply** — burn, or keep a post-grad market. Do not leave it unexplained in the AMM.
 3. **Wrong-network banner + human contract errors** — first-session failures.
-4. **Park NFT in the shell** — nav/home default to tokens; studio labeled demo until it writes chain. Started (nav/home/explore). Studio mint is still a simulated demo.
+4. **Park NFT in the shell** — nav/home default to tokens; studio/stats/rewards labeled parked/demo. Shipped for shell; studio mint is still simulated.
 5. **Ten names** — distribution is a workstream. Code does not invent a room.
 
 If the UI and this file disagree, this file wins until we change it on purpose.
+
+## Track
+
+| Track | Status |
+|---|---|
+| **Launcher (good)** | Live: `PRODUCT.md`, launch → token page → explore tokens, creator paycheck on-chain |
+| **Unconstant (archived)** | OpenSea parity + connected-shell unification. Historical only: `archive/unconstant-product/` |

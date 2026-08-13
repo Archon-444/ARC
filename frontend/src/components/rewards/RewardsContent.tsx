@@ -79,31 +79,31 @@ export default function RewardsContent() {
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6 lg:py-10">
         <div className="mb-8 grid gap-6 rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:grid-cols-[1.1fr_0.9fr] lg:p-8">
           <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
               <Trophy className="h-3.5 w-3.5" />
-              ARC rewards
+              Parked
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-5xl">
-              Progress through loyalty, quests, and wallet-linked status in one ARC rewards surface.
+              Rewards is not the product.
             </h1>
             <p className="mt-4 max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
-              Rewards now behaves more like the connected shell, using live wallet activity where available and keeping continuity into profile, studio, analytics, token markets, and launch routes.
+              XP and quests stay in the repo. Creators get paid on the token page, not here.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
-                href="/explore"
+                href="/launch"
                 className="inline-flex items-center gap-2 rounded-2xl bg-primary-500 px-6 py-3 font-semibold text-white transition hover:bg-primary-600"
               >
-                <Search className="h-4 w-4" />
-                Explore markets
+                <Rocket className="h-4 w-4" />
+                Launch a token
               </Link>
               <Link
                 href="/explore?tab=tokens"
                 className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white"
               >
-                <Wallet className="h-4 w-4" />
-                Token markets
+                <Search className="h-4 w-4" />
+                Explore tokens
               </Link>
             </div>
           </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, Flame, Folder, Users, Sparkles, X, Compass, Rocket, BarChart3 } from 'lucide-react';
+import { Search, Flame, Folder, Users, Sparkles, X, Compass, Rocket } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCommandPalette } from '@/hooks/useCommandPalette';
@@ -25,24 +25,17 @@ const quickActions: CommandPaletteItem[] = [
     category: 'routes',
   },
   {
-    title: 'Explore token markets',
-    subtitle: 'Browse launched token markets on ARC',
-    href: '/explore?tab=tokens',
-    icon: <Search className="h-4 w-4" />,
-    category: 'routes',
-  },
-  {
     title: 'Launch a token',
-    subtitle: 'Open the ARC launch flow',
+    subtitle: 'Name, ticker, image. Earn on every trade.',
     href: '/launch',
     icon: <Rocket className="h-4 w-4" />,
     category: 'routes',
   },
   {
-    title: 'Open stats',
-    subtitle: 'Review ARC analytics and market activity',
-    href: '/stats',
-    icon: <BarChart3 className="h-4 w-4" />,
+    title: 'Explore tokens',
+    subtitle: 'Board of live curves',
+    href: '/explore?tab=tokens',
+    icon: <Search className="h-4 w-4" />,
     category: 'routes',
   },
 ];

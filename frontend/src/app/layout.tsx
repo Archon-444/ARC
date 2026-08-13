@@ -24,12 +24,12 @@ export default function RootLayout({
         <meta name="theme-color" content="#6366f1" />
         <meta
           name="description"
-          content="ARC brings marketplace discovery, token launches, stats, rewards, and live token-market activity into one wallet-native platform."
+          content="ARC is a USDC token launcher. Creators earn on every trade. Traders buy a live curve."
         />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
-        <title>ARC | Connected Marketplace, Launchpad, and Token Discovery</title>
+        <title>ARC | USDC token launcher</title>
       </head>
       <body>
         <div

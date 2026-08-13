@@ -1,21 +1,22 @@
-# ARC — NFT Marketplace + Token Launchpad on Arc Blockchain
+# ARC — USDC token launcher on Circle Arc
 
-A full-stack marketplace and **token launcher** on Circle's Arc blockchain: USDC for gas and payments, sub-second finality, and a launcher-first loop (launch → token page → discovery).
+**Creators earn on every trade. Traders buy a live curve. Unsold supply cannot be yanked.**
 
-## Version 0.4 — Core + Token Launcher
+Launch a coin, share the link, trade the bonding curve. NFT studio, listings, and auctions stay in the repo as a library — they are not the product. Canonical direction: [PRODUCT.md](./PRODUCT.md). Old OpenSea/shell docs: [archive/unconstant-product/](./archive/unconstant-product/).
 
-**Current Status:** Core marketplace and token launcher flows implemented. Security remediation and production infra in progress.
+## Version 0.5 — Launcher
+
+**Current Status:** Launcher ritual (launch → share → trade) plus creator paycheck on every trade. Security grill in `KASPUMP_GRILL.md`.
 
 ### Completed
 
-- **Marketplace**: Listings, auctions, collections, NFT detail pages, search, filtering
 - **Token launcher**: Short launch flow (name, ticker, image, socials; bonding curve behind “Advanced”), success → Open token market / Copy address / Share link / Launch another
-- **Token page**: Market-first layout — identity, price, graduation progress, recent trades, one buy CTA; copy contract/share and socials in hero; Connected routes, Distribution, Community in collapsible Details
-- **Token discovery**: First-class in Explore (New, Trending, Recent activity, Nearing graduation, Graduated) with launcher-native cards; Home “Explore tokens” CTA
-- **Realtime**: Backend token WebSocket room (`token:<address>`), `GET /v1/activity/token/:address`, `POST /v1/activity/token/broadcast`; frontend `useTokenActivity` and `subscribeToToken`
-- **Trust layer**: Footer Legal & company; compliance line; trust in footer/collapsible, not in main loop
+- **Creator paycheck**: Half of the 2.5% trade fee accrues to the creator; collect on the token page
+- **Token page**: Identity, price, graduation, recent trades, buy/sell
+- **Token discovery**: Explore defaults to tokens; Home is a board of coins
+- **Realtime**: Backend token WebSocket room (`token:<address>`), `GET /v1/activity/token/:address`
 
-See [GAP_ANALYSIS.md](./GAP_ANALYSIS.md) for progress and [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) for security findings.
+See [PRODUCT.md](./PRODUCT.md) for what we build next and [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) / [KASPUMP_GRILL.md](./KASPUMP_GRILL.md) for security.
 
 ## Features
 
@@ -85,7 +86,8 @@ ArcMarket/
 │   └── schema.graphql     # LaunchedToken, TokenTrade, TokenGraduation, …
 │
 ├── .github/workflows/      # CI/CD
-├── GAP_ANALYSIS.md         # Progress tracking
+├── PRODUCT.md              # Canonical product direction
+├── archive/unconstant-product/  # Old OpenSea/shell docs (not a roadmap)
 └── SECURITY_AUDIT.md       # Security findings
 ```
 
@@ -256,16 +258,19 @@ See [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) for the full security audit report.
 - [ ] Production deployment configuration
 - [ ] Beta launch
 
-### v0.5 - Advanced Features
-- Lazy minting for creators
-- Offer system for unlisted NFTs
-- Bulk operations (batch listing/buying)
-- Analytics dashboard
+### Next (see PRODUCT.md)
+
+- Leftover 20% supply at graduation (burn or post-grad market)
+- Wrong-network banner + human contract errors
+- Studio stays demo until it writes chain
+- Ten named launchers — distribution, not more rooms
 
 ## Documentation
 
-- [GAP_ANALYSIS.md](./GAP_ANALYSIS.md) — Progress tracking and roadmap
+- [PRODUCT.md](./PRODUCT.md) — What ARC is and what we build next
+- [archive/unconstant-product/](./archive/unconstant-product/) — Old OpenSea/shell identity (historical)
 - [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) — Security audit findings
+- [KASPUMP_GRILL.md](./KASPUMP_GRILL.md) — Launcher-era security grill
 - [CLAUDE.md](./CLAUDE.md) — Project context and conventions (for AI and contributors)
 - [subgraph/DEPLOY.md](./subgraph/DEPLOY.md) — Set ArcTokenFactory address before subgraph deploy
 - [backend/TOKEN_ACTIVITY_BROADCAST.md](./backend/TOKEN_ACTIVITY_BROADCAST.md) — Push token trade/graduation events to WebSocket

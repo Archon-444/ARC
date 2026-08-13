@@ -8,14 +8,12 @@ import { useAccount, useConnect, useReadContract, useWaitForTransactionReceipt, 
 import {
   AlertCircle,
   ArrowUpRight,
-  BarChart3,
   CheckCircle2,
   Clock3,
   Flame,
   Globe,
   Loader2,
   MessageSquare,
-  RefreshCw,
   Rocket,
   Shield,
   TrendingUp,
@@ -270,28 +268,6 @@ export default function TokenDetailPage({ params }: { params: { address: string 
       ? `/profile/${walletAddress}`
       : '/profile';
   const creatorProfileLabel = tokenConfig?.creator ? 'Creator profile' : 'Wallet profile';
-  const connectedRoutes = [
-    {
-      title: 'Explore tokens',
-      description: 'Board of live curves — new, trending, and near graduation.',
-      href: '/explore?tab=tokens',
-      icon: <TrendingUp className="h-4 w-4" />,
-    },
-    {
-      title: 'Launch a token',
-      description: 'Name, ticker, image. You earn half of the 2.5% fee on every trade.',
-      href: '/launch',
-      icon: <Rocket className="h-4 w-4" />,
-    },
-    {
-      title: creatorProfileLabel,
-      description: tokenConfig?.creator
-        ? 'Open the creator identity connected to this token.'
-        : 'Open the connected wallet identity for the current session.',
-      href: creatorProfileHref,
-      icon: <User className="h-4 w-4" />,
-    },
-  ];
 
   useEffect(() => {
     setTradeStatus(null);
@@ -571,14 +547,29 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                   <Badge icon={<TrendingUp className="h-3.5 w-3.5" />}>{isConnected ? `Wallet ${formatAddress(walletAddress)}` : 'Connect wallet for trading'}</Badge>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-3">
-                  <Link href="/explore?tab=tokens" className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700">
-                    <TrendingUp className="h-4 w-4" />
-                    Browse token markets
-                  </Link>
-                  <Link href="/launch" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
-                    Launch another token
-                    <ArrowUpRight className="h-4 w-4" />
-                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!routeAddress) return;
+                      void navigator.clipboard.writeText(routeAddress);
+                      setTradeStatus('Contract address copied.');
+                    }}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-primary-500 px-5 py-3 text-sm font-semibold text-white hover:bg-primary-600"
+                  >
+                    Copy contract
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!routeAddress) return;
+                      const url = `${window.location.origin}/token/${routeAddress}`;
+                      void navigator.clipboard.writeText(url);
+                      setTradeStatus('Share link copied.');
+                    }}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white"
+                  >
+                    Copy share link
+                  </button>
                   <Link href={creatorProfileHref} className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
                     <User className="h-4 w-4" />
                     {creatorProfileLabel}
@@ -600,41 +591,9 @@ export default function TokenDetailPage({ params }: { params: { address: string 
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <HeroMetric label="Current price" value={currentPrice.isLoading ? 'Loading...' : `$${currentPrice.priceFormatted}`} hint="Live AMM read" />
-              <HeroMetric label="Resolved market" value={marketShortAddress} hint={routeResolved ? routeMode : 'Waiting on route resolution'} />
-              <HeroMetric label="Base price" value={basePriceFormatted ? `$${basePriceFormatted}` : 'Loading...'} hint="Factory launch config" />
-              <HeroMetric label="Connected wallet" value={isConnected ? formatAddress(walletAddress) : 'Not connected'} hint="Required for writes" />
+              <HeroMetric label="Graduation" value={graduation.isLoading ? 'Loading...' : `${graduation.progressPercent.toFixed(1)}%`} hint="80% sold graduates this curve" />
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="mb-8 rounded-3xl border p-5 shadow-sm backdrop-blur dark:bg-slate-900/70 lg:p-6">
-        <div className={cn(
-          'flex items-start gap-3 rounded-2xl border p-4',
-          statusTone === 'red'
-            ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300'
-            : statusTone === 'green'
-              ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300'
-              : statusTone === 'blue'
-                ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300'
-                : 'border-neutral-200 bg-white text-neutral-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-neutral-300'
-        )}>
-          <div className="mt-0.5">{statusIcon}</div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-semibold uppercase tracking-wide">Market state</span>
-              <span className="rounded-full border border-current/10 bg-white/60 px-2.5 py-1 text-xs font-semibold dark:bg-white/5">{statusTitle}</span>
-            </div>
-            <p className="mt-2 text-sm leading-6">{statusDescription}</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => recentTrades.refetch()}
-            className="inline-flex items-center gap-2 rounded-xl border border-current/10 bg-white/70 px-3 py-2 text-sm font-semibold transition hover:bg-white dark:bg-white/5 dark:hover:bg-white/10"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </button>
         </div>
       </div>
 
@@ -642,22 +601,6 @@ export default function TokenDetailPage({ params }: { params: { address: string 
 
       <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-6">
-          <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Market snapshot</h2>
-              <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-500 dark:border-white/10 dark:text-neutral-400">
-                <BarChart3 className="h-3.5 w-3.5" />
-                On-chain aware
-              </span>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <SnapshotCard title="Current price" value={currentPrice.isLoading ? 'Loading...' : `$${currentPrice.priceFormatted}`} delta="Pulled from AMM" />
-              <SnapshotCard title="Projected fee" value={`${projectedFee} USDC`} delta={tradeIntent === 'buy' ? 'Buy quote' : 'Sell quote'} />
-              <SnapshotCard title="Graduation" value={graduation.isLoading ? 'Loading...' : `${graduation.progressPercent.toFixed(1)}%`} delta="Live progress" />
-              <SnapshotCard title="Allowance" value={tradeIntent === 'buy' ? `${buyAllowanceFormatted} USDC` : sellApprovalSupported ? `${sellAllowanceFormatted} ${symbolSeed}` : 'Token route needed'} delta={tradeIntent === 'buy' ? (isCheckingAllowance ? 'Checking approval' : buyApprovalRequired ? 'Approval required' : 'Ready to buy') : sellApprovalSupported ? (isCheckingSellAllowance ? 'Checking approval' : sellApprovalRequired ? 'Approval required' : 'Ready to sell') : 'Direct AMM route'} />
-            </div>
-          </section>
-
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Recent trades</h2>
@@ -704,54 +647,14 @@ export default function TokenDetailPage({ params }: { params: { address: string 
               ))}
             </div>
           </section>
-
-          <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Creator and trust signals</h2>
-              <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-500 dark:border-white/10 dark:text-neutral-400">
-                <Shield className="h-3.5 w-3.5" />
-                Factory-backed metadata
-              </span>
-            </div>
-            <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
-              <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
-                <div className="mb-2 text-sm font-semibold text-neutral-900 dark:text-white">Creator profile</div>
-                <div className="text-sm text-neutral-600 dark:text-neutral-400">{tokenConfig?.creator ? formatAddress(tokenConfig.creator) : 'Loading creator...'}</div>
-                <div className="mt-3 space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
-                  <div className="flex items-center justify-between"><span>Launch time</span><span className="font-medium text-neutral-900 dark:text-white">{tokenConfig ? formatLaunchDate(tokenConfig.createdAt) : 'Loading...'}</span></div>
-                  <div className="flex items-center justify-between"><span>Total supply</span><span className="font-medium text-neutral-900 dark:text-white">{totalSupplyFormatted ? Number(totalSupplyFormatted).toLocaleString() : 'Loading...'}</span></div>
-                  <div className="flex items-center justify-between"><span>Graduation target</span><span className="font-medium text-neutral-900 dark:text-white">{graduationThresholdFormatted ? Number(graduationThresholdFormatted).toLocaleString() : 'Loading...'}</span></div>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <Link href={creatorProfileHref} className="inline-flex items-center gap-2 rounded-2xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-white dark:text-black">
-                    <User className="h-4 w-4" />
-                    {creatorProfileLabel}
-                  </Link>
-                  <Link href="/launch" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-900 dark:text-white">
-                    <Rocket className="h-4 w-4" />
-                    Launch flow
-                  </Link>
-                </div>
-              </div>
-              <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
-                <div className="mb-3 text-sm font-semibold text-neutral-900 dark:text-white">Execution path</div>
-                <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
-                  <p>Buy flow resolves token routes into AMM routes, checks live USDC allowance, then gates approval only when it is actually needed.</p>
-                  <p>Sell flow reads token allowance when the route is token-native and asks for approval before execution only when the position requires it.</p>
-                  <p>{tokenConfig ? 'Header, creator details, and the recent trades feed are hydrated from live factory and AMM data for token-native routes.' : 'Open this page from a token route to hydrate launch metadata directly from the token factory.'}</p>
-                  <p>From this page you can jump to Explore, Rewards, Launchpad, or the creator profile—navigation stays available in the header and footer.</p>
-                </div>
-              </div>
-            </div>
-          </section>
         </div>
 
         <aside className="space-y-6">
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
             <div className="mb-4 flex items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Trade panel</h2>
+              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Trade</h2>
               <span className="rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300">
-                Resolved routing + allowance
+                2.5% fee — half to creator
               </span>
             </div>
             <div className="space-y-4">
@@ -873,7 +776,7 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                 </button>
               )}
 
-              <button onClick={() => handleExecute(tradeIntent)} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-base font-semibold text-white hover:bg-blue-700 disabled:opacity-60" disabled={buy.isLoading || sell.isLoading || approval.isLoading || isSellApprovalPending || isSellApprovalConfirming || !routeResolved}>
+              <button onClick={() => handleExecute(tradeIntent)} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-500 px-6 py-4 text-base font-semibold text-white hover:bg-primary-600 disabled:opacity-60" disabled={buy.isLoading || sell.isLoading || approval.isLoading || isSellApprovalPending || isSellApprovalConfirming || !routeResolved}>
                 {tradeIntent === 'buy' ? <TrendingUp className="h-5 w-5" /> : <Flame className="h-5 w-5" />}
                 {tradeIntent === 'buy'
                   ? buy.isLoading ? 'Buying...' : 'Execute buy'
@@ -884,31 +787,7 @@ export default function TokenDetailPage({ params }: { params: { address: string 
 
           <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Connected routes</h2>
-              <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
-                Token market
-              </span>
-            </div>
-            <div className="space-y-3">
-              {connectedRoutes.map((route) => (
-                <RouteCard key={route.title} title={route.title} description={route.description} href={route.href} icon={route.icon} />
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
-            <h2 className="mb-4 text-xl font-semibold text-neutral-900 dark:text-white">Distribution risk view</h2>
-            <div className="space-y-3">
-              <RiskRow label="Creator allocation" value="Config-driven launches" />
-              <RiskRow label="Total supply" value={totalSupplyFormatted ? Number(totalSupplyFormatted).toLocaleString() : 'Loading...'} />
-              <RiskRow label="Graduation target" value={graduationThresholdFormatted ? Number(graduationThresholdFormatted).toLocaleString() : 'Loading...'} />
-              <RiskRow label="Base price" value={basePriceFormatted ? `$${basePriceFormatted}` : 'Loading...'} />
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Community links</h2>
+              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Community</h2>
               <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-500 dark:border-white/10 dark:text-neutral-400">
                 <MessageSquare className="h-3.5 w-3.5" />
                 Embedded from launch metadata
@@ -933,7 +812,7 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                 ))
               ) : (
                 <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
-                  Community links are not embedded for this route yet. Launch metadata will appear here automatically for token-native routes with website, X, or Telegram fields.
+                  No website, X, or Telegram was set at launch.
                 </div>
               )}
             </div>
@@ -954,15 +833,6 @@ function HeroMetric({ label, value, hint }: { label: string; value: string; hint
   );
 }
 
-function SnapshotCard({ title, value, delta }: { title: string; value: string; delta: string }) {
-  return (
-    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
-      <div className="text-sm text-neutral-500 dark:text-neutral-400">{title}</div>
-      <div className="mt-1 text-2xl font-bold text-neutral-900 dark:text-white">{value}</div>
-      <div className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{delta}</div>
-    </div>
-  );
-}
 
 function Badge({ children, icon }: { children: ReactNode; icon: ReactNode }) {
   return (
@@ -982,28 +852,7 @@ function WalletMetric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function RiskRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-white/10 dark:bg-slate-950/60">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-neutral-500 dark:text-neutral-400">{label}</span>
-        <span className="font-semibold text-neutral-900 dark:text-white">{value}</span>
-      </div>
-    </div>
-  );
-}
 
-function RouteCard({ title, description, href, icon }: { title: string; description: string; href: string; icon: ReactNode }) {
-  return (
-    <Link href={href} className="block rounded-2xl border border-neutral-200 bg-neutral-50 p-4 transition hover:border-blue-300 hover:bg-white dark:border-white/10 dark:bg-slate-950/60 dark:hover:border-blue-500/40">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-300">
-        {icon}
-      </div>
-      <div className="font-semibold text-neutral-900 dark:text-white">{title}</div>
-      <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</div>
-    </Link>
-  );
-}
 
 function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');

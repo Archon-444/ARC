@@ -301,7 +301,7 @@ export default function ExploreContent() {
                 {tokensLoading ? 'Loading...' : tokenMarketCount.toLocaleString()}
               </div>
               <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                Token discovery now sits alongside ARC marketplace inventory as a first-class experience.
+                Live curves. NFT listings are a library tab, not the board.
               </div>
             </div>
           </div>
@@ -418,7 +418,7 @@ export default function ExploreContent() {
               </div>
               <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
                 <Flame className="h-3.5 w-3.5" />
-                {viewMode === 'tokens' ? 'Launchpad mode' : 'Marketplace mode'}
+                {viewMode === 'tokens' ? 'Token board' : 'NFT library'}
               </span>
             </div>
 
