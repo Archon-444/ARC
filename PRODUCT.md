@@ -34,7 +34,7 @@ Home and Explore are a **board of coins**. Stats, rewards, studio, and “shell 
 
 - NFT marketplace parity (OpenSea GAP file is a tombstone, not a roadmap)
 - Fake analytics, XP ranks, simulated studio mints presented as live
-- Dual-home with KasPump
+- Dual-home with KasPump or AgentTrust
 - Racing 2026-09-16 without ten named people who will launch that week
 
 ## Next product slices (in order)
@@ -53,3 +53,4 @@ If the UI and this file disagree, this file wins until we change it on purpose.
 |---|---|
 | **Launcher (good)** | Live: `PRODUCT.md`, launch → token page → explore tokens, creator paycheck on-chain |
 | **Unconstant (archived)** | OpenSea parity + connected-shell unification. Historical only: `archive/unconstant-product/` |
+| **AgentTrust (separate repo)** | Trust / x402 / passport experiment moved to [Archon-444/AgentTrust](https://github.com/Archon-444/AgentTrust). Pointer: `archive/agent-trust/`. Do not merge it back. |
