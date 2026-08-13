@@ -2,7 +2,7 @@
 
 **Creators earn on every trade. Traders buy a live curve. Unsold supply cannot be yanked.**
 
-Launch a coin, share the link, trade the bonding curve. NFT studio, listings, and auctions stay in the repo as a library — they are not the product. Canonical direction: [PRODUCT.md](./PRODUCT.md). Old OpenSea/shell docs: [archive/unconstant-product/](./archive/unconstant-product/).
+Launch a coin, share the link, trade the bonding curve. NFT studio, listings, and auctions stay in the repo as a library — they are not the product. Canonical direction: [PRODUCT.md](./PRODUCT.md). Old OpenSea/shell docs: [archive/unconstant-product/](./archive/unconstant-product/). Separate payment-MCP repo (not this product): [AgentTrust](https://github.com/Archon-444/AgentTrust) ([archive/agent-trust/](./archive/agent-trust/)).
 
 ## Version 0.5 — Launcher
 

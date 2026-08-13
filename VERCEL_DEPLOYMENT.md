@@ -70,6 +70,10 @@ Add these in Vercel Dashboard → Settings → Environment Variables:
 
 ## Troubleshooting
 
+### Root Directory `apps/web` does not exist
+
+Git-connected Vercel builds ARC `main`. The Next app is `frontend/`, not `apps/web`. That path belonged to the agent-commerce experiment, which moved to [AgentTrust](https://github.com/Archon-444/AgentTrust). In Vercel: Settings → General → Root Directory → `frontend`. Do not add `apps/web` on this repo to make the old setting succeed.
+
 ### Build Fails
 - Check environment variables are set
 - Verify Node.js version (18+)
