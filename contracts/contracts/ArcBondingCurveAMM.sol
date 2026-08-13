@@ -129,6 +129,7 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
     error NoRewardsClaimable();
     error RewardsPoolExhausted();
     error NotCreator();
+    error ProtectedToken();
 
     // ========== MODIFIERS ==========
     modifier notGraduated() {
@@ -157,6 +158,8 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
      * @param _graduationThreshold Supply at which token graduates (18 decimals)
      * @param _feeVault ARC platform fee recipient
      * @param _usdc USDC token address
+     * @param _owner Platform owner (pause / stray-token recovery). Must NOT be the factory
+     *        if admin functions should remain callable after a factory deploy.
      */
     constructor(
         address _token,
@@ -166,12 +169,14 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
         uint8 _curveType,
         uint256 _graduationThreshold,
         address _feeVault,
-        address _usdc
-    ) Ownable(msg.sender) {
+        address _usdc,
+        address _owner
+    ) Ownable(_owner) {
         if (_token == address(0)) revert ZeroAddress();
         if (_tokenCreator == address(0)) revert ZeroAddress();
         if (_feeVault == address(0)) revert ZeroAddress();
         if (_usdc == address(0)) revert ZeroAddress();
+        if (_owner == address(0)) revert ZeroAddress();
         if (_curveType > 1) revert InvalidCurveType();
 
         if (_basePrice < MIN_BASE_PRICE || _basePrice > MAX_BASE_PRICE) {
@@ -216,24 +221,36 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
     {
         if (usdcAmount == 0) revert InvalidAmount();
 
-        uint256 platformFee = (usdcAmount * PLATFORM_FEE_BPS) / 10000;
-        uint256 usdcAfterFee = usdcAmount - platformFee;
+        uint256 quotedFee = (usdcAmount * PLATFORM_FEE_BPS) / 10000;
+        uint256 usdcAfterFee = usdcAmount - quotedFee;
 
-        // Calculate tokens from bonding curve
+        // Calculate tokens from bonding curve (capped at remaining-to-graduation)
         uint256 tokensOut = calculateTokensOut(usdcAfterFee, currentSupply);
 
         if (tokensOut == 0) revert InvalidAmount();
         if (tokensOut < minTokensOut) revert SlippageTooHigh();
         if (tokensOut > token.balanceOf(address(this))) revert InsufficientBalance();
 
+        // Charge the curve cost of tokensOut, not the unused headroom. A graduating
+        // (or otherwise capped) buy used to pull the full usdcAmount anyway.
+        uint256 actualCost = _cumulativeCost(currentSupply, currentSupply + tokensOut);
+        if (actualCost == 0) {
+            actualCost = 1; // dust: 18-decimal token amounts can truncate 6-decimal USDC to 0
+        }
+        uint256 totalCharged = Math.mulDiv(actualCost, 10000, 10000 - PLATFORM_FEE_BPS);
+        if (totalCharged > usdcAmount) {
+            totalCharged = usdcAmount;
+        }
+        uint256 platformFee = totalCharged - actualCost;
+
         // Effects
         uint256 newSupply = currentSupply + tokensOut;
         bool willGraduate = newSupply >= graduationThreshold;
         currentSupply = newSupply;
-        totalVolume += usdcAmount;
+        totalVolume += totalCharged;
 
         // Interactions
-        usdc.safeTransferFrom(msg.sender, address(this), usdcAmount);
+        usdc.safeTransferFrom(msg.sender, address(this), totalCharged);
         token.safeTransfer(msg.sender, tokensOut);
         usdc.safeTransfer(feeVault, platformFee);
 
@@ -244,7 +261,7 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
 
         emit TokensBought(
             msg.sender,
-            usdcAmount,
+            totalCharged,
             tokensOut,
             platformFee,
             getCurrentPrice(),
@@ -326,8 +343,9 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
             high = graduationThreshold - fromSupply;
         }
 
-        // 64 iterations covers >1e18 range with precision
-        for (uint256 i = 0; i < 64; i++) {
+        // 256 iterations covers the full uint256 range; 64 left ~43 wei
+        // of 18-decimal supply unbought and made graduation unreachable.
+        for (uint256 i = 0; i < 256; i++) {
             if (low >= high) break;
 
             uint256 mid = (low + high + 1) / 2;
@@ -627,13 +645,10 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
             totalTokenStaked
         );
 
-        // Time-weighted reward = proportionalShare * elapsed / REWARD_DURATION
-        uint256 reward = Math.mulDiv(proportionalShare, elapsed, REWARD_DURATION);
-
-        // Subtract already claimed
-        if (reward <= rewardsClaimed[user]) return 0;
-
-        return reward - rewardsClaimed[user];
+        // Period-based: elapsed since last checkpoint (claim / stake update).
+        // Do NOT subtract lifetime rewardsClaimed — claim() resets stakingStartTime,
+        // so subtracting cumulative claims against a reset clock zeroes all future rewards.
+        return Math.mulDiv(proportionalShare, elapsed, REWARD_DURATION);
     }
 
     /**
@@ -753,5 +768,22 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
 
     function unpause() external onlyOwner {
         _unpause();
+    }
+
+    /**
+     * @dev Recover ERC20 tokens accidentally sent to this AMM.
+     * Cannot recover USDC (curve / graduation reserves) or the launched token.
+     */
+    function recoverStrayERC20(address tokenAddress, address to, uint256 amount)
+        external
+        onlyOwner
+        nonReentrant
+    {
+        if (to == address(0)) revert ZeroAddress();
+        if (tokenAddress == address(usdc) || tokenAddress == address(token)) {
+            revert ProtectedToken();
+        }
+        if (amount == 0) revert InvalidAmount();
+        IERC20(tokenAddress).safeTransfer(to, amount);
     }
 }

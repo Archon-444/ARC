@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { CURVE_TYPE_NAMES } from '@/lib/contracts';
 import type { GenerateTokenPageResponse } from '@/types';
+import { getRequestIp } from '@/lib/api-guards';
 
 // Simple in-memory rate limiter per IP
 const rateLimitMap = new Map<string, number[]>();
@@ -59,7 +60,7 @@ const TOKEN_PAGE_TOOL: Anthropic.Messages.Tool = {
 export async function POST(request: NextRequest) {
   try {
     // Rate limit
-    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const ip = getRequestIp(request);
     if (isRateLimited(ip)) {
       return NextResponse.json(
         { error: 'Rate limit exceeded. Please wait before trying again.' },

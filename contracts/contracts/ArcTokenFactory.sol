@@ -257,6 +257,8 @@ contract ArcTokenFactory is Ownable, ReentrancyGuard, Pausable {
         CurveType _curveType,
         uint256 _graduationThreshold
     ) internal returns (address) {
+        // Pass factory owner (not address(this)) so pause()/recoverStrayERC20 remain callable.
+        // Ownable(msg.sender) would make the factory the AMM owner with no forwarding surface.
         ArcBondingCurveAMM amm = new ArcBondingCurveAMM(
             _tokenAddress,
             _creator,
@@ -265,7 +267,8 @@ contract ArcTokenFactory is Ownable, ReentrancyGuard, Pausable {
             uint8(_curveType),
             _graduationThreshold,
             feeVault,
-            address(usdc)
+            address(usdc),
+            owner()
         );
         return address(amm);
     }

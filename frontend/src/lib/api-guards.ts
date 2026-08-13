@@ -24,12 +24,26 @@ function normalizeIdentifier(value?: string | null) {
   return value.toLowerCase();
 }
 
-function getRequestIp(request: NextRequest) {
+export function getRequestIp(request: NextRequest) {
+  const vercelForwarded = request.headers.get('x-vercel-forwarded-for');
+  if (vercelForwarded) {
+    return vercelForwarded.split(',')[0]?.trim() || 'unknown';
+  }
+
+  const cloudflareIp = request.headers.get('cf-connecting-ip');
+  if (cloudflareIp) return cloudflareIp.trim();
+
+  const realIp = request.headers.get('x-real-ip');
+  if (realIp) return realIp.trim();
+
+  // Right-most hop is typically appended by the trusted proxy; the left-most is client-spoofable.
   const forwardedFor = request.headers.get('x-forwarded-for');
   if (forwardedFor) {
-    return forwardedFor.split(',')[0]?.trim() || 'unknown';
+    const hops = forwardedFor.split(',').map((hop) => hop.trim()).filter(Boolean);
+    return hops[hops.length - 1] || 'unknown';
   }
-  return request.headers.get('x-real-ip') || 'unknown';
+
+  return 'unknown';
 }
 
 export async function requireSessionUser(expectedUserId?: string | null) {

@@ -6,6 +6,7 @@ import {
   fetchCreatorWithdrawals,
 } from '@/lib/graphql-client';
 import { computeRiskAssessment } from '@/lib/risk-scoring';
+import { getRequestIp } from '@/lib/api-guards';
 import type { TokenRiskAssessment } from '@/types';
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -42,7 +43,7 @@ export async function GET(
     }
 
     // Rate limit
-    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const ip = getRequestIp(request);
     if (isRateLimited(ip)) {
       return NextResponse.json(
         { error: 'Rate limit exceeded. Please wait before trying again.' },

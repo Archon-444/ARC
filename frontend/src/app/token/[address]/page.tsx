@@ -41,6 +41,7 @@ import {
   useRecentTrades,
   useSellTokens,
 } from '@/hooks/useTokenAMM';
+import { applySlippageMinOut, safeHttpUrl } from '@/lib/utils';
 import { useTokenConfig } from '@/hooks/useTokenFactory';
 import ArcTokenFactoryABI from '@/hooks/abis/ArcTokenFactory.json';
 import ERC20ABI from '@/hooks/abis/ERC20.json';
@@ -113,9 +114,7 @@ function formatLaunchDate(timestamp?: bigint) {
 }
 
 function normalizeUrl(value?: string) {
-  if (!value) return null;
-  if (value.startsWith('http://') || value.startsWith('https://')) return value;
-  return `https://${value}`;
+  return safeHttpUrl(value);
 }
 
 export default function TokenDetailPage({ params }: { params: { address: string } }) {
@@ -417,7 +416,11 @@ export default function TokenDetailPage({ params }: { params: { address: string 
         setTradeStatus('Approve USDC first, then execute the buy transaction.');
         return;
       }
-      buy.buyTokens(buyAmount, 0n);
+      if (!projectedBuy.tokensOut) {
+        setTradeStatus('Wait for the quote before executing the buy.');
+        return;
+      }
+      buy.buyTokens(buyAmount, applySlippageMinOut(projectedBuy.tokensOut));
       setTradeStatus(`Submitting buy for ${buyAmount} USDC.`);
       return;
     }
@@ -427,7 +430,12 @@ export default function TokenDetailPage({ params }: { params: { address: string 
       return;
     }
 
-    sell.sellTokens(sellAmount, 0n);
+    if (!projectedSell.usdcOut) {
+      setTradeStatus('Wait for the quote before executing the sell.');
+      return;
+    }
+
+    sell.sellTokens(sellAmount, applySlippageMinOut(projectedSell.usdcOut));
     setTradeStatus(`Submitting sell for ${sellAmount} ${symbolSeed}.`);
   };
 

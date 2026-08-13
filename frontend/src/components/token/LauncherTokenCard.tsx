@@ -8,10 +8,10 @@
 import Link from 'next/link';
 import { Award, ExternalLink, Globe } from 'lucide-react';
 
+import { safeHttpUrl } from '@/lib/utils';
+
 function normalizeUrl(url: string | undefined): string | null {
-  if (!url || !url.trim()) return null;
-  const u = url.trim();
-  return u.startsWith('http') ? u : `https://${u}`;
+  return safeHttpUrl(url);
 }
 
 export interface LaunchedTokenFeedItem {

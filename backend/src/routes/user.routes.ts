@@ -6,33 +6,27 @@ const router = Router();
 
 /**
  * GET /v1/user/:address
- * Get user profile
  */
 router.get('/:address', asyncHandler(async (req: Request, res: Response) => {
   const { address } = req.params;
 
-  // Mock user data
-  const user = {
+  res.json({
     address,
-    username: `user_${address.slice(2, 8)}`,
-    bio: 'NFT collector and enthusiast',
-    avatar: 'https://via.placeholder.com/150',
-    banner: 'https://via.placeholder.com/1500x400',
-    verified: Math.random() > 0.7,
-    social: {
-      twitter: 'https://twitter.com/nftuser',
-      discord: 'nftuser#1234',
-      website: 'https://nftuser.io',
-    },
+    username: null,
+    bio: null,
+    avatar: null,
+    banner: null,
+    verified: false,
+    social: {},
     stats: {
-      owned: Math.floor(Math.random() * 100 + 10),
-      created: Math.floor(Math.random() * 50),
-      favorited: Math.floor(Math.random() * 200 + 20),
-      volumeTraded: (Math.random() * 100000 + 10000).toFixed(2),
+      owned: 0,
+      created: 0,
+      favorited: 0,
+      volumeTraded: '0',
     },
-  };
-
-  res.json(user);
+    unavailable: true,
+    reason: 'User profiles are not indexed yet. Stats are not invented.',
+  });
 }));
 
 export default router;

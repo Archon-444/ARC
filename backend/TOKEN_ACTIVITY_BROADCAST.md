@@ -6,7 +6,7 @@ To make the launcher feel live, token trade and graduation events should be push
 
 - **WebSocket room**: Clients subscribe to `token:<address>` (e.g. via path `/ws/activity/token/0x...` or `subscribe` message with `room: "token:0x..."`).
 - **Backend**: `broadcastTokenActivity(tokenAddress, event)` in `src/websocket/index.ts` sends a `token_activity` message to all clients in that room.
-- **Internal API**: `POST /v1/activity/token/broadcast` accepts a JSON body and broadcasts it.
+- **Internal API**: `POST /v1/activity/token/broadcast` accepts a JSON body and broadcasts it. Requires `TOKEN_BROADCAST_SECRET` via the `x-broadcast-secret` header.
 
 ## Wiring events
 
@@ -16,6 +16,7 @@ Call the broadcast when you have a new token event (e.g. from a subgraph sync or
    ```bash
    curl -X POST http://localhost:3001/v1/activity/token/broadcast \
      -H "Content-Type: application/json" \
+     -H "x-broadcast-secret: $TOKEN_BROADCAST_SECRET" \
      -d '{"tokenAddress":"0x...","type":"buy","from":"0x...","to":"0x...","amount":"100","txHash":"0x..."}'
    ```
 

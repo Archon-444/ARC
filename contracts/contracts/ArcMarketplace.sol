@@ -498,10 +498,3 @@ contract ArcMarketplace is ERC721Holder, ReentrancyGuard, Pausable, Ownable {
         return activeAuctionsCount;
     }
 }
-
-interface IERC2981 {
-    function royaltyInfo(uint256 tokenId, uint256 salePrice)
-        external
-        view
-        returns (address receiver, uint256 royaltyAmount);
-}

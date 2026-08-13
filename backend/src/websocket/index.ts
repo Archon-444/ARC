@@ -19,6 +19,10 @@ interface Client {
 const clients: Map<string, Client> = new Map();
 const rooms: Map<string, Set<string>> = new Map(); // roomId -> clientIds
 
+function isValidRoomId(roomId: unknown): roomId is string {
+  return typeof roomId === 'string' && /^[a-zA-Z0-9:_-]{3,96}$/.test(roomId);
+}
+
 export function setupWebSocket(wss: WebSocketServer) {
   console.log('✅ WebSocket server initialized');
 
@@ -49,9 +53,10 @@ export function setupWebSocket(wss: WebSocketServer) {
       const entityId = pathParts[3]; // actual ID
 
       const roomId = `${entityType}:${entityId}`;
-      joinRoom(clientId, roomId);
-
-      console.log(`Client ${clientId} joined room: ${roomId}`);
+      if (isValidRoomId(roomId)) {
+        joinRoom(clientId, roomId);
+        console.log(`Client ${clientId} joined room: ${roomId}`);
+      }
     }
 
     // Handle messages from client
@@ -111,19 +116,22 @@ function handleClientMessage(clientId: string, message: any) {
 
   switch (message.type) {
     case 'subscribe':
-      // Subscribe to a room
-      if (message.room) {
+      if (isValidRoomId(message.room)) {
         joinRoom(clientId, message.room);
         send(client.ws, {
           type: 'subscribed',
           room: message.room,
         });
+      } else {
+        send(client.ws, {
+          type: 'error',
+          message: 'Invalid room',
+        });
       }
       break;
 
     case 'unsubscribe':
-      // Unsubscribe from a room
-      if (message.room) {
+      if (isValidRoomId(message.room)) {
         leaveRoom(clientId, message.room);
         send(client.ws, {
           type: 'unsubscribed',

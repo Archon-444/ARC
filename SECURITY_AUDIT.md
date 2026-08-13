@@ -1,3 +1,5 @@
+**Last launcher-era grill:** see `KASPUMP_GRILL.md` (mapped from KasPump #74). This file remains the Nov 2025 marketplace/Circle audit.
+
 # Security Audit Report: ARC NFT Marketplace
 
 **Date:** November 25, 2025

@@ -59,25 +59,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Implement actual Circle transaction execution
-    // For production, you would:
-    // 1. Verify wallet ownership
-    // 2. Validate transaction parameters
-    // 3. Call Circle API to execute transaction
-    // 4. Return transaction hash
-
-    // Mock transaction execution
-    const transactionHash = `0x${Math.random().toString(16).substring(2, 66).padStart(64, '0')}`;
-
-    // Transaction details intentionally not logged (SEC-06)
-
-    return NextResponse.json({
-      success: true,
-      transactionHash,
-      status: 'PENDING',
-      wallet: walletId,
-      estimatedConfirmationTime: '< 1 second', // Arc's fast finality
-    });
+    // Circle execution is not wired. Never return a fabricated hash.
+    return NextResponse.json(
+      {
+        error: 'Circle transaction execution is not implemented',
+        code: 'NOT_IMPLEMENTED',
+      },
+      { status: 501 }
+    );
   } catch (error) {
     console.error('Circle transaction error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
@@ -120,24 +109,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // TODO: Implement actual transaction status check
-    // For production, call Circle API or Arc blockchain RPC
-
-    // Mock transaction status
-    const transaction = {
-      transactionHash,
-      status: 'CONFIRMED',
-      confirmations: 1,
-      blockNumber: Math.floor(Math.random() * 1000000),
-      timestamp: new Date().toISOString(),
-      gasUsed: '21000',
-      effectiveGasPrice: '1000000000', // 1 gwei
-    };
-
-    return NextResponse.json({
-      success: true,
-      transaction,
-    });
+    // Circle status lookup is not wired. Never report a fake CONFIRMED receipt.
+    return NextResponse.json(
+      {
+        error: 'Circle transaction status is not implemented',
+        code: 'NOT_IMPLEMENTED',
+      },
+      { status: 501 }
+    );
   } catch (error) {
     console.error('Transaction status check error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
@@ -179,7 +158,7 @@ export async function PUT(request: NextRequest) {
       return signatureResult.error;
     }
 
-    const { walletId, to, _value, data } = await request.json();
+    const { walletId, to } = await request.json();
 
     if (!walletId || !to) {
       return NextResponse.json(
@@ -188,24 +167,13 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // TODO: Implement actual gas estimation
-    // For production, call Arc RPC or Circle API
-
-    // Mock gas estimation
-    const gasLimit = data ? '100000' : '21000';
-    const gasPrice = '1000000000'; // 1 gwei
-    const estimatedCost = (BigInt(gasLimit) * BigInt(gasPrice)).toString();
-
-    // Convert to USDC (Arc uses USDC for gas)
-    const estimatedCostUSDC = (Number(estimatedCost) / 1e18).toFixed(6);
-
-    return NextResponse.json({
-      success: true,
-      gasLimit,
-      gasPrice,
-      estimatedCost,
-      estimatedCostUSDC: `${estimatedCostUSDC} USDC`,
-    });
+    return NextResponse.json(
+      {
+        error: 'Circle gas estimation is not implemented',
+        code: 'NOT_IMPLEMENTED',
+      },
+      { status: 501 }
+    );
   } catch (error) {
     console.error('Gas estimation error:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
