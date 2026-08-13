@@ -53,4 +53,4 @@ If the UI and this file disagree, this file wins until we change it on purpose.
 |---|---|
 | **Launcher (good)** | Live: `PRODUCT.md`, launch → token page → explore tokens, creator paycheck on-chain |
 | **Unconstant (archived)** | OpenSea parity + connected-shell unification. Historical only: `archive/unconstant-product/` |
-| **AgentTrust (separate repo)** | Trust / x402 / passport experiment moved to [Archon-444/AgentTrust](https://github.com/Archon-444/AgentTrust). Pointer: `archive/agent-trust/`. Do not merge it back. |
+| **AgentTrust (separate repo)** | Left as an editorial-trust experiment; now a payment MCP ([Archon-444/AgentTrust](https://github.com/Archon-444/AgentTrust)). Pointer: `archive/agent-trust/`. Do not merge it back. |

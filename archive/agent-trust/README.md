@@ -13,7 +13,9 @@ It is a different buyer, ritual, and money path from the token launcher. Same du
 
 ## Where it went
 
-**[Archon-444/AgentTrust](https://github.com/Archon-444/AgentTrust)** — independent repo. History was pushed from the trust-layer branch (not copy-pasted). Further work happens there.
+**[Archon-444/AgentTrust](https://github.com/Archon-444/AgentTrust)** — independent repo. History was pushed from the trust-layer branch (not copy-pasted).
+
+That repo has since cut the editorial/passport/token-scoring prototype. Its product is now **policy and receipts for agent payments** (sandbox MCP control plane). Still not ARC. Do not merge it back, and do not add its MCP to this launcher.
 
 ## What won here
 
@@ -23,5 +25,5 @@ See [`PRODUCT.md`](../../PRODUCT.md). **ARC is a USDC-native token launcher.** R
 
 - Merge those Claude branches into ARC `main` (they are deleted; do not recreate them here)
 - Add `apps/web` on ARC so a leftover Vercel setting succeeds
-- 308 `/launch` or `/token` to a trust/passport product
-- Treat `STRATEGIC_PIVOT.md` or Forrester/x402 docs as ARC roadmap
+- 308 `/launch` or `/token` to a trust/passport or payment-MCP product
+- Treat AgentTrust docs as ARC roadmap
