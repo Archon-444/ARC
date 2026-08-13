@@ -1,25 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import { Hexagon, ArrowUpRight, Rocket, Search, Sparkles, ShieldCheck, BarChart3, Trophy, User, Wallet, Layers3, FileText, Shield, Info, Mail } from 'lucide-react';
+import { Hexagon, ArrowUpRight, Rocket, Search, Sparkles, ShieldCheck, User, Wallet, Layers3, FileText, Shield, Info, Mail } from 'lucide-react';
 
 const footerSections = [
   {
-    title: 'Platform',
+    title: 'Launcher',
     links: [
+      { label: 'Launch a token', href: '/launch', icon: Rocket },
+      { label: 'Token markets', href: '/explore?tab=tokens', icon: Wallet },
       { label: 'Explore', href: '/explore', icon: Search },
-      { label: 'Launchpad', href: '/launch', icon: Rocket },
-      { label: 'Studio', href: '/studio', icon: Sparkles },
-      { label: 'Stats', href: '/stats', icon: BarChart3 },
     ],
   },
   {
-    title: 'Discovery',
+    title: 'Also in the repo',
     links: [
-      { label: 'All inventory', href: '/explore?tab=all', icon: Search },
+      { label: 'Listings', href: '/explore?tab=listings', icon: Search },
       { label: 'Auctions', href: '/explore?tab=auctions', icon: ArrowUpRight },
-      { label: 'Token markets', href: '/explore?tab=tokens', icon: Wallet },
-      { label: 'Rewards', href: '/rewards', icon: Trophy },
+      { label: 'Studio (NFT demo)', href: '/studio', icon: Sparkles },
     ],
   },
   {
@@ -43,11 +41,9 @@ const footerSections = [
 ];
 
 const shellRoutes = [
-  { label: 'Explore', href: '/explore' },
+  { label: 'Launch', href: '/launch' },
   { label: 'Token markets', href: '/explore?tab=tokens' },
-  { label: 'Launchpad', href: '/launch' },
-  { label: 'Stats', href: '/stats' },
-  { label: 'Rewards', href: '/rewards' },
+  { label: 'Explore', href: '/explore' },
 ];
 
 export default function Footer() {

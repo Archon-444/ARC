@@ -129,7 +129,7 @@ export function SellTokenPanel({ ammAddress, tokenAddress, tokenSymbol, onSucces
               </span>
             </div>
             <div className="flex justify-between text-xs text-neutral-500 mt-1">
-              <span>Platform fee (2.5%)</span>
+              <span>2.5% fee — half to creator</span>
               <span>${feeFormatted} USDC</span>
             </div>
           </div>

@@ -427,16 +427,55 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
       ).to.be.revertedWithCustomError(amm, "SlippageTooHigh");
     });
 
-    it("should deduct 2.5% platform fee and send to feeVault", async function () {
+    it("should deduct 2.5% trade fee and send half to feeVault", async function () {
       const { amm } = await createToken();
 
       const vaultBefore = await usdc.balanceOf(feeVault.address);
       await buyTokens(amm, buyer, USDC(1000));
       const vaultAfter = await usdc.balanceOf(feeVault.address);
 
-      // 2.5% of 1000 USDC = 25 USDC
+      // 2.5% of 1000 USDC = 25; half to vault, half accrued for creator
       const feeCollected = vaultAfter - vaultBefore;
-      expect(feeCollected).to.equal(USDC(25));
+      expect(feeCollected).to.equal(USDC("12.5"));
+      expect(await amm.creatorFeesAccrued()).to.equal(USDC("12.5"));
+      expect(await amm.getReserveBalance()).to.equal(USDC(975));
+    });
+
+    it("should let only the creator withdraw accrued trade fees", async function () {
+      const { amm } = await createToken();
+      await buyTokens(amm, buyer, USDC(1000));
+
+      await expect(
+        amm.connect(buyer).withdrawCreatorFees()
+      ).to.be.revertedWithCustomError(amm, "NotCreator");
+
+      const creatorBefore = await usdc.balanceOf(creator.address);
+      await expect(amm.connect(creator).withdrawCreatorFees())
+        .to.emit(amm, "CreatorFeesWithdrawn");
+      const creatorAfter = await usdc.balanceOf(creator.address);
+
+      expect(creatorAfter - creatorBefore).to.equal(USDC("12.5"));
+      expect(await amm.creatorFeesAccrued()).to.equal(0);
+      expect(await amm.getReserveBalance()).to.equal(USDC(975));
+    });
+
+    it("should accrue creator fees on sells without touching curve reserve accounting", async function () {
+      const { amm, token } = await createToken();
+      await buyTokens(amm, buyer, USDC(1000));
+      await amm.connect(creator).withdrawCreatorFees();
+
+      const curveBefore = await amm.getReserveBalance();
+      const tokenBalance = await token.balanceOf(buyer.address);
+      const sellAmount = tokenBalance / 2n;
+      const ammAddr = await amm.getAddress();
+      await token.connect(buyer).approve(ammAddr, sellAmount);
+
+      const [usdcOut, sellFee] = await amm.calculateSellReturn(sellAmount);
+      await amm.connect(buyer).sellTokens(sellAmount, 0);
+
+      const creatorShare = sellFee / 2n;
+      expect(await amm.creatorFeesAccrued()).to.equal(creatorShare);
+      expect(await amm.getReserveBalance()).to.equal(curveBefore - usdcOut - sellFee);
     });
 
     it("should revert buy with zero amount", async function () {
@@ -520,7 +559,7 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
       ).to.emit(amm, "TokenGraduated");
     });
 
-    it("should split USDC 50/25/25 at graduation", async function () {
+    it("should split remaining curve USDC 50/25/25 and leave accrued creator fees intact", async function () {
       const { amm } = await createSmallToken();
 
       const vaultBefore = await usdc.balanceOf(feeVault.address);
@@ -531,9 +570,24 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
       expect(reserves.stakingRewardPool).to.be.gt(0);
       expect(reserves.platformFee).to.be.gt(0);
 
-      // Platform fee should have been transferred to feeVault
+      const accrued = await amm.creatorFeesAccrued();
+      expect(accrued).to.be.gt(0);
+
+      const ammAddr = await amm.getAddress();
+      expect(await usdc.balanceOf(ammAddr)).to.equal(
+        reserves.creatorReserve + reserves.stakingRewardPool + accrued
+      );
+
       const vaultAfter = await usdc.balanceOf(feeVault.address);
-      expect(vaultAfter - vaultBefore).to.be.gt(0);
+      expect(vaultAfter - vaultBefore).to.be.gt(reserves.platformFee);
+
+      const creatorBefore = await usdc.balanceOf(creator.address);
+      await amm.connect(creator).withdrawCreatorFees();
+      expect(await amm.creatorFeesAccrued()).to.equal(0);
+      expect(await usdc.balanceOf(creator.address) - creatorBefore).to.equal(accrued);
+      expect(await usdc.balanceOf(ammAddr)).to.equal(
+        reserves.creatorReserve + reserves.stakingRewardPool
+      );
     });
 
     it("should disable buy/sell after graduation", async function () {

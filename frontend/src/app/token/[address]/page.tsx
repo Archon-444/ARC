@@ -18,9 +18,7 @@ import {
   RefreshCw,
   Rocket,
   Shield,
-  Sparkles,
   TrendingUp,
-  Trophy,
   User,
   Wallet,
 } from 'lucide-react';
@@ -43,6 +41,7 @@ import {
 } from '@/hooks/useTokenAMM';
 import { applySlippageMinOut, safeHttpUrl } from '@/lib/utils';
 import { useTokenConfig } from '@/hooks/useTokenFactory';
+import { CreatorFeesPanel } from '@/components/token/CreatorFeesPanel';
 import ArcTokenFactoryABI from '@/hooks/abis/ArcTokenFactory.json';
 import ERC20ABI from '@/hooks/abis/ERC20.json';
 
@@ -179,7 +178,7 @@ export default function TokenDetailPage({ params }: { params: { address: string 
   const projectName = tokenConfig?.name || `ARC ${symbolSeed}`;
 
   const tokenMetadata = useMemo(() => parseDescriptionAndLinks(tokenConfig?.description), [tokenConfig?.description]);
-  const heroDescription = tokenMetadata.summary || 'A trader-facing token page designed for immediate action: live price reads, resolved AMM routing, exact approval checks, and buy or sell execution from one surface.';
+  const heroDescription = tokenMetadata.summary || 'USDC market on a live bonding curve. Creators earn on every trade.';
   const communityLinks = [
     { label: 'Website', value: tokenMetadata.links.website, href: normalizeUrl(tokenMetadata.links.website) },
     { label: 'X', value: tokenMetadata.links.x, href: normalizeUrl(tokenMetadata.links.x) },
@@ -273,33 +272,26 @@ export default function TokenDetailPage({ params }: { params: { address: string 
   const creatorProfileLabel = tokenConfig?.creator ? 'Creator profile' : 'Wallet profile';
   const connectedRoutes = [
     {
-      title: 'Explore markets',
-      description: 'Return to the broader discovery surface for listings, auctions, and tokens.',
+      title: 'Explore tokens',
+      description: 'Board of live curves — new, trending, and near graduation.',
       href: '/explore?tab=tokens',
       icon: <TrendingUp className="h-4 w-4" />,
     },
     {
-      title: 'Launch flow',
-      description: 'Create the next token and return to launch from here.',
+      title: 'Launch a token',
+      description: 'Name, ticker, image. You earn half of the 2.5% fee on every trade.',
       href: '/launch',
       icon: <Rocket className="h-4 w-4" />,
     },
     {
-      title: 'Rewards',
-      description: 'Stay inside wallet-linked progression after trading activity.',
-      href: '/rewards',
-      icon: <Trophy className="h-4 w-4" />,
-    },
-    {
       title: creatorProfileLabel,
       description: tokenConfig?.creator
-        ? 'Open the creator identity connected to this token route.'
+        ? 'Open the creator identity connected to this token.'
         : 'Open the connected wallet identity for the current session.',
       href: creatorProfileHref,
       icon: <User className="h-4 w-4" />,
     },
   ];
-  const shellRouteCount = connectedRoutes.length;
 
   useEffect(() => {
     setTradeStatus(null);
@@ -587,10 +579,6 @@ export default function TokenDetailPage({ params }: { params: { address: string 
                     Launch another token
                     <ArrowUpRight className="h-4 w-4" />
                   </Link>
-                  <Link href="/rewards" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
-                    <Trophy className="h-4 w-4" />
-                    Rewards
-                  </Link>
                   <Link href={creatorProfileHref} className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
                     <User className="h-4 w-4" />
                     {creatorProfileLabel}
@@ -650,24 +638,7 @@ export default function TokenDetailPage({ params }: { params: { address: string 
         </div>
       </div>
 
-      <div className="mb-8 rounded-3xl border border-blue-200 bg-blue-50/80 p-5 shadow-sm dark:border-blue-500/20 dark:bg-blue-500/10 lg:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="mb-1 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-200">
-              <Sparkles className="h-4 w-4" />
-              Shell continuity
-            </div>
-            <div className="text-lg font-semibold text-neutral-900 dark:text-white">This token page now behaves like a connected ARC route, not an isolated trade screen.</div>
-            <p className="mt-1 max-w-3xl text-sm text-blue-800 dark:text-blue-200">
-              Traders can move from the live market into explore, launch, rewards, and creator identity surfaces without losing context, while route resolution and allowance checks stay central to execution.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-blue-200 bg-white/70 px-4 py-3 text-sm text-blue-900 dark:border-blue-500/20 dark:bg-slate-950/40 dark:text-blue-200">
-            <div className="font-semibold">Connected routes</div>
-            <div className="mt-1">{shellRouteCount} high-intent paths from token market</div>
-          </div>
-        </div>
-      </div>
+      {routeResolved && <div className="mb-8"><CreatorFeesPanel ammAddress={marketAddress} /></div>}
 
       <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-6">

@@ -1,14 +1,11 @@
 import {
   ArrowRight,
-  BarChart3,
-  Clock3,
+  Coins,
   Layers3,
   Radio,
   Rocket,
   Shield,
-  Sparkles,
   TrendingUp,
-  Wallet,
 } from 'lucide-react';
 
 export interface MarketplaceStats {
@@ -24,21 +21,21 @@ export type FeedTab = 'new' | 'hot' | 'graduating';
 
 export const HERO_KPIS = [
   {
-    label: 'Launch to market',
-    value: 'Creator flow already live',
-    hint: 'Start from launch, resolve into token routes, and carry context forward.',
-    icon: Rocket,
+    label: 'Creator paycheck',
+    value: 'Earn on every trade',
+    hint: 'Half of the 2.5% fee accrues to you. Collect it on the token page.',
+    icon: Coins,
   },
   {
-    label: 'Discovery shell',
-    value: 'Homepage as command center',
-    hint: 'Move between fresh launches, momentum, stats, and next-step routes without friction.',
-    icon: Radio,
+    label: 'Live curve',
+    value: 'Buy and sell in USDC',
+    hint: 'Price is the bonding curve. Share the token link; that is the market.',
+    icon: TrendingUp,
   },
   {
-    label: 'Trust + action',
-    value: 'Signals before execution',
-    hint: 'Market pulse, route continuity, and trader cues reduce hesitation before entry.',
+    label: 'Cannot-rug',
+    value: 'Curve funds stay put',
+    hint: 'No AMM withdraw of USDC. Unsold supply cannot be yanked as a rug.',
     icon: Shield,
   },
 ];
@@ -50,7 +47,7 @@ export const FEED_LABELS: Record<FeedTab, { title: string; subtitle: string }> =
   },
   hot: {
     title: 'Hot right now',
-    subtitle: 'Tokens and collections with the strongest recent momentum.',
+    subtitle: 'Tokens with the strongest recent momentum.',
   },
   graduating: {
     title: 'Near graduation',
@@ -60,54 +57,40 @@ export const FEED_LABELS: Record<FeedTab, { title: string; subtitle: string }> =
 
 export const CONNECTED_SURFACES = [
   {
-    title: 'Launch flow',
-    description: 'Open the guided creator route and move directly into live token markets.',
+    title: 'Launch a token',
+    description: 'Name, ticker, image, description. You earn on every trade from the first buy.',
     href: '/launch',
     cta: 'Open launch',
     icon: Rocket,
   },
   {
-    title: 'Explore',
-    description: 'Jump into the broader discovery surface for listings, auctions, and token routes.',
-    href: '/explore',
-    cta: 'Browse markets',
+    title: 'Explore tokens',
+    description: 'Board of coins: new, trending, recent activity, nearing graduation.',
+    href: '/explore?tab=tokens',
+    cta: 'Browse tokens',
     icon: Layers3,
-  },
-  {
-    title: 'Stats',
-    description: 'Track the macro picture behind ARC activity and use it to frame trading decisions.',
-    href: '/stats',
-    cta: 'View stats',
-    icon: BarChart3,
-  },
-  {
-    title: 'Rewards',
-    description: 'Stay connected to retention and participation loops after discovery and trading.',
-    href: '/rewards',
-    cta: 'Open rewards',
-    icon: Wallet,
   },
 ];
 
 export const READINESS_ITEMS = [
   {
-    title: 'Entry route upgraded',
-    detail: 'Homepage now behaves like a shell surface, not just a feed teaser.',
-    icon: Sparkles,
+    title: 'Launch',
+    detail: 'Pay a USDC creation fee. The whole supply goes to the curve. You cannot yank it.',
+    icon: Rocket,
   },
   {
-    title: 'Action paths nearby',
-    detail: 'Launch, explore, stats, and rewards stay one click away from the primary entry point.',
+    title: 'Share',
+    detail: 'The token URL is the product. One link for buyers.',
     icon: ArrowRight,
   },
   {
-    title: 'Signals before conviction',
-    detail: 'Pulse metrics, live tape, and feed segmentation help frame urgency and momentum.',
+    title: 'Trade',
+    detail: 'Quote plus 1% minOut. 2.5% fee; half to the creator.',
     icon: TrendingUp,
   },
   {
-    title: 'Next in order',
-    detail: 'After homepage, Phase 1 continues into the shared layout shell and then stats.',
-    icon: Clock3,
+    title: 'Get paid',
+    detail: 'Collect accrued fees anytime. Graduation is a later 50% of remaining curve USDC — not the only paycheck.',
+    icon: Radio,
   },
 ];

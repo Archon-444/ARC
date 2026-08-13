@@ -72,11 +72,12 @@ KasPump DEX dust-griefing: N/A (no DEX). TokenFactory EIP-170 size: not a blocke
 
 ## Suggested sequencing (remaining)
 
-1. FeeVault-revert isolation + leftover 20% supply decision (product, then code).
-2. Align exponential cost with spot price; add a golden-vector test.
-3. Redis rate limit + wrong-network banner + contract-error mapping.
-4. Wire `announce()` and pending/confirmed toasts.
-5. Studio: stop presenting simulated mints as live.
+1. Leftover 20% supply decision (product, then code). See PRODUCT.md.
+2. FeeVault-revert isolation (still bricks every trade).
+3. Align exponential cost with spot price; add a golden-vector test.
+4. Redis rate limit + wrong-network banner + contract-error mapping.
+5. Wire `announce()` and pending/confirmed toasts.
+6. Studio: stop presenting simulated mints as live.
 
 ## Mapping from KasPump PRs
 

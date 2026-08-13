@@ -15,7 +15,6 @@ import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
   ArrowRight,
-  BarChart3,
   ChevronDown,
   ChevronRight,
   CheckCircle2,
@@ -26,7 +25,6 @@ import {
   Rocket,
   Sparkles,
   TrendingUp,
-  Trophy,
   Twitter,
   User,
   Wallet,
@@ -141,28 +139,16 @@ export default function LaunchPage() {
 
   const creatorRoutes = [
     {
+      title: 'Token board',
+      description: 'See live curves after you launch.',
+      href: '/explore?tab=tokens',
+      icon: <TrendingUp className="h-4 w-4" />,
+    },
+    {
       title: 'Profile',
-      description: 'Review wallet identity, owned assets, and creator state.',
+      description: 'Wallet identity for the coins you launched.',
       href: address ? `/profile/${address}` : '/profile',
       icon: <User className="h-4 w-4" />,
-    },
-    {
-      title: 'Studio',
-      description: 'Return to creator workflows, collections, and publish routes.',
-      href: '/studio',
-      icon: <Sparkles className="h-4 w-4" />,
-    },
-    {
-      title: 'Rewards',
-      description: 'See how launch activity contributes to wallet-linked progression.',
-      href: '/rewards',
-      icon: <Trophy className="h-4 w-4" />,
-    },
-    {
-      title: 'Stats',
-      description: 'Check market context before or after the token goes live.',
-      href: '/stats',
-      icon: <BarChart3 className="h-4 w-4" />,
     },
   ];
 
@@ -306,26 +292,19 @@ export default function LaunchPage() {
               ARC launch
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-5xl">
-              Connect your wallet to open the ARC token launch flow.
+              Connect your wallet to launch a token.
             </h1>
             <p className="mt-4 max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
-              Launch brings token identity, bonding-curve setup, trust links, and transaction-state feedback into one market-ready ARC workflow.
+              You earn half of the 2.5% fee on every buy and sell. Collect it on the token page. Unsold supply stays on the curve — you cannot yank it.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
-                href="/explore"
+                href="/explore?tab=tokens"
                 className="inline-flex items-center gap-2 rounded-2xl bg-primary-500 px-6 py-3 font-semibold text-white transition hover:bg-primary-600"
               >
                 <ArrowRight className="h-4 w-4" />
-                Explore launches
-              </Link>
-              <Link
-                href="/studio"
-                className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white"
-              >
-                <Sparkles className="h-4 w-4" />
-                Open studio
+                Explore tokens
               </Link>
             </div>
           </div>
@@ -334,11 +313,11 @@ export default function LaunchPage() {
             <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-500/10 text-primary-500">
               <Rocket className="h-7 w-7" />
             </div>
-            <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">What launch covers</h2>
+            <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">The ritual</h2>
             <div className="mt-5 space-y-4">
-              <StateRow icon={<Coins className="h-4 w-4" />} title="Token setup" description="Define name, ticker, description, visuals, and curve configuration in one place." />
-              <StateRow icon={<Wallet className="h-4 w-4" />} title="Wallet-guided transactions" description="Clear approval, deploy, and success states keep the launch process easier to follow." />
-              <StateRow icon={<TrendingUp className="h-4 w-4" />} title="Market-ready output" description="Route traders from the launch flow directly into the live token market page." />
+              <StateRow icon={<Coins className="h-4 w-4" />} title="Launch" description="Name, ticker, image, description. Curve stays behind Advanced." />
+              <StateRow icon={<Wallet className="h-4 w-4" />} title="Share" description="The token URL is the market. Copy it after deploy." />
+              <StateRow icon={<TrendingUp className="h-4 w-4" />} title="Get paid" description="Half of every 2.5% trade fee accrues to you. Collect anytime." />
             </div>
           </div>
         </div>
@@ -356,7 +335,7 @@ export default function LaunchPage() {
             Launch a token
           </h1>
           <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-            Name, ticker, image, description, and socials. You pay {feeFormatted} USDC; balance: ${balanceFormatted} USDC.
+            Name, ticker, image, description. You earn half of the 2.5% fee on every trade. Creation fee {feeFormatted} USDC; balance: ${balanceFormatted} USDC.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-sm text-neutral-500 dark:text-neutral-400">

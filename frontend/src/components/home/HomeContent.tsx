@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import {
   ArrowRight,
-  BarChart3,
   Flame,
   Layers3,
   LineChart,
@@ -38,13 +37,13 @@ export default function HomeContent() {
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
               <Sparkles className="h-3.5 w-3.5" />
-              Home
+              USDC token launcher
             </div>
             <h1 className="mb-4 text-4xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-5xl">
-              Open ARC from the route that matters, then keep the next move obvious.
+              Creators earn on every trade. Traders buy a live curve.
             </h1>
             <p className="max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
-              The homepage now acts as a connected entry point for launch, discovery, stats, and trader follow-through, while still keeping the freshest markets front and center.
+              Launch a coin in USDC, share the link, trade the bonding curve. Unsold supply cannot be yanked as a rug.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -56,18 +55,11 @@ export default function HomeContent() {
                 Launch a token
               </Link>
               <Link
-                href="/explore"
+                href="/explore?tab=tokens"
                 className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white"
               >
-                Explore marketplace
+                Explore tokens
                 <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/stats"
-                className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white"
-              >
-                <BarChart3 className="h-4 w-4" />
-                View stats
               </Link>
             </div>
 
@@ -161,24 +153,12 @@ export default function HomeContent() {
         )}
 
         <div className="mb-8 rounded-3xl border border-blue-200 bg-blue-50/80 p-5 shadow-sm dark:border-blue-500/20 dark:bg-blue-500/10 lg:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="mb-1 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-200">
-                <Sparkles className="h-4 w-4" />
-                Phase 1 continuity
-              </div>
-              <div className="text-lg font-semibold text-neutral-900 dark:text-white">
-                Home now behaves like the ARC starting surface for both creators and traders.
-              </div>
-              <p className="mt-1 max-w-3xl text-sm text-blue-800 dark:text-blue-200">
-                Discovery remains central, but the route also keeps macro stats and next-step navigation close enough to support real flow instead of forcing users back through disconnected pages.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-blue-200 bg-white/70 px-4 py-3 text-sm text-blue-900 dark:border-blue-500/20 dark:bg-slate-950/40 dark:text-blue-200">
-              <div className="font-semibold">Connected surfaces</div>
-              <div className="mt-1">{CONNECTED_SURFACES.length} primary routes anchored from home</div>
-            </div>
+          <div className="text-lg font-semibold text-neutral-900 dark:text-white">
+            Launch. Share the link. Trade. Get paid.
           </div>
+          <p className="mt-1 max-w-3xl text-sm text-blue-800 dark:text-blue-200">
+            Half of every 2.5% trade fee goes to the creator. Graduation later splits remaining curve USDC — it is not the only paycheck.
+          </p>
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
@@ -283,17 +263,17 @@ export default function HomeContent() {
             <div className="grid gap-6 md:grid-cols-2">
               <FeaturePanel
                 icon={<Rocket className="h-5 w-5" />}
-                title="Launchpad"
-                description="Start with the guided launch flow, creator trust links, and curve presets that now connect cleanly into the broader ARC journey."
+                title="Launch"
+                description="Name, ticker, image, description. Curve stays behind Advanced. You earn half of the 2.5% fee on every buy and sell."
                 href="/launch"
-                cta="Open launch flow"
+                cta="Launch a token"
               />
               <FeaturePanel
                 icon={<Layers3 className="h-5 w-5" />}
-                title="Marketplace"
-                description="Browse discovery surfaces and hand off directly into live token routes without leaving the shell mindset introduced in the last phase."
-                href="/explore"
-                cta="Open marketplace"
+                title="Token board"
+                description="New, trending, recent activity, nearing graduation. NFT listings stay in the repo; they are not the front door."
+                href="/explore?tab=tokens"
+                cta="Explore tokens"
               />
             </div>
           </div>
@@ -302,14 +282,14 @@ export default function HomeContent() {
             <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Connected routes</h2>
+                  <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">The ritual</h2>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    The next best ARC surface should always be obvious from home.
+                    Launch, share, trade. Stats and studio are not part of this loop.
                   </p>
                 </div>
                 <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Shell aware
+                  Launch first
                 </span>
               </div>
 
@@ -375,7 +355,7 @@ export default function HomeContent() {
             </div>
 
             <div className="rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
-              <h2 className="mb-4 text-2xl font-semibold text-neutral-900 dark:text-white">Readiness view</h2>
+              <h2 className="mb-4 text-2xl font-semibold text-neutral-900 dark:text-white">How it works</h2>
               <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
                 {READINESS_ITEMS.map((item) => {
                   const Icon = item.icon;
