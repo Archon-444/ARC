@@ -369,3 +369,49 @@ export function useCalculateSellReturn(ammAddress: string, tokenAmount: string) 
     isLoading,
   };
 }
+
+/**
+ * Accrued creator share of the 2.5% trade fee (pull-payment).
+ */
+export function useCreatorFees(ammAddress: string) {
+  const addr = ammAddress as `0x${string}`;
+  const enabled = Boolean(ammAddress);
+
+  const { data: accrued, refetch: refetchAccrued } = useReadContract({
+    address: addr,
+    abi: ArcBondingCurveAMMABI,
+    functionName: 'creatorFeesAccrued',
+    query: { enabled },
+  });
+
+  const { data: tokenCreator } = useReadContract({
+    address: addr,
+    abi: ArcBondingCurveAMMABI,
+    functionName: 'tokenCreator',
+    query: { enabled },
+  });
+
+  const { writeContract, data: hash, isPending: isWriting, error: writeError } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  const withdrawCreatorFees = useCallback(() => {
+    if (!ammAddress) return;
+    writeContract({
+      address: addr,
+      abi: ArcBondingCurveAMMABI,
+      functionName: 'withdrawCreatorFees',
+    });
+  }, [addr, ammAddress, writeContract]);
+
+  return {
+    accrued: accrued as bigint | undefined,
+    accruedFormatted: accrued ? formatUnits(accrued as bigint, 6) : '0',
+    tokenCreator: tokenCreator as `0x${string}` | undefined,
+    withdrawCreatorFees,
+    isLoading: isWriting || isConfirming,
+    isSuccess,
+    txHash: hash,
+    error: writeError,
+    refetchAccrued,
+  };
+}

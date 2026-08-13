@@ -211,9 +211,8 @@ function OfferRow({ offer, isHighest, isOwner, isProcessing, onAccept, onDecline
 
       {/* Floor Difference */}
       <td className="px-4 py-4">
-        <span className="text-sm font-medium text-green-600 dark:text-green-400">
-          {/* TODO: Calculate actual floor difference */}
-          +{Math.floor(Math.random() * 20)}%
+        <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+          —
         </span>
       </td>
 

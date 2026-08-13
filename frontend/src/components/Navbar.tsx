@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import {
-  BarChart3,
   Bell,
   ChevronDown,
   CircleDollarSign,
@@ -18,7 +17,6 @@ import {
   Search,
   Settings,
   ShoppingCart,
-  Sparkles,
   Trophy,
   User,
   Wallet,
@@ -32,31 +30,26 @@ import { useCommandPalette } from '@/hooks/useCommandPalette';
 import { truncateAddress } from '@/lib/utils';
 
 const primaryNav = [
+  { label: 'Launch', href: '/launch' },
   { label: 'Explore', href: '/explore', hasDropdown: true },
-  { label: 'Launchpad', href: '/launch' },
-  { label: 'Studio', href: '/studio' },
-  { label: 'Stats', href: '/stats' },
-  { label: 'Rewards', href: '/rewards' },
 ];
 
 const exploreSections = [
   {
     title: 'Explore',
     links: [
-      { label: 'All inventory', href: '/explore?tab=all' },
+      { label: 'Token markets', href: '/explore?tab=tokens' },
       { label: 'Listings', href: '/explore?tab=listings' },
       { label: 'Auctions', href: '/explore?tab=auctions' },
-      { label: 'Token markets', href: '/explore?tab=tokens' },
+      { label: 'All inventory', href: '/explore?tab=all' },
     ],
   },
 ];
 
 const mobileNav = [
   { label: 'Home', href: '/', icon: <Home className="h-5 w-5" /> },
+  { label: 'Launch', href: '/launch', icon: <Rocket className="h-5 w-5" /> },
   { label: 'Explore', href: '/explore', icon: <Compass className="h-5 w-5" /> },
-  { label: 'Launchpad', href: '/launch', icon: <Rocket className="h-5 w-5" /> },
-  { label: 'Studio', href: '/studio', icon: <Sparkles className="h-5 w-5" /> },
-  { label: 'Stats', href: '/stats', icon: <BarChart3 className="h-5 w-5" /> },
 ];
 
 const mobileUtilityLinks = [
@@ -102,38 +95,20 @@ export default function Navbar() {
   const shellContext = useMemo(() => {
     if (pathname.startsWith('/launch')) {
       return {
-        title: 'Launchpad active',
-        description: 'Create and route new token launches into live ARC market pages.',
-      };
-    }
-    if (pathname.startsWith('/stats')) {
-      return {
-        title: 'Analytics active',
-        description: 'Review ARC signals, then route back into discovery or creator workflows.',
-      };
-    }
-    if (pathname.startsWith('/rewards')) {
-      return {
-        title: 'Rewards active',
-        description: 'Track loyalty and participation across launch, discovery, and rewards.',
+        title: 'Launch',
+        description: 'Name, ticker, image. You earn on every trade.',
       };
     }
     if (pathname.startsWith('/explore')) {
       return {
-        title: 'Explore active',
-        description: 'Browse inventory and token markets from the primary discovery surface.',
+        title: 'Token board',
+        description: 'Live curves: new, trending, near graduation.',
       };
     }
     if (pathname.startsWith('/token/')) {
       return {
-        title: 'Token market active',
-        description: 'Trade launched tokens and return quickly to discovery or analytics.',
-      };
-    }
-    if (pathname.startsWith('/studio')) {
-      return {
-        title: 'Studio active',
-        description: 'Create and manage your work; discovery and token markets stay one click away.',
+        title: 'Token market',
+        description: 'Buy and sell on the curve. Creators collect half the 2.5% fee.',
       };
     }
     if (pathname.startsWith('/profile')) {
@@ -144,7 +119,7 @@ export default function Navbar() {
     }
     return {
       title: 'Home',
-      description: 'Primary navigation for Explore, Launchpad, Studio, Stats, and Rewards; account actions in the utility area.',
+      description: 'Launch a token, share the link, trade the curve.',
     };
   }, [pathname]);
 
@@ -722,7 +697,7 @@ export default function Navbar() {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-background-dark lg:hidden safe-bottom" aria-label="Primary navigation">
-        <div className="grid grid-cols-5">
+        <div className="grid grid-cols-3">
           {mobileNav.map((item) => {
             const isActive = item.href === '/' ? pathname === '/' : isNavActive(item.href);
             return (
@@ -766,20 +741,20 @@ export default function Navbar() {
                 <div className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">Quick actions</div>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <Link
-                    href="/rewards"
+                    href="/launch"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center justify-center gap-2 rounded-xl bg-primary-500 px-3 py-2.5 text-sm font-semibold text-white"
                   >
-                    <Trophy className="h-4 w-4" />
-                    Rewards
+                    <Rocket className="h-4 w-4" />
+                    Launch
                   </Link>
                   <Link
-                    href="/launch"
+                    href="/explore?tab=tokens"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm font-semibold text-neutral-900 dark:border-white/10 dark:bg-slate-950/60 dark:text-white"
                   >
-                    <Rocket className="h-4 w-4" />
-                    Launchpad
+                    <Compass className="h-4 w-4" />
+                    Tokens
                   </Link>
                 </div>
               </div>

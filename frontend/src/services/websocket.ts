@@ -83,7 +83,7 @@ class WebSocketClient {
       reconnectDelay: 2000,
       maxReconnectAttempts: 10,
       heartbeatInterval: 30000,
-      mockMode: !process.env.NEXT_PUBLIC_WS_URL, // Default to mock if no URL
+      mockMode: process.env.NODE_ENV !== 'production' && !process.env.NEXT_PUBLIC_WS_URL,
       ...options,
     };
   }

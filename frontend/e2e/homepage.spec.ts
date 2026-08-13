@@ -7,7 +7,7 @@ test.describe('Homepage', () => {
 
   test('should load homepage successfully', async ({ page }) => {
     // Check page title
-    await expect(page).toHaveTitle(/ArcMarket/i);
+    await expect(page).toHaveTitle(/ARC/i);
   });
 
   test('should display navigation bar', async ({ page }) => {

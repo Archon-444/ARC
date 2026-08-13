@@ -1,4 +1,6 @@
-# ARC — NFT Marketplace + Token Launchpad
+# ARC — USDC token launcher
+
+## Project Structure
 
 ## Project Structure
 

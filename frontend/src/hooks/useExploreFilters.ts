@@ -10,7 +10,7 @@ export function useExploreFilters(initialTab: ViewMode | null) {
   const searchParams = useSearchParams();
 
   const [viewMode, setViewMode] = useState<ViewMode>(
-    initialTab && ['all', 'listings', 'auctions', 'tokens'].includes(initialTab) ? initialTab : 'all'
+    initialTab && ['all', 'listings', 'auctions', 'tokens'].includes(initialTab) ? initialTab : 'tokens'
   );
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortOption>(SORT_OPTIONS[0]);

@@ -1,13 +1,14 @@
 /**
  * useUserXP Hook
  *
- * Fetches and manages user XP, level, and badge data
+ * Fetches and manages user XP, level, and badge data.
+ * XP is not indexed yet — returns an honest zeroed profile instead of fabricated ranks.
  */
 
 'use client';
 
 import { useEffect, useState } from 'react';
-import { calculateLevelProgress, checkBadgeUnlocks, type BadgeId } from '@/lib/gamification';
+import type { BadgeId } from '@/lib/gamification';
 
 export interface UserXPData {
     xp: number;
@@ -34,48 +35,15 @@ export function useUserXP(address?: string): {
             return;
         }
 
-        const fetchUserXP = async () => {
-            setIsLoading(true);
-            setError(null);
-
-            try {
-                // TODO: Replace with actual GraphQL query to subgraph
-                // For now, use mock data
-                const mockXP = Math.floor(Math.random() * 5000) + 100;
-                const mockStats = {
-                    nftsOwned: Math.floor(Math.random() * 20),
-                    totalTransactions: Math.floor(Math.random() * 100),
-                    offersMade: Math.floor(Math.random() * 50),
-                    auctionsWon: Math.floor(Math.random() * 10),
-                    joinedAt: Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000, // Random date within last 90 days
-                    firstPurchase: true,
-                    firstSale: Math.random() > 0.5,
-                };
-
-                const { level, progress, xpToNextLevel } = calculateLevelProgress(mockXP);
-                const badges = checkBadgeUnlocks(mockStats);
-
-                setData({
-                    xp: mockXP,
-                    level,
-                    progress,
-                    xpToNextLevel,
-                    badges,
-                    rank: Math.floor(Math.random() * 1000) + 1,
-                });
-            } catch (err) {
-                setError(err as Error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchUserXP();
-
-        // Poll for updates every 30 seconds
-        const interval = setInterval(fetchUserXP, 30000);
-
-        return () => clearInterval(interval);
+        setError(null);
+        setData({
+            xp: 0,
+            level: 1,
+            progress: 0,
+            xpToNextLevel: 0,
+            badges: [],
+        });
+        setIsLoading(false);
     }, [address]);
 
     return { data, isLoading, error };

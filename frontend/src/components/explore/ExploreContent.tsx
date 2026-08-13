@@ -16,7 +16,6 @@ import {
   SlidersHorizontal,
   Sparkles,
   TrendingUp,
-  Trophy,
   User,
   Wallet,
 } from 'lucide-react';
@@ -172,8 +171,6 @@ export default function ExploreContent() {
 
   const totalPages = Math.ceil((filteredNFTs.length || ITEMS_PER_PAGE) / ITEMS_PER_PAGE);
   const tokenMarketCount = launchedTokens.length;
-  const connectedRouteCount = isConnected ? 4 : 3;
-
   const activityRows = useMemo(() => {
     return listings.slice(0, 6).map((listing, index) => ({
       id: listing.id,
@@ -221,27 +218,15 @@ export default function ExploreContent() {
 
   const connectedRoutes = [
     {
-      title: 'Launch flow',
-      description: 'Create a new token and route it back into discovery.',
+      title: 'Launch a token',
+      description: 'Name, ticker, image. You earn on every trade.',
       href: '/launch',
       icon: <Rocket className="h-4 w-4" />,
-    },
-    {
-      title: 'Stats',
-      description: 'Check momentum, volume, and market context.',
-      href: '/stats',
-      icon: <TrendingUp className="h-4 w-4" />,
-    },
-    {
-      title: 'Rewards',
-      description: 'Follow wallet-linked progression beyond discovery.',
-      href: '/rewards',
-      icon: <Trophy className="h-4 w-4" />,
     },
     ...(isConnected
       ? [{
           title: 'Profile',
-          description: 'Return to your connected wallet identity and creator context.',
+          description: 'Wallet identity for the coins you launched.',
           href: `/profile/${address}`,
           icon: <User className="h-4 w-4" />,
         }]
@@ -266,22 +251,18 @@ export default function ExploreContent() {
         <div>
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
             <Sparkles className="h-3.5 w-3.5" />
-            ARC marketplace + launchpad
+            Token board
           </div>
           <h1 className="mb-4 text-4xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-5xl">
-            Explore marketplace inventory and live token markets in one place.
+            Live curves. New, trending, near graduation.
           </h1>
           <p className="max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
-            ARC brings listings, auctions, and launched tokens into one discovery layer so users can move from browsing to trading without friction.
+            ARC is a USDC token launcher. Listings and auctions are still here; tokens are the front door.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href="/launch" className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700">
               <Rocket className="h-4 w-4" />
               Launch a token
-            </Link>
-            <Link href="/stats" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-3 font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
-              Open stats
-              <ArrowRight className="h-4 w-4" />
             </Link>
             <Link href={isConnected && address ? `/profile/${address}` : '/profile'} className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-3 font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white">
               <User className="h-4 w-4" />
@@ -320,7 +301,7 @@ export default function ExploreContent() {
                 {tokensLoading ? 'Loading...' : tokenMarketCount.toLocaleString()}
               </div>
               <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                Token discovery now sits alongside ARC marketplace inventory as a first-class experience.
+                Live curves. NFT listings are a library tab, not the board.
               </div>
             </div>
           </div>
@@ -358,23 +339,10 @@ export default function ExploreContent() {
         </div>
       </div>
 
-      <div className="mb-8 rounded-3xl border border-blue-200 bg-blue-50/80 p-5 shadow-sm dark:border-blue-500/20 dark:bg-blue-500/10 lg:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="mb-1 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-200">
-              <Sparkles className="h-4 w-4" />
-              Shell continuity
-            </div>
-            <div className="text-lg font-semibold text-neutral-900 dark:text-white">Discovery is now a connected ARC route, not a dead-end browse page.</div>
-            <p className="mt-1 max-w-3xl text-sm text-blue-800 dark:text-blue-200">
-              Users can move from explore into launch, stats, rewards, and profile with less context switching, while token mode stays positioned as the handoff into live market pages.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-blue-200 bg-white/70 px-4 py-3 text-sm text-blue-900 dark:border-blue-500/20 dark:bg-slate-950/40 dark:text-blue-200">
-            <div className="font-semibold">Connected routes</div>
-            <div className="mt-1">{connectedRouteCount} high-intent paths from explore</div>
-          </div>
-        </div>
+      <div className="mb-8 grid gap-4 sm:grid-cols-3">
+        <ShortcutCard icon={<Wallet className="h-4 w-4" />} title="Tokens first" description="This board defaults to launched markets." href="/explore?tab=tokens" />
+        <ShortcutCard icon={<Rocket className="h-4 w-4" />} title="Launch" description="Name, ticker, image. Earn on every trade." href="/launch" />
+        <ShortcutCard icon={<User className="h-4 w-4" />} title="Your profile" description="Wallet identity for the coins you launched." href={isConnected && address ? `/profile/${address}` : '/profile'} />
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
@@ -443,14 +411,14 @@ export default function ExploreContent() {
                   {viewMode === 'tokens' ? 'Launched token markets' : 'Marketplace inventory'}
                 </h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  {viewMode === 'tokens'
-                    ? 'Launched tokens now sit inside the same ARC discovery system as marketplace inventory.'
-                    : 'A cleaner browsing surface for listings and auctions with stronger ARC navigation context.'}
+                    {viewMode === 'tokens'
+                      ? 'Live bonding-curve markets. Creators earn on every trade.'
+                      : 'NFT listings and auctions. Parked behind the token board.'}
                 </p>
               </div>
               <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
                 <Flame className="h-3.5 w-3.5" />
-                {viewMode === 'tokens' ? 'Launchpad mode' : 'Marketplace mode'}
+                {viewMode === 'tokens' ? 'Token board' : 'NFT library'}
               </span>
             </div>
 
@@ -458,23 +426,15 @@ export default function ExploreContent() {
               <div className="mb-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-white/10 dark:bg-slate-950/60">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
-                    <div className="text-sm font-semibold text-neutral-900 dark:text-white">Token route handoff</div>
+                    <div className="text-sm font-semibold text-neutral-900 dark:text-white">Open a market or launch the next one</div>
                     <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                      Use token mode to move directly from discovery into trader-facing market pages, or launch a new token if this surface is still empty.
+                      Token pages are the product. Launch if this board is empty.
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-3">
                     <Link href="/launch" className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
                       <Rocket className="h-4 w-4" />
                       Launch now
-                    </Link>
-                    <Link href="/stats" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-900 dark:text-white">
-                      Stats
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                    <Link href="/rewards" className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-900 dark:text-white">
-                      <Trophy className="h-4 w-4" />
-                      Rewards
                     </Link>
                   </div>
                 </div>

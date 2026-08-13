@@ -11,6 +11,7 @@ import { useAccount, useReadContract, useWriteContract, useWaitForTransactionRec
 import { parseEther, formatEther } from 'viem';
 import { CheckCircle2 } from 'lucide-react';
 import { useSellTokens, useCalculateSellReturn } from '@/hooks/useTokenAMM';
+import { applySlippageMinOut } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { InlineError } from '@/components/ui/ErrorDisplay';
@@ -43,7 +44,7 @@ export function SellTokenPanel({ ammAddress, tokenAddress, tokenSymbol, onSucces
   const parsedAmount = amount ? parseEther(amount) : 0n;
   const hasInsufficientBalance = balance !== undefined && parsedAmount > balance;
 
-  const { usdcOutFormatted, feeFormatted, isLoading: isCalculating } = useCalculateSellReturn(ammAddress, amount);
+  const { usdcOut, usdcOutFormatted, feeFormatted, isLoading: isCalculating } = useCalculateSellReturn(ammAddress, amount);
 
   // Approve token
   const { writeContract: approveToken, data: approveHash, isPending: isApprovePending } = useWriteContract();
@@ -54,11 +55,11 @@ export function SellTokenPanel({ ammAddress, tokenAddress, tokenSymbol, onSucces
   const { sellTokens, isLoading: isSelling, isSuccess: isSold, error: sellError } = useSellTokens(ammAddress);
 
   useEffect(() => {
-    if (isApproved && step === 'approving') {
+    if (isApproved && step === 'approving' && usdcOut) {
       setStep('selling');
-      sellTokens(amount);
+      sellTokens(amount, applySlippageMinOut(usdcOut));
     }
-  }, [isApproved, step]);
+  }, [isApproved, step, amount, usdcOut, sellTokens]);
 
   useEffect(() => {
     if (isSold) {
@@ -77,6 +78,10 @@ export function SellTokenPanel({ ammAddress, tokenAddress, tokenSymbol, onSucces
 
   const handleSell = () => {
     if (!amount || parseFloat(amount) <= 0) return;
+    if (!usdcOut) {
+      setError('Wait for the quote before selling.');
+      return;
+    }
     setError(null);
     setStep('approving');
     approveToken({
@@ -124,7 +129,7 @@ export function SellTokenPanel({ ammAddress, tokenAddress, tokenSymbol, onSucces
               </span>
             </div>
             <div className="flex justify-between text-xs text-neutral-500 mt-1">
-              <span>Platform fee (2.5%)</span>
+              <span>2.5% fee — half to creator</span>
               <span>${feeFormatted} USDC</span>
             </div>
           </div>

@@ -9,6 +9,7 @@ import { CircleWalletProvider } from '@/hooks/useCircleWallet';
 import { CommandPaletteProvider } from '@/hooks/useCommandPalette';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeProvider } from '@/providers/ThemeProvider';
+import { LiveRegionProvider } from '@/components/ui/LiveRegion';
 import { config } from '@/lib/wagmi';
 
 const queryClient = new QueryClient({
@@ -30,9 +31,11 @@ export default function RootProviders({ children }: { children: React.ReactNode 
               <RainbowKitProvider>
                 <CircleWalletProvider>
                   <ToastProvider>
-                    <CommandPaletteProvider>
-                      {children}
-                    </CommandPaletteProvider>
+                    <LiveRegionProvider>
+                      <CommandPaletteProvider>
+                        {children}
+                      </CommandPaletteProvider>
+                    </LiveRegionProvider>
                   </ToastProvider>
                 </CircleWalletProvider>
               </RainbowKitProvider>

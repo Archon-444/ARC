@@ -175,7 +175,7 @@ export default function StudioPage() {
       imagePreview: '',
     });
     setCreateStep('upload');
-    alert('NFT minted successfully. (Mock)');
+    alert('Demo only. Nothing was minted on-chain.');
   };
 
   const completedSteps = ['upload', 'details', 'collection', 'review'].indexOf(createStep);
@@ -183,26 +183,14 @@ export default function StudioPage() {
   const selectedCollection = collections.find((collection) => collection.address === mintForm.collectionAddress);
   const shellRoutes = [
     {
-      title: 'Open profile',
-      description: 'Return to your wallet identity and creator-facing account surface.',
-      href: '/profile',
-      icon: <User className="h-4 w-4" />,
+      title: 'Launch a token',
+      description: 'The live product. You earn on every trade.',
+      href: '/launch',
+      icon: <Rocket className="h-4 w-4" />,
     },
     {
-      title: 'Review stats',
-      description: 'Use ARC analytics before coming back to creation and launch decisions.',
-      href: '/stats',
-      icon: <BarChart3 className="h-4 w-4" />,
-    },
-    {
-      title: 'Open rewards',
-      description: 'Check loyalty and progression while staying inside the connected shell.',
-      href: '/rewards',
-      icon: <Trophy className="h-4 w-4" />,
-    },
-    {
-      title: 'Open token markets',
-      description: 'Move from creation into launched-token discovery and trading routes.',
+      title: 'Token board',
+      description: 'Live curves. This studio does not write chain.',
       href: '/explore?tab=tokens',
       icon: <Wallet className="h-4 w-4" />,
     },
@@ -214,31 +202,31 @@ export default function StudioPage() {
         <div className="mx-auto max-w-6xl">
           <div className="mb-8 grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
             <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
                 <Sparkles className="h-3.5 w-3.5" />
-                ARC studio
+                NFT demo
               </div>
               <h1 className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-5xl">
-                Connect your wallet to open the ARC creator studio.
+                Studio is a demo. Launch a token instead.
               </h1>
               <p className="mt-4 max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
-                Studio brings collection management, asset creation, and launch-ready preparation into one wallet-native ARC workflow.
+                Mint and collection deploy here are simulated. The live product is the USDC token launcher.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
-                  href="/explore"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-primary-500 px-6 py-3 font-semibold text-white transition hover:bg-primary-600"
-                >
-                  <Search className="h-4 w-4" />
-                  Explore markets
-                </Link>
-                <Link
                   href="/launch"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-primary-500 px-6 py-3 font-semibold text-white transition hover:bg-primary-600"
                 >
                   <Rocket className="h-4 w-4" />
                   Launch a token
+                </Link>
+                <Link
+                  href="/explore?tab=tokens"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-6 py-3 font-semibold text-neutral-900 transition hover:bg-neutral-50 dark:border-white/10 dark:bg-slate-950/60 dark:text-white"
+                >
+                  <Search className="h-4 w-4" />
+                  Explore tokens
                 </Link>
               </div>
             </div>
@@ -327,15 +315,15 @@ export default function StudioPage() {
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6 lg:py-10">
         <div className="mb-8 grid gap-6 rounded-3xl border border-neutral-200/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70 lg:grid-cols-[1.1fr_0.9fr] lg:p-8">
           <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
               <Sparkles className="h-3.5 w-3.5" />
-              Wallet-linked ARC studio
+              NFT demo
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-neutral-900 dark:text-white lg:text-5xl">
-              Build collections and prepare assets inside the ARC creator workflow.
+              Studio does not write chain.
             </h1>
             <p className="mt-4 max-w-2xl text-base text-neutral-600 dark:text-neutral-400 lg:text-lg">
-              Studio is the creation layer of the shell, connecting wallet identity, collection management, mint preparation, and launch-ready routes.
+              Mint here is simulated. Launch a token if you want a live USDC market.
             </p>
           </div>
 

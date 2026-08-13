@@ -6,6 +6,7 @@
   "scripts": {
     "test": "hardhat test",
     "test:coverage": "hardhat coverage",
+    "coverage": "hardhat coverage",
     "compile": "hardhat compile",
     "clean": "hardhat clean",
     "deploy:local": "hardhat run scripts/deploy.js --network hardhat",

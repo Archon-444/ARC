@@ -369,6 +369,37 @@ export function getAddressUrl(address: Address, chainId: number = 5042002): stri
   return `https://arcscan.app/address/${address}`;
 }
 
+const BLOCKED_URL_SCHEMES = /^(javascript|data|vbscript|file):/i;
+
+/**
+ * Allow only http(s) creator/social links. Rejects javascript: and other schemes.
+ */
+export function safeHttpUrl(value?: string | null): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed || BLOCKED_URL_SCHEMES.test(trimmed)) return null;
+
+  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+
+  try {
+    const url = new URL(withScheme);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    if (!url.hostname) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+/** Apply a slippage floor so trades do not submit minOut = 0 (sandwichable). */
+export const DEFAULT_SLIPPAGE_BPS = 100n;
+
+export function applySlippageMinOut(amount: bigint | undefined, slippageBps: bigint = DEFAULT_SLIPPAGE_BPS): bigint {
+  if (!amount || amount <= 0n) return 0n;
+  const bps = slippageBps > 10000n ? 10000n : slippageBps;
+  return amount - (amount * bps) / 10000n;
+}
+
 // ============================================
 // Array Utilities
 // ============================================

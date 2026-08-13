@@ -86,11 +86,29 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
     };
   }
 
+  async function createSmallToken() {
+    const SMALL_SUPPLY = ethers.parseEther("1000");
+    const LOW_BASE_PRICE = 100n;
+    return createToken(creator, {
+      totalSupply: SMALL_SUPPLY,
+      basePrice: LOW_BASE_PRICE,
+      slope: 100n,
+    });
+  }
+
   // Helper: buy tokens on AMM
   async function buyTokens(amm, signer, usdcAmount, minTokensOut = 0) {
     const ammAddr = await amm.getAddress();
     await usdc.connect(signer).approve(ammAddr, usdcAmount);
     return amm.connect(signer).buyTokens(usdcAmount, minTokensOut);
+  }
+
+  async function buyUntilGraduated(amm, signer) {
+    for (let i = 0; i < 8; i++) {
+      if (await amm.isGraduated()) return;
+      await buyTokens(amm, signer, USDC(50000));
+    }
+    expect(await amm.isGraduated()).to.equal(true, "Buy loop should reach graduation threshold");
   }
 
   // ================================================================
@@ -409,16 +427,55 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
       ).to.be.revertedWithCustomError(amm, "SlippageTooHigh");
     });
 
-    it("should deduct 2.5% platform fee and send to feeVault", async function () {
+    it("should deduct 2.5% trade fee and send half to feeVault", async function () {
       const { amm } = await createToken();
 
       const vaultBefore = await usdc.balanceOf(feeVault.address);
       await buyTokens(amm, buyer, USDC(1000));
       const vaultAfter = await usdc.balanceOf(feeVault.address);
 
-      // 2.5% of 1000 USDC = 25 USDC
+      // 2.5% of 1000 USDC = 25; half to vault, half accrued for creator
       const feeCollected = vaultAfter - vaultBefore;
-      expect(feeCollected).to.equal(USDC(25));
+      expect(feeCollected).to.equal(USDC("12.5"));
+      expect(await amm.creatorFeesAccrued()).to.equal(USDC("12.5"));
+      expect(await amm.getReserveBalance()).to.equal(USDC(975));
+    });
+
+    it("should let only the creator withdraw accrued trade fees", async function () {
+      const { amm } = await createToken();
+      await buyTokens(amm, buyer, USDC(1000));
+
+      await expect(
+        amm.connect(buyer).withdrawCreatorFees()
+      ).to.be.revertedWithCustomError(amm, "NotCreator");
+
+      const creatorBefore = await usdc.balanceOf(creator.address);
+      await expect(amm.connect(creator).withdrawCreatorFees())
+        .to.emit(amm, "CreatorFeesWithdrawn");
+      const creatorAfter = await usdc.balanceOf(creator.address);
+
+      expect(creatorAfter - creatorBefore).to.equal(USDC("12.5"));
+      expect(await amm.creatorFeesAccrued()).to.equal(0);
+      expect(await amm.getReserveBalance()).to.equal(USDC(975));
+    });
+
+    it("should accrue creator fees on sells without touching curve reserve accounting", async function () {
+      const { amm, token } = await createToken();
+      await buyTokens(amm, buyer, USDC(1000));
+      await amm.connect(creator).withdrawCreatorFees();
+
+      const curveBefore = await amm.getReserveBalance();
+      const tokenBalance = await token.balanceOf(buyer.address);
+      const sellAmount = tokenBalance / 2n;
+      const ammAddr = await amm.getAddress();
+      await token.connect(buyer).approve(ammAddr, sellAmount);
+
+      const [usdcOut, sellFee] = await amm.calculateSellReturn(sellAmount);
+      await amm.connect(buyer).sellTokens(sellAmount, 0);
+
+      const creatorShare = sellFee / 2n;
+      expect(await amm.creatorFeesAccrued()).to.equal(creatorShare);
+      expect(await amm.getReserveBalance()).to.equal(curveBefore - usdcOut - sellFee);
     });
 
     it("should revert buy with zero amount", async function () {
@@ -480,17 +537,6 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
   // SUITE 5: Graduation
   // ================================================================
   describe("Suite 5: Graduation", function () {
-    // Create token with small supply and low graduation threshold for easy testing
-    const SMALL_SUPPLY = ethers.parseEther("1000");  // 1000 tokens
-    const LOW_BASE_PRICE = 100n;                      // 0.0001 USDC per token
-
-    async function createSmallToken() {
-      return createToken(creator, {
-        totalSupply: SMALL_SUPPLY,
-        basePrice: LOW_BASE_PRICE,
-        slope: 100n, // Low slope
-      });
-    }
 
     it("should graduate when 80% supply is sold", async function () {
       const { amm } = await createSmallToken();
@@ -498,7 +544,7 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
 
       // Buy until graduation (80% of supply)
       // Use large USDC amount to ensure we hit threshold
-      await buyTokens(amm, buyer, USDC(10000));
+      await buyUntilGraduated(amm, buyer);
 
       expect(await amm.isGraduated()).to.be.true;
     });
@@ -506,34 +552,49 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
     it("should emit TokenGraduated event", async function () {
       const { amm } = await createSmallToken();
       const ammAddr = await amm.getAddress();
-      await usdc.connect(buyer).approve(ammAddr, USDC(10000));
+      await usdc.connect(buyer).approve(ammAddr, USDC(50000));
 
       await expect(
-        amm.connect(buyer).buyTokens(USDC(10000), 0)
+        amm.connect(buyer).buyTokens(USDC(50000), 0)
       ).to.emit(amm, "TokenGraduated");
     });
 
-    it("should split USDC 50/25/25 at graduation", async function () {
+    it("should split remaining curve USDC 50/25/25 and leave accrued creator fees intact", async function () {
       const { amm } = await createSmallToken();
 
       const vaultBefore = await usdc.balanceOf(feeVault.address);
-      await buyTokens(amm, buyer, USDC(10000));
+      await buyUntilGraduated(amm, buyer);
 
       const reserves = await amm.reserves();
       expect(reserves.creatorReserve).to.be.gt(0);
       expect(reserves.stakingRewardPool).to.be.gt(0);
       expect(reserves.platformFee).to.be.gt(0);
 
-      // Platform fee should have been transferred to feeVault
+      const accrued = await amm.creatorFeesAccrued();
+      expect(accrued).to.be.gt(0);
+
+      const ammAddr = await amm.getAddress();
+      expect(await usdc.balanceOf(ammAddr)).to.equal(
+        reserves.creatorReserve + reserves.stakingRewardPool + accrued
+      );
+
       const vaultAfter = await usdc.balanceOf(feeVault.address);
-      expect(vaultAfter - vaultBefore).to.be.gt(0);
+      expect(vaultAfter - vaultBefore).to.be.gt(reserves.platformFee);
+
+      const creatorBefore = await usdc.balanceOf(creator.address);
+      await amm.connect(creator).withdrawCreatorFees();
+      expect(await amm.creatorFeesAccrued()).to.equal(0);
+      expect(await usdc.balanceOf(creator.address) - creatorBefore).to.equal(accrued);
+      expect(await usdc.balanceOf(ammAddr)).to.equal(
+        reserves.creatorReserve + reserves.stakingRewardPool
+      );
     });
 
     it("should disable buy/sell after graduation", async function () {
       const { amm } = await createSmallToken();
 
       // Graduate
-      await buyTokens(amm, buyer, USDC(10000));
+      await buyUntilGraduated(amm, buyer);
       expect(await amm.isGraduated()).to.be.true;
 
       // Try to buy again
@@ -548,7 +609,7 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
       const { amm } = await createSmallToken();
 
       // Graduate
-      await buyTokens(amm, buyer, USDC(10000));
+      await buyUntilGraduated(amm, buyer);
       const reserveBalance = (await amm.reserves()).creatorReserve;
 
       const creatorBefore = await usdc.balanceOf(creator.address);
@@ -560,7 +621,7 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
 
     it("should not allow non-creator to withdraw reserve", async function () {
       const { amm } = await createSmallToken();
-      await buyTokens(amm, buyer, USDC(10000));
+      await buyUntilGraduated(amm, buyer);
 
       await expect(
         amm.connect(buyer).withdrawCreatorReserve(1, "steal")
@@ -571,7 +632,7 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
       const { amm, token } = await createSmallToken();
 
       // Graduate by buying
-      await buyTokens(amm, buyer, USDC(10000));
+      await buyUntilGraduated(amm, buyer);
       expect(await amm.isGraduated()).to.be.true;
 
       // Buyer stakes their tokens
@@ -588,7 +649,7 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
       const { amm, token } = await createSmallToken();
 
       // Graduate
-      await buyTokens(amm, buyer, USDC(10000));
+      await buyUntilGraduated(amm, buyer);
 
       // Stake tokens
       const tokenBalance = await token.balanceOf(buyer.address);
@@ -609,10 +670,19 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
       const progressBefore = await amm.getGraduationProgress();
       expect(progressBefore).to.equal(0);
 
-      await buyTokens(amm, buyer, USDC(10000));
+      await buyUntilGraduated(amm, buyer);
 
       const progressAfter = await amm.getGraduationProgress();
       expect(progressAfter).to.equal(10000); // 100%
+    });
+
+    it("should not charge unused USDC when a buy is capped at graduation", async function () {
+      const { amm } = await createSmallToken();
+      const before = await usdc.balanceOf(buyer.address);
+      await buyUntilGraduated(amm, buyer);
+      const spent = before - await usdc.balanceOf(buyer.address);
+      expect(spent).to.be.lt(USDC(50000), "Capped buy must refund unused headroom");
+      expect(await amm.isGraduated()).to.be.true;
     });
   });
 
@@ -677,7 +747,8 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
           CURVE_TYPE_LINEAR,
           TOTAL_SUPPLY,
           feeVault.address,
-          await usdc.getAddress()
+          await usdc.getAddress(),
+          owner.address
         )
       ).to.be.revertedWithCustomError(ArcBondingCurveAMM, "ZeroAddress");
     });
@@ -694,7 +765,8 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
           2, // invalid curve type
           TOTAL_SUPPLY,
           feeVault.address,
-          await usdc.getAddress()
+          await usdc.getAddress(),
+          owner.address
         )
       ).to.be.revertedWithCustomError(ArcBondingCurveAMM, "InvalidCurveType");
     });
@@ -717,6 +789,74 @@ describe("ArcTokenFactory + ArcBondingCurveAMM", function () {
       await expect(
         amm.connect(creator).withdrawCreatorReserve(1, "early")
       ).to.be.revertedWithCustomError(amm, "NotGraduated");
+    });
+
+    it("should set AMM owner to the factory owner after a factory deploy", async function () {
+      const { amm } = await createToken();
+      expect(await amm.owner()).to.equal(owner.address);
+      expect(await amm.owner()).to.not.equal(await factory.getAddress());
+    });
+
+    it("should allow the factory owner to pause a factory-deployed AMM", async function () {
+      const { amm } = await createToken();
+      await amm.connect(owner).pause();
+      await expect(buyTokens(amm, buyer, USDC(1))).to.be.reverted;
+    });
+
+    it("should prevent non-owners from pausing a factory-deployed AMM", async function () {
+      const { amm } = await createToken();
+      await expect(amm.connect(creator).pause()).to.be.reverted;
+    });
+
+    it("should reject recovering USDC or the launched token", async function () {
+      const { amm, token } = await createToken();
+      await expect(
+        amm.connect(owner).recoverStrayERC20(await usdc.getAddress(), owner.address, 1)
+      ).to.be.revertedWithCustomError(amm, "ProtectedToken");
+      await expect(
+        amm.connect(owner).recoverStrayERC20(await token.getAddress(), owner.address, 1)
+      ).to.be.revertedWithCustomError(amm, "ProtectedToken");
+    });
+
+    it("should recover a stray ERC20 that is not USDC or the launched token", async function () {
+      const { amm } = await createToken();
+      const MockUSDC = await ethers.getContractFactory("MockUSDC");
+      const stray = await MockUSDC.deploy();
+      await stray.waitForDeployment();
+
+      const amount = USDC(10);
+      const before = await stray.balanceOf(owner.address);
+      await stray.transfer(await amm.getAddress(), amount);
+      expect(await stray.balanceOf(await amm.getAddress())).to.equal(amount);
+
+      await amm.connect(owner).recoverStrayERC20(await stray.getAddress(), owner.address, amount);
+      expect(await stray.balanceOf(await amm.getAddress())).to.equal(0);
+      expect(await stray.balanceOf(owner.address)).to.equal(before);
+    });
+  });
+
+  describe("Suite 7: Staking reward claims", function () {
+    it("should allow a second claim after the first (timer reset must not zero rewards)", async function () {
+      const { amm, token } = await createSmallToken();
+      await buyUntilGraduated(amm, buyer);
+
+      const tokenBalance = await token.balanceOf(buyer.address);
+      const ammAddr = await amm.getAddress();
+      await token.connect(buyer).approve(ammAddr, tokenBalance);
+      await amm.connect(buyer).stakeTokens(tokenBalance);
+
+      await time.increase(30 * 24 * 60 * 60);
+      const firstClaimable = await amm.getClaimableRewards(buyer.address);
+      expect(firstClaimable).to.be.gt(0);
+
+      await amm.connect(buyer).claimStakingRewards();
+      expect(await amm.getClaimableRewards(buyer.address)).to.equal(0);
+
+      await time.increase(30 * 24 * 60 * 60);
+      const secondClaimable = await amm.getClaimableRewards(buyer.address);
+      expect(secondClaimable).to.be.gt(0, "Second period after claim must still accrue");
+
+      await expect(amm.connect(buyer).claimStakingRewards()).to.not.be.reverted;
     });
   });
 });

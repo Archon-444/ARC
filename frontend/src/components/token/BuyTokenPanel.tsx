@@ -10,6 +10,7 @@ import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { CheckCircle2 } from 'lucide-react';
 import { useBuyTokens, useApproveAMMUSDC, useCalculateBuyReturn } from '@/hooks/useTokenAMM';
+import { applySlippageMinOut } from '@/lib/utils';
 import { useUSDCBalance } from '@/hooks/useMarketplace';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -29,7 +30,7 @@ export function BuyTokenPanel({ ammAddress, tokenSymbol, onSuccess }: BuyTokenPa
   const [error, setError] = useState<string | null>(null);
 
   const { balance, balanceFormatted } = useUSDCBalance(address || '');
-  const { tokensOutFormatted, feeFormatted, isLoading: isCalculating } = useCalculateBuyReturn(ammAddress, amount);
+  const { tokensOut, tokensOutFormatted, feeFormatted, isLoading: isCalculating } = useCalculateBuyReturn(ammAddress, amount);
   const { approve, isLoading: isApproving, isSuccess: isApproved } = useApproveAMMUSDC(ammAddress);
   const { buyTokens, isLoading: isBuying, isSuccess: isBought, error: buyError } = useBuyTokens(ammAddress);
 
@@ -38,11 +39,11 @@ export function BuyTokenPanel({ ammAddress, tokenSymbol, onSuccess }: BuyTokenPa
 
   // Handle approval -> buy flow
   useEffect(() => {
-    if (isApproved && step === 'approving') {
+    if (isApproved && step === 'approving' && tokensOut) {
       setStep('buying');
-      buyTokens(amount);
+      buyTokens(amount, applySlippageMinOut(tokensOut));
     }
-  }, [isApproved, step]);
+  }, [isApproved, step, amount, tokensOut, buyTokens]);
 
   useEffect(() => {
     if (isBought) {
@@ -61,6 +62,10 @@ export function BuyTokenPanel({ ammAddress, tokenSymbol, onSuccess }: BuyTokenPa
 
   const handleBuy = () => {
     if (!amount || parseFloat(amount) <= 0) return;
+    if (!tokensOut) {
+      setError('Wait for the quote before buying.');
+      return;
+    }
     setError(null);
     setStep('approving');
     approve(amount);
@@ -119,7 +124,7 @@ export function BuyTokenPanel({ ammAddress, tokenSymbol, onSuccess }: BuyTokenPa
               </span>
             </div>
             <div className="flex justify-between text-xs text-neutral-500 mt-1">
-              <span>Platform fee (2.5%)</span>
+              <span>2.5% fee — half to creator</span>
               <span>${feeFormatted} USDC</span>
             </div>
           </div>

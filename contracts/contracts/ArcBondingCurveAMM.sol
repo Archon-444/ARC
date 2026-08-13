@@ -14,7 +14,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @notice Arc-native implementation:
  * - All pricing and settlement in USDC (6 decimals)
  * - No native currency support (no msg.value)
- * - Graduation: 50% creator / 25% staking rewards / 25% platform
+ * - Trade fee 2.5%: half to creator (pull), half to platform
+ * - Graduation: 50% remaining curve USDC to creator / 25% stakers / 25% platform
  * - Time-weighted staking rewards (365 days distribution)
  * - No DEX integration (Arc has no DEX yet)
  */
@@ -25,7 +26,7 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
     // ========== IMMUTABLE STATE ==========
     IERC20 public immutable token;              // Token created by factory (18 decimals)
     IERC20 public immutable usdc;               // USDC stablecoin (6 decimals)
-    address public immutable tokenCreator;      // Token creator (receives 50% at graduation)
+    address public immutable tokenCreator;      // Token creator (trade fees + 50% at graduation)
     address public immutable feeVault;          // ARC platform fee recipient
 
     uint256 public immutable basePrice;         // Starting price (in USDC, 6 decimals)
@@ -37,6 +38,7 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
     uint256 public currentSupply;               // Tokens sold so far
     uint256 public totalVolume;                 // Total USDC volume traded
     bool public isGraduated;                    // Has token graduated?
+    uint256 public creatorFeesAccrued;          // Unpaid creator share of trade fees (not curve USDC)
 
     // Graduation state (only populated when graduated)
     struct GraduationReserves {
@@ -59,7 +61,8 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
     uint256 public constant USDC_DECIMALS = 1e6;            // USDC is 6 decimals
 
     // Platform fees (basis points)
-    uint256 public constant PLATFORM_FEE_BPS = 250;         // 2.5%
+    uint256 public constant PLATFORM_FEE_BPS = 250;         // 2.5% total on each trade
+    uint256 public constant CREATOR_FEE_SHARE_BPS = 5000;   // 50% of the 2.5% accrues to creator
 
     // Bonding curve safety limits
     uint256 public constant MAX_TOTAL_SUPPLY = 1e12 * 1e18; // 1 trillion tokens
@@ -117,6 +120,18 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
         uint256 timestamp
     );
 
+    event CreatorFeesAccrued(
+        address indexed creator,
+        uint256 amount,
+        uint256 timestamp
+    );
+
+    event CreatorFeesWithdrawn(
+        address indexed creator,
+        uint256 amount,
+        uint256 timestamp
+    );
+
     // ========== CUSTOM ERRORS ==========
     error InvalidAmount();
     error InsufficientBalance();
@@ -129,6 +144,7 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
     error NoRewardsClaimable();
     error RewardsPoolExhausted();
     error NotCreator();
+    error ProtectedToken();
 
     // ========== MODIFIERS ==========
     modifier notGraduated() {
@@ -150,13 +166,15 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
     /**
      * @dev Initialize bonding curve AMM for a token
      * @param _token ERC20 token created by factory (18 decimals)
-     * @param _tokenCreator Creator of token (receives graduation funds)
+     * @param _tokenCreator Creator of token (trade-fee paycheck + graduation funds)
      * @param _basePrice Starting price in USDC (6 decimals, e.g., 1e4 = $0.01)
      * @param _slope Price increase per token (scale relative to PRECISION)
      * @param _curveType 0 = linear, 1 = exponential
      * @param _graduationThreshold Supply at which token graduates (18 decimals)
      * @param _feeVault ARC platform fee recipient
      * @param _usdc USDC token address
+     * @param _owner Platform owner (pause / stray-token recovery). Must NOT be the factory
+     *        if admin functions should remain callable after a factory deploy.
      */
     constructor(
         address _token,
@@ -166,12 +184,14 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
         uint8 _curveType,
         uint256 _graduationThreshold,
         address _feeVault,
-        address _usdc
-    ) Ownable(msg.sender) {
+        address _usdc,
+        address _owner
+    ) Ownable(_owner) {
         if (_token == address(0)) revert ZeroAddress();
         if (_tokenCreator == address(0)) revert ZeroAddress();
         if (_feeVault == address(0)) revert ZeroAddress();
         if (_usdc == address(0)) revert ZeroAddress();
+        if (_owner == address(0)) revert ZeroAddress();
         if (_curveType > 1) revert InvalidCurveType();
 
         if (_basePrice < MIN_BASE_PRICE || _basePrice > MAX_BASE_PRICE) {
@@ -216,26 +236,41 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
     {
         if (usdcAmount == 0) revert InvalidAmount();
 
-        uint256 platformFee = (usdcAmount * PLATFORM_FEE_BPS) / 10000;
-        uint256 usdcAfterFee = usdcAmount - platformFee;
+        uint256 quotedFee = (usdcAmount * PLATFORM_FEE_BPS) / 10000;
+        uint256 usdcAfterFee = usdcAmount - quotedFee;
 
-        // Calculate tokens from bonding curve
+        // Calculate tokens from bonding curve (capped at remaining-to-graduation)
         uint256 tokensOut = calculateTokensOut(usdcAfterFee, currentSupply);
 
         if (tokensOut == 0) revert InvalidAmount();
         if (tokensOut < minTokensOut) revert SlippageTooHigh();
         if (tokensOut > token.balanceOf(address(this))) revert InsufficientBalance();
 
+        // Charge the curve cost of tokensOut, not the unused headroom. A graduating
+        // (or otherwise capped) buy used to pull the full usdcAmount anyway.
+        uint256 actualCost = _cumulativeCost(currentSupply, currentSupply + tokensOut);
+        if (actualCost == 0) {
+            actualCost = 1; // dust: 18-decimal token amounts can truncate 6-decimal USDC to 0
+        }
+        uint256 totalCharged = Math.mulDiv(actualCost, 10000, 10000 - PLATFORM_FEE_BPS);
+        if (totalCharged > usdcAmount) {
+            totalCharged = usdcAmount;
+        }
+        uint256 platformFee = totalCharged - actualCost;
+        uint256 vaultShare = _allocateTradeFee(platformFee);
+
         // Effects
         uint256 newSupply = currentSupply + tokensOut;
         bool willGraduate = newSupply >= graduationThreshold;
         currentSupply = newSupply;
-        totalVolume += usdcAmount;
+        totalVolume += totalCharged;
 
         // Interactions
-        usdc.safeTransferFrom(msg.sender, address(this), usdcAmount);
+        usdc.safeTransferFrom(msg.sender, address(this), totalCharged);
         token.safeTransfer(msg.sender, tokensOut);
-        usdc.safeTransfer(feeVault, platformFee);
+        if (vaultShare > 0) {
+            usdc.safeTransfer(feeVault, vaultShare);
+        }
 
         // Graduate if threshold reached
         if (willGraduate && !isGraduated) {
@@ -244,7 +279,7 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
 
         emit TokensBought(
             msg.sender,
-            usdcAmount,
+            totalCharged,
             tokensOut,
             platformFee,
             getCurrentPrice(),
@@ -272,7 +307,9 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
         uint256 usdcAfterFee = usdcValue - platformFee;
 
         if (usdcAfterFee < minUsdcOut) revert SlippageTooHigh();
-        if (usdcValue > usdc.balanceOf(address(this))) revert InsufficientBalance();
+        if (usdcValue > _curveUsdcBalance()) revert InsufficientBalance();
+
+        uint256 vaultShare = _allocateTradeFee(platformFee);
 
         // Effects
         currentSupply -= tokenAmount;
@@ -281,7 +318,9 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
         // Interactions (CEI: token in first, USDC out second)
         token.safeTransferFrom(msg.sender, address(this), tokenAmount);
         usdc.safeTransfer(msg.sender, usdcAfterFee);
-        usdc.safeTransfer(feeVault, platformFee);
+        if (vaultShare > 0) {
+            usdc.safeTransfer(feeVault, vaultShare);
+        }
 
         emit TokensSold(
             msg.sender,
@@ -326,8 +365,9 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
             high = graduationThreshold - fromSupply;
         }
 
-        // 64 iterations covers >1e18 range with precision
-        for (uint256 i = 0; i < 64; i++) {
+        // 256 iterations covers the full uint256 range; 64 left ~43 wei
+        // of 18-decimal supply unbought and made graduation unreachable.
+        for (uint256 i = 0; i < 256; i++) {
             if (low >= high) break;
 
             uint256 mid = (low + high + 1) / 2;
@@ -484,12 +524,13 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
     /**
      * @dev Internal: Graduate token, split reserves
      * SPLIT:
-     * - 50% to creator (can withdraw anytime)
+     * - 50% of remaining *curve* USDC to creator (can withdraw anytime)
      * - 25% to staking rewards (time-weighted, 365 days)
      * - 25% to platform (transferred immediately to feeVault)
+     * Unpaid creator trade fees (`creatorFeesAccrued`) are excluded from this split.
      */
     function _graduateToken() internal {
-        uint256 totalUSDC = usdc.balanceOf(address(this));
+        uint256 totalUSDC = _curveUsdcBalance();
         require(totalUSDC > 0, "No USDC reserves");
 
         uint256 creatorReserve = (totalUSDC * 50) / 100;
@@ -537,6 +578,18 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
         usdc.safeTransfer(tokenCreator, usdcAmount);
 
         emit CreatorReserveWithdrawn(tokenCreator, usdcAmount, reason, block.timestamp);
+    }
+
+    /**
+     * @dev Creator pulls accrued trade-fee share. Pull-payment so a reverting
+     *      creator cannot brick buys/sells. Callable before and after graduation.
+     */
+    function withdrawCreatorFees() external nonReentrant onlyCreator {
+        uint256 amount = creatorFeesAccrued;
+        if (amount == 0) revert InvalidAmount();
+        creatorFeesAccrued = 0;
+        usdc.safeTransfer(tokenCreator, amount);
+        emit CreatorFeesWithdrawn(tokenCreator, amount, block.timestamp);
     }
 
     // ========== POST-GRADUATION: STAKING REWARDS ==========
@@ -627,13 +680,10 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
             totalTokenStaked
         );
 
-        // Time-weighted reward = proportionalShare * elapsed / REWARD_DURATION
-        uint256 reward = Math.mulDiv(proportionalShare, elapsed, REWARD_DURATION);
-
-        // Subtract already claimed
-        if (reward <= rewardsClaimed[user]) return 0;
-
-        return reward - rewardsClaimed[user];
+        // Period-based: elapsed since last checkpoint (claim / stake update).
+        // Do NOT subtract lifetime rewardsClaimed — claim() resets stakingStartTime,
+        // so subtracting cumulative claims against a reset clock zeroes all future rewards.
+        return Math.mulDiv(proportionalShare, elapsed, REWARD_DURATION);
     }
 
     /**
@@ -701,10 +751,29 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
     }
 
     /**
-     * @dev Get the USDC reserve balance held by this AMM
+     * @dev Curve USDC available for sells / graduation (excludes unpaid creator fees)
      */
     function getReserveBalance() external view returns (uint256) {
-        return usdc.balanceOf(address(this));
+        return _curveUsdcBalance();
+    }
+
+    /**
+     * @dev Split a trade fee: half accrues to the creator, remainder goes to the vault.
+     *      `TokensBought` / `TokensSold` still emit the full fee as `platformFee`.
+     */
+    function _allocateTradeFee(uint256 totalFee) internal returns (uint256 vaultShare) {
+        uint256 creatorShare = (totalFee * CREATOR_FEE_SHARE_BPS) / 10000;
+        if (creatorShare > 0) {
+            creatorFeesAccrued += creatorShare;
+            emit CreatorFeesAccrued(tokenCreator, creatorShare, block.timestamp);
+        }
+        return totalFee - creatorShare;
+    }
+
+    function _curveUsdcBalance() internal view returns (uint256) {
+        uint256 bal = usdc.balanceOf(address(this));
+        uint256 reserved = creatorFeesAccrued;
+        return bal > reserved ? bal - reserved : 0;
     }
 
     /**
@@ -753,5 +822,22 @@ contract ArcBondingCurveAMM is ReentrancyGuard, Pausable, Ownable {
 
     function unpause() external onlyOwner {
         _unpause();
+    }
+
+    /**
+     * @dev Recover ERC20 tokens accidentally sent to this AMM.
+     * Cannot recover USDC (curve / graduation reserves) or the launched token.
+     */
+    function recoverStrayERC20(address tokenAddress, address to, uint256 amount)
+        external
+        onlyOwner
+        nonReentrant
+    {
+        if (to == address(0)) revert ZeroAddress();
+        if (tokenAddress == address(usdc) || tokenAddress == address(token)) {
+            revert ProtectedToken();
+        }
+        if (amount == 0) revert InvalidAmount();
+        IERC20(tokenAddress).safeTransfer(to, amount);
     }
 }
